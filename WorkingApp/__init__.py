@@ -32,11 +32,15 @@ from . ClassDefinitions  import ExplodingBits
 def register():
     bpy.utils.register_class(NeuronAnalysis)
     bpy.utils.register_class(ExplodingBits)
-
+    bpy.types.Scene.my_string_prop = bpy.props.StringProperty \
+      (
+        name = "My String",
+        description = "My description",
+        default = "default"
+      )
 
 def unregister():
     bpy.utils.unregister_class(NeuronAnalysis)
     bpy.utils.unregister_class(ExplodingBits)
-
-
+    bpy.types.Scene.my_string_prop
     

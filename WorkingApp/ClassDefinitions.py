@@ -15,6 +15,11 @@ class NeuronAnalysis(bpy.types.Panel):
         row = layout.row()
         row.operator('object.exploding_bits', text = 'Separate Dendrites', icon = 'CUBE')
 
+        row = self.layout.column(align = True)
+        row.prop(context.scene, "my_string_prop")
+        
+
+
 
 #Row operator for panel that applies "separate by loose parts" to mesh    
 class ExplodingBits(bpy.types.Operator):
