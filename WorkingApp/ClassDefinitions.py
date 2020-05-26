@@ -1,6 +1,6 @@
 #New comment here
 import bpy
-import pynwb
+#import pynwb
 
 
 #Create a 3Dview panel and add a row to it
