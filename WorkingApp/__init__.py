@@ -26,13 +26,14 @@ bl_info = {
 import bpy
 from . ClassDefinitions   import NeuronAnalysis
 from . ClassDefinitions  import ExplodingBits
+from .ClassDefinitions import WriteNWB
 import subprocess
 import sys
 from pathlib import Path
 from datetime import datetime
 import pkg_resources
 
-for package in ['pynwb']:
+for package in ['pynwb']:  #May want to expand this
     try:
         dist = pkg_resources.get_distribution(package)
         print('{} ({}) is installed'.format(dist.key, dist.version))
@@ -65,6 +66,9 @@ import pynwb
 def register():
     bpy.utils.register_class(NeuronAnalysis)
     bpy.utils.register_class(ExplodingBits)
+    bpy.utils.register_class(WriteNWB)
+
+    #Subject Table Strings
     bpy.types.Scene.subject_ID = bpy.props.StringProperty \
       (name = "Subject ID")
     bpy.types.Scene.age = bpy.props.StringProperty \
@@ -77,10 +81,18 @@ def register():
       (name = "Sex")
     bpy.types.Scene.species = bpy.props.StringProperty \
       (name = "Species")
+    #NWBfile fields
+    bpy.types.Scene.identifier = bpy.props.StringProperty \
+      (name = "Identifier")
+    bpy.types.Scene.session_start_time = bpy.props.StringProperty \
+      (name = "Session Start Time")
+    bpy.types.Scene.session_description = bpy.props.StringProperty \
+      (name = "Session Description")
 
 def unregister():
     bpy.utils.unregister_class(NeuronAnalysis)
     bpy.utils.unregister_class(ExplodingBits)
+    bpy.utils.unregister_class(WriteNWB)
     bpy.types.Scene.subject_ID
     bpy.types.Scene.age
     bpy.types.Scene.subject_description
