@@ -26,38 +26,41 @@ bl_info = {
 import bpy
 from . ClassDefinitions   import NeuronAnalysis
 from . ClassDefinitions  import ExplodingBits
-#import pynwb
-
-
 import subprocess
 import sys
 from pathlib import Path
 from datetime import datetime
+import pkg_resources
 
-#This code installs pynwb from here: https://blender.stackexchange.com/questions/149944/how-to-write-my-add-on-so-that-when-installed-it-also-installs-dependencies-let/153520#153520
+for package in ['pynwb']:
+    try:
+        dist = pkg_resources.get_distribution(package)
+        print('{} ({}) is installed'.format(dist.key, dist.version))
+    except pkg_resources.DistributionNotFound:
+        
+        #This code installs pynwb from here: https://blender.stackexchange.com/questions/149944/how-to-write-my-add-on-so-that-when-installed-it-also-installs-dependencies-let/153520#153520
 
-# OS independent (Windows: bin\python.exe; Mac/Linux: bin/python3.7m)
-py_path = Path(sys.prefix) / "bin"
-# first file that starts with "python" in "bin" dir
-py_exec = next(py_path.glob("python*"))
-# ensure pip is installed & update
-subprocess.call([str(py_exec), "-m", "ensurepip"])
-subprocess.call([str(py_exec), "-m", "pip", "install", "--upgrade", "pip"])
-# install dependencies using pip
-# dependencies such as 'numpy' could be added to the end of this command's list
-subprocess.call([str(py_exec),"-m", "pip", "install", "--user", "pynwb"])
-#from setuptools import setup, find_packages
+        # OS independent (Windows: bin\python.exe; Mac/Linux: bin/python3.7m)
+        py_path = Path(sys.prefix) / "bin"
+        # first file that starts with "python" in "bin" dir
+        py_exec = next(py_path.glob("python*"))
+        # ensure pip is installed & update
+        subprocess.call([str(py_exec), "-m", "ensurepip"])
+        subprocess.call([str(py_exec), "-m", "pip", "install", "--upgrade", "pip"])
+        # install dependencies using pip
+        # dependencies such as 'numpy' could be added to the end of this command's list
+        subprocess.call([str(py_exec),"-m", "pip", "install", "--user", "pynwb"])
+        #from setuptools import setup, find_packages
 
 import pynwb
 
-start_time = datetime(2017, 4, 3, 1)
+# start_time = datetime(2017, 4, 3, 1)
+# nwbfile = pynwb.NWBFile(session_description='demonstrate NWBFile basics',  # required
+#                   identifier='NWB123',  # required
+#                   session_start_time= start_time  # required
+#                   )  # optional
 
-nwbfile = pynwb.NWBFile(session_description='demonstrate NWBFile basics',  # required
-                  identifier='NWB123',  # required
-                  session_start_time= start_time  # required
-                  )  # optional
-
-print(nwbfile)
+# print(nwbfile)
 
 def register():
     bpy.utils.register_class(NeuronAnalysis)
