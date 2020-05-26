@@ -53,6 +53,6 @@ class WriteNWB(bpy.types.Operator):
     bl_label = 'Write NWB File'
 
     def execute(self, context):
-        #subject_ID = bpy.context.scene.subject_ID 
-        print('ping')
+        subject_ID = bpy.context.scene.subject_ID 
+        print(subject_ID)
         return {'FINISHED'}
