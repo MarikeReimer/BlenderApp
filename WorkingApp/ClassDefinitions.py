@@ -1,5 +1,7 @@
 #New comment here
 import bpy
+import pynwb
+
 
 #Create a 3Dview panel and add a row to it
 class NeuronAnalysis(bpy.types.Panel):
@@ -16,7 +18,12 @@ class NeuronAnalysis(bpy.types.Panel):
         row.operator('object.exploding_bits', text = 'Separate Dendrites', icon = 'CUBE')
 
         row = self.layout.column(align = True)
-        row.prop(context.scene, "my_string_prop")
+        row.prop(context.scene, "subject_ID")
+        row.prop(context.scene, "age")
+        row.prop(context.scene, "subject_description")
+        row.prop(context.scene, "genotype")
+        row.prop(context.scene, "sex")
+        row.prop(context.scene, "species")
         
 
 

@@ -32,15 +32,25 @@ from . ClassDefinitions  import ExplodingBits
 def register():
     bpy.utils.register_class(NeuronAnalysis)
     bpy.utils.register_class(ExplodingBits)
-    bpy.types.Scene.my_string_prop = bpy.props.StringProperty \
-      (
-        name = "My String",
-        description = "My description",
-        default = "default"
-      )
+    bpy.types.Scene.subject_ID = bpy.props.StringProperty \
+      (name = "Subject ID")
+    bpy.types.Scene.age = bpy.props.StringProperty \
+      (name = "Age")
+    bpy.types.Scene.subject_description = bpy.props.StringProperty \
+      (name = "Description")
+    bpy.types.Scene.genotype = bpy.props.StringProperty \
+      (name = "Genotype")
+    bpy.types.Scene.sex = bpy.props.StringProperty \
+      (name = "Sex")
+    bpy.types.Scene.species = bpy.props.StringProperty \
+      (name = "Species")
 
 def unregister():
     bpy.utils.unregister_class(NeuronAnalysis)
     bpy.utils.unregister_class(ExplodingBits)
-    bpy.types.Scene.my_string_prop
+    bpy.types.Scene.subject_ID
+    bpy.types.Scene.age
+    bpy.types.Scene.subject_description
+    bpy.types.Scene.sex
+    bpy.types.Scene.species
     
