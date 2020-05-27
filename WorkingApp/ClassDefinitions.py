@@ -1,6 +1,7 @@
 #New comment here
 import bpy
-#import pynwb
+from datetime import datetime
+from pynwb import NWBFile, NWBHDF5IO
 
 
 #Create a 3Dview panel and add a row to it
@@ -54,5 +55,24 @@ class WriteNWB(bpy.types.Operator):
 
     def execute(self, context):
         subject_ID = bpy.context.scene.subject_ID 
+        age = bpy.context.scene.age
+        subject_description = bpy.context.scene.subject_description
+        genotype = bpy.context.scene.genotype
+        sex = bpy.context.scene.sex
+        species = bpy.context.scene.species
+        identifier = bpy.context.scene.identifier
+        #session_start_time = datetime(bpy.context.scene.session_start_time.tolist())  #Will need to do string manipulations to get this working
+        session_description = bpy.context.scene.session_description
+
+        nwbfile_name = identifier + '.nwb'
+
+        nwbfile = NWBFile(session_description = session_description,
+            identifier = identifier, 
+            session_start_time = datetime.now(),  #Fix this
+            file_create_date = datetime.now())  
+
+        with NWBHDF5IO(nwbfile_name, 'w') as io:
+            io.write(nwbfile)
+
         print(subject_ID)
         return {'FINISHED'}

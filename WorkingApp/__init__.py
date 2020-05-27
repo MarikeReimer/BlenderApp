@@ -33,7 +33,9 @@ from pathlib import Path
 from datetime import datetime
 import pkg_resources
 
-for package in ['pynwb']:  #May want to expand this
+
+#This code checks to see if you have pywnb installed and uses pip to install it if you don't
+for package in ['pynwb']:  #May want to expand this if I need more libraries
     try:
         dist = pkg_resources.get_distribution(package)
         print('{} ({}) is installed'.format(dist.key, dist.version))
@@ -53,15 +55,8 @@ for package in ['pynwb']:  #May want to expand this
         subprocess.call([str(py_exec),"-m", "pip", "install", "--user", "pynwb"])
         #from setuptools import setup, find_packages
 
-import pynwb
 
-# start_time = datetime(2017, 4, 3, 1)
-# nwbfile = pynwb.NWBFile(session_description='demonstrate NWBFile basics',  # required
-#                   identifier='NWB123',  # required
-#                   session_start_time= start_time  # required
-#                   )  # optional
 
-# print(nwbfile)
 
 def register():
     bpy.utils.register_class(NeuronAnalysis)
