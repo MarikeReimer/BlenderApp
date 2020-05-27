@@ -64,7 +64,7 @@ def register():
     bpy.utils.register_class(WriteNWB)
 
     #Subject Table Strings
-    bpy.types.Scene.subject_ID = bpy.props.StringProperty \
+    bpy.types.Scene.subject_id = bpy.props.StringProperty \
       (name = "Subject ID")
     bpy.types.Scene.age = bpy.props.StringProperty \
       (name = "Age")
@@ -88,7 +88,7 @@ def unregister():
     bpy.utils.unregister_class(NeuronAnalysis)
     bpy.utils.unregister_class(ExplodingBits)
     bpy.utils.unregister_class(WriteNWB)
-    bpy.types.Scene.subject_ID
+    bpy.types.Scene.subject_id
     bpy.types.Scene.age
     bpy.types.Scene.subject_description
     bpy.types.Scene.sex

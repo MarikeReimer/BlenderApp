@@ -2,7 +2,7 @@
 import bpy
 from datetime import datetime
 from pynwb import NWBFile, NWBHDF5IO
-
+from pynwb.file import Subject
 
 #Create a 3Dview panel and add a row to it
 class NeuronAnalysis(bpy.types.Panel):
@@ -22,7 +22,7 @@ class NeuronAnalysis(bpy.types.Panel):
 
         row = self.layout.column(align = True)
         #Subject Table:
-        row.prop(context.scene, "subject_ID")
+        row.prop(context.scene, "subject_id")
         row.prop(context.scene, "age")
         row.prop(context.scene, "subject_description")
         row.prop(context.scene, "genotype")
@@ -54,14 +54,14 @@ class WriteNWB(bpy.types.Operator):
     bl_label = 'Write NWB File'
 
     def execute(self, context):
-        subject_ID = bpy.context.scene.subject_ID 
+        subject_id = bpy.context.scene.subject_id 
         age = bpy.context.scene.age
         subject_description = bpy.context.scene.subject_description
         genotype = bpy.context.scene.genotype
         sex = bpy.context.scene.sex
         species = bpy.context.scene.species
         identifier = bpy.context.scene.identifier
-        #session_start_time = datetime(bpy.context.scene.session_start_time.tolist())  #Will need to do string manipulations to get this working
+        #session_start_time = datetime(bpy.context.scene.session_start_time.tolist())  #Will need to do string manipulations of some sort to get this working
         session_description = bpy.context.scene.session_description
 
         nwbfile_name = identifier + '.nwb'
@@ -71,8 +71,15 @@ class WriteNWB(bpy.types.Operator):
             session_start_time = datetime.now(),  #Fix this
             file_create_date = datetime.now())  
 
+        subject = Subject(
+            description = subject_description,
+            genotype = genotype,
+            sex = sex,
+            species = species,
+            subject_id = subject_id,
+            )
+
         with NWBHDF5IO(nwbfile_name, 'w') as io:
             io.write(nwbfile)
 
-        print(subject_ID)
         return {'FINISHED'}
