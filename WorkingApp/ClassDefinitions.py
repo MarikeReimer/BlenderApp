@@ -1,10 +1,9 @@
-#New comment here
 import bpy
 from datetime import datetime
 from pynwb import NWBFile, NWBHDF5IO
 from pynwb.file import Subject
 
-#Create a 3Dview panel and add a row to it
+#Create a 3Dview panel and add rows for fields and buttons
 class NeuronAnalysis(bpy.types.Panel):
     bl_label = "Neuron Analysis"
     bl_idname = "PT_TestPanel"
@@ -13,13 +12,11 @@ class NeuronAnalysis(bpy.types.Panel):
     bl_category = 'NeuronAnalysis'
     
     def draw(self, context):
-        layout = self.layout
-        
+        layout = self.layout        
         row = layout.row()
         row.operator('object.exploding_bits', text = 'Separate Dendrites', icon = 'CUBE')
         row = layout.row()
         row.operator('object.write_nwb', text = "Write NWB File")
-
         row = self.layout.column(align = True)
         #Subject Table:
         row.prop(context.scene, "subject_id")
@@ -34,9 +31,7 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "session_description")
 
 
-
-
-#Row operator for panel that applies "separate by loose parts" to mesh    
+#Row operator/button for panel that applies "separate by loose parts" to mesh    
 class ExplodingBits(bpy.types.Operator):
     bl_idname = 'object.exploding_bits'
     bl_label = 'Exploding Bits'
@@ -48,12 +43,14 @@ class ExplodingBits(bpy.types.Operator):
         bpy.ops.mesh.separate(type='LOOSE')
         return {'FINISHED'}
 
-#Row operator for writing NWB file
+
+#Row operator/button for writing NWB file
 class WriteNWB(bpy.types.Operator):
     bl_idname = 'object.write_nwb'
     bl_label = 'Write NWB File'
 
     def execute(self, context):
+        #Extract strings from the NeuronAnalsyis Panel
         subject_id = bpy.context.scene.subject_id 
         age = bpy.context.scene.age
         subject_description = bpy.context.scene.subject_description
@@ -64,22 +61,30 @@ class WriteNWB(bpy.types.Operator):
         #session_start_time = datetime(bpy.context.scene.session_start_time.tolist())  #Will need to do string manipulations of some sort to get this working
         session_description = bpy.context.scene.session_description
 
+        #Create filename 
         nwbfile_name = identifier + '.nwb'
 
-        nwbfile = NWBFile(session_description = session_description,
-            identifier = identifier, 
-            session_start_time = datetime.now(),  #Fix this
-            file_create_date = datetime.now())  
-
+        #Create pynwb subject
         subject = Subject(
             description = subject_description,
             genotype = genotype,
             sex = sex,
             species = species,
-            subject_id = subject_id,
+            subject_id = subject_id
             )
 
+        #Create pywnb File
+        nwbfile = NWBFile(session_description = session_description,
+            identifier = identifier, 
+            session_start_time = datetime.now(),  #Fix this
+            file_create_date = datetime.now(),
+            subject = subject
+            )  
+
+        #Write the NWB file
         with NWBHDF5IO(nwbfile_name, 'w') as io:
             io.write(nwbfile)
 
         return {'FINISHED'}
+
+

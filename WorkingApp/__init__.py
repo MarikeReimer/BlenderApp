@@ -1,63 +1,25 @@
-# This program is free software; you can redistribute it and/or modify
-# it under the terms of the GNU General Public License as published by
-# the Free Software Foundation; either version 3 of the License, or
-# (at your option) any later version.
-#
-# This program is distributed in the hope that it will be useful, but
-# WITHOUT ANY WARRANTY; without even the implied warranty of
-# MERCHANTIBILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
-# General Public License for more details.
-#
-# You should have received a copy of the GNU General Public License
-# along with this program. If not, see <http://www.gnu.org/licenses/>.
+import bpy
+#Import a function that checks for pynwb and installs it
+from . LibraryChecker import library_checker
+library_checker()
 
+#Import class definitions
+from . ClassDefinitions import NeuronAnalysis
+from . ClassDefinitions import ExplodingBits
+from . ClassDefinitions import WriteNWB
+
+#Information about the Addon created by the Blender Development VSCode Extension
 bl_info = {
     "name" : "TestAddon",
     "author" : "Marike",
     "description" : "",
     "blender" : (2, 80, 0),
-    "version" : (0, 0, 1),
     "location" : "",
     "warning" : "",
     "category" : "Generic"
 }
 
-
-import bpy
-from . ClassDefinitions   import NeuronAnalysis
-from . ClassDefinitions  import ExplodingBits
-from .ClassDefinitions import WriteNWB
-import subprocess
-import sys
-from pathlib import Path
-from datetime import datetime
-import pkg_resources
-
-
-#This code checks to see if you have pywnb installed and uses pip to install it if you don't
-for package in ['pynwb']:  #May want to expand this if I need more libraries
-    try:
-        dist = pkg_resources.get_distribution(package)
-        print('{} ({}) is installed'.format(dist.key, dist.version))
-    except pkg_resources.DistributionNotFound:
-        
-        #This code installs pynwb from here: https://blender.stackexchange.com/questions/149944/how-to-write-my-add-on-so-that-when-installed-it-also-installs-dependencies-let/153520#153520
-
-        # OS independent (Windows: bin\python.exe; Mac/Linux: bin/python3.7m)
-        py_path = Path(sys.prefix) / "bin"
-        # first file that starts with "python" in "bin" dir
-        py_exec = next(py_path.glob("python*"))
-        # ensure pip is installed & update
-        subprocess.call([str(py_exec), "-m", "ensurepip"])
-        subprocess.call([str(py_exec), "-m", "pip", "install", "--upgrade", "pip"])
-        # install dependencies using pip
-        # dependencies such as 'numpy' could be added to the end of this command's list
-        subprocess.call([str(py_exec),"-m", "pip", "install", "--user", "pynwb"])
-        #from setuptools import setup, find_packages
-
-
-
-
+#Register classes so that Blender can find them
 def register():
     bpy.utils.register_class(NeuronAnalysis)
     bpy.utils.register_class(ExplodingBits)
@@ -84,6 +46,8 @@ def register():
     bpy.types.Scene.session_description = bpy.props.StringProperty \
       (name = "Session Description")
 
+
+#Unregister classes so that they don't clash with other addons
 def unregister():
     bpy.utils.unregister_class(NeuronAnalysis)
     bpy.utils.unregister_class(ExplodingBits)
