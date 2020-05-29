@@ -7,6 +7,8 @@ library_checker()
 from . ClassDefinitions import NeuronAnalysis
 from . ClassDefinitions import ExplodingBits
 from . ClassDefinitions import WriteNWB
+from . ClassDefinitions import WideField
+from . ClassDefinitions import TwoPhoton
 
 #Information about the Addon created by the Blender Development VSCode Extension
 bl_info = {
@@ -24,6 +26,8 @@ def register():
     bpy.utils.register_class(NeuronAnalysis)
     bpy.utils.register_class(ExplodingBits)
     bpy.utils.register_class(WriteNWB)
+    bpy.utils.register_class(WideField)
+    bpy.utils.register_class(TwoPhoton)
 
     #Subject Table Strings
     bpy.types.Scene.subject_id = bpy.props.StringProperty \
@@ -52,9 +56,14 @@ def unregister():
     bpy.utils.unregister_class(NeuronAnalysis)
     bpy.utils.unregister_class(ExplodingBits)
     bpy.utils.unregister_class(WriteNWB)
+    bpy.utils.unregister_class(WideField)
+    bpy.utils.unregister_class(TwoPhoton)
+
     bpy.types.Scene.subject_id
     bpy.types.Scene.age
     bpy.types.Scene.subject_description
     bpy.types.Scene.sex
     bpy.types.Scene.species
-    
+
+
+

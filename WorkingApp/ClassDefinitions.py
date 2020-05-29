@@ -1,56 +1,70 @@
 import bpy
 from datetime import datetime
 from pynwb import NWBFile, NWBHDF5IO
+from pynwb.ophys import TwoPhotonSeries, OpticalChannel, ImageSegmentation
 from pynwb.file import Subject
+from pynwb.device import Device
 
-#Create a 3Dview panel and add rows for fields and buttons
+#NeuronAnalysis creates a 3Dview panel and add rows for fields and buttons. 
+#Blender's documentation describes what the strings that start with "bl_" do: https://docs.blender.org/api/blender_python_api_2_70_5/bpy.types.Panel.html#bpy.types.Panel.bl_idname
+
 class NeuronAnalysis(bpy.types.Panel):
-    bl_label = "Neuron Analysis"
-    bl_idname = "PT_TestPanel"
-    bl_space_type = 'VIEW_3D'
-    bl_region_type = 'UI'
-    bl_category = 'NeuronAnalysis'
+    bl_label = "Neuron Analysis" #The name of our panel
+    bl_idname = "PT_TestPanel" #Gives the panel gets a custom ID, otherwise it takes the name of the class used to define the panel.  Used default from template
+    bl_space_type = 'VIEW_3D' #Puts the panel on the VIEW_3D tool bar
+    bl_region_type = 'UI' #The region where the panel will be used
+    bl_category = 'NeuronAnalysis' #The category is used for filtering in the add-ons panel.
     
+    #Create a layout and add fields and buttons to it
     def draw(self, context):
-        layout = self.layout        
+        layout = self.layout
+        #Add button that separates dendrites        
         row = layout.row()
-        row.operator('object.exploding_bits', text = 'Separate Dendrites', icon = 'CUBE')
+        row.operator('object.exploding_bits', text = 'Separate Dendrites')
+
         row = layout.row()
+        row.operator('object.wide_field', text = "Wide Field")
+        row = layout.row()
+        row.operator('object.two_photon', text = "Two Photon")
+
+        row = layout.row()
+        #Add button that writes data from panel and object values to an NWB file
         row.operator('object.write_nwb', text = "Write NWB File")
         row = self.layout.column(align = True)
-        #Subject Table:
+        #Add fields for the Subject class strings
         row.prop(context.scene, "subject_id")
         row.prop(context.scene, "age")
         row.prop(context.scene, "subject_description")
         row.prop(context.scene, "genotype")
         row.prop(context.scene, "sex")
         row.prop(context.scene, "species")
-        #NWBFile
+        #Add fields for NWBFile strings
         row.prop(context.scene, "identifier")
         row.prop(context.scene, "session_start_time")
         row.prop(context.scene, "session_description")
+        
 
-
-#Row operator/button for panel that applies "separate by loose parts" to mesh    
+#Row operator for that applies "separate by loose parts" to mesh    
 class ExplodingBits(bpy.types.Operator):
-    bl_idname = 'object.exploding_bits'
+    bl_idname = 'object.exploding_bits' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'Exploding Bits'
     
     def execute(self, context):
-        #Select ative object
+        #Select active object
         object = bpy.context.active_object
         #Split it into pieces
         bpy.ops.mesh.separate(type='LOOSE')
-        return {'FINISHED'}
+        return {'FINISHED'} #Todo - explain why this is needed
 
 
-#Row operator/button for writing NWB file
+#Row operator for writing  data toNWB file
 class WriteNWB(bpy.types.Operator):
-    bl_idname = 'object.write_nwb'
+    bl_idname = 'object.write_nwb' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'Write NWB File'
 
+    #Extract data from panel and object
     def execute(self, context):
-        #Extract strings from the NeuronAnalsyis Panel
+        #Extract strings
         subject_id = bpy.context.scene.subject_id 
         age = bpy.context.scene.age
         subject_description = bpy.context.scene.subject_description
@@ -81,10 +95,38 @@ class WriteNWB(bpy.types.Operator):
             subject = subject
             )  
 
+        nwbfile.add_device(device)
+
         #Write the NWB file
         with NWBHDF5IO(nwbfile_name, 'w') as io:
             io.write(nwbfile)
 
         return {'FINISHED'}
+
+#Row operator for selecting widefield as the device used
+class WideField(bpy.types.Operator):
+    bl_idname = 'object.wide_field' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'Wide_field'
+    def execute(self, context):
+        device = Device('Wide_field')
+        print(device)
+        return {'FINISHED'}
+    
+
+#Row operator for selecting 2P as the device used
+class TwoPhoton(bpy.types.Operator):
+    bl_idname = 'object.two_photon' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'TwoPhoton'
+    def execute(self, context):
+        device = Device('Two Photon')
+        print(device)
+        return {'FINISHED'}
+
+
+#Row operator for selecting metadata for the red microscope channel
+# class RedChannel(bpy.types.Operator):
+#     bl_idname = 'object.red_channel' #operators must follow the naming convention of object.lowercase_letters
+#     bl_label = 'Red Channel Data'
+
 
 
