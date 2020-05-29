@@ -18,21 +18,8 @@ class NeuronAnalysis(bpy.types.Panel):
     #Create a layout and add fields and buttons to it
     def draw(self, context):
         layout = self.layout
-        #Add button that separates dendrites        
-        row = layout.row()
-        row.operator('object.exploding_bits', text = 'Separate Dendrites')
         
-        #Add Device menu:
-        row = layout.row()
-        row.menu(DeviceMenu.bl_idname, text = 'Microscope Selector')
 
-        #Add OpticalChannel menu:
-        row = layout.row()
-        row.menu(OpticalChannelMenu.bl_idname, text = 'Channel Selector')
-
-        row = layout.row()
-        #Add button that writes data from panel and object values to an NWB file
-        row.operator('object.write_nwb', text = "Write NWB File")
         row = self.layout.column(align = True)
         #Add fields for the Subject class strings
         row.prop(context.scene, "subject_id")
@@ -44,8 +31,25 @@ class NeuronAnalysis(bpy.types.Panel):
         #Add fields for NWBFile strings
         row.prop(context.scene, "identifier")
         row.prop(context.scene, "session_start_time")
-        row.prop(context.scene, "session_description")
-        
+        row.prop(context.scene, "session_description")        
+
+        #Add Device menu:
+        row = layout.row()
+        row.menu(DeviceMenu.bl_idname, text = 'Microscope Selector')
+
+        #Add OpticalChannel menu:
+        row = layout.row()
+        row.menu(OpticalChannelMenu.bl_idname, text = 'Channel Selector')
+
+        #Add button that separates dendrites        
+        row = layout.row()
+        row.operator('object.exploding_bits', text = 'Separate Dendrites')
+
+        #Add button that writes data from panel and object values to an NWB file
+        row = layout.row()
+        row.operator('object.write_nwb', text = "Write NWB File")
+
+
 #ROW OPERATORS
 
 #Row operator for that applies "separate by loose parts" to mesh    
