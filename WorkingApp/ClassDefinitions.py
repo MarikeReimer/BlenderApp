@@ -21,11 +21,10 @@ class NeuronAnalysis(bpy.types.Panel):
         #Add button that separates dendrites        
         row = layout.row()
         row.operator('object.exploding_bits', text = 'Separate Dendrites')
-
+        
+        #Add Device menu:
         row = layout.row()
-        row.operator('object.wide_field', text = "Wide Field")
-        row = layout.row()
-        row.operator('object.two_photon', text = "Two Photon")
+        row.menu(DeviceMenu.bl_idname, text = 'Microscope Selector')
 
         row = layout.row()
         #Add button that writes data from panel and object values to an NWB file
@@ -43,6 +42,7 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "session_start_time")
         row.prop(context.scene, "session_description")
         
+#Row Operators
 
 #Row operator for that applies "separate by loose parts" to mesh    
 class ExplodingBits(bpy.types.Operator):
@@ -123,10 +123,14 @@ class TwoPhoton(bpy.types.Operator):
         return {'FINISHED'}
 
 
-#Row operator for selecting metadata for the red microscope channel
-# class RedChannel(bpy.types.Operator):
-#     bl_idname = 'object.red_channel' #operators must follow the naming convention of object.lowercase_letters
-#     bl_label = 'Red Channel Data'
 
+#Menus
+class DeviceMenu(bpy.types.Menu):
+    bl_label = "Device Menu"
+    bl_idname = "OBJECT_MT_device_menu"
 
+    def draw(self, context):
+        layout = self.layout
 
+        layout.operator("object.two_photon")
+        layout.operator("object.wide_field")

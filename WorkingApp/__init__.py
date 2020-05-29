@@ -9,6 +9,7 @@ from . ClassDefinitions import ExplodingBits
 from . ClassDefinitions import WriteNWB
 from . ClassDefinitions import WideField
 from . ClassDefinitions import TwoPhoton
+from . ClassDefinitions import DeviceMenu
 
 #Information about the Addon created by the Blender Development VSCode Extension
 bl_info = {
@@ -23,11 +24,15 @@ bl_info = {
 
 #Register classes so that Blender can find them
 def register():
+    #main panel
     bpy.utils.register_class(NeuronAnalysis)
+    #operators
     bpy.utils.register_class(ExplodingBits)
     bpy.utils.register_class(WriteNWB)
     bpy.utils.register_class(WideField)
     bpy.utils.register_class(TwoPhoton)
+    #menus
+    bpy.utils.register_class(DeviceMenu)
 
     #Subject Table Strings
     bpy.types.Scene.subject_id = bpy.props.StringProperty \
@@ -53,12 +58,16 @@ def register():
 
 #Unregister classes so that they don't clash with other addons
 def unregister():
+    #main panel
     bpy.utils.unregister_class(NeuronAnalysis)
+    #operators
     bpy.utils.unregister_class(ExplodingBits)
     bpy.utils.unregister_class(WriteNWB)
     bpy.utils.unregister_class(WideField)
     bpy.utils.unregister_class(TwoPhoton)
-
+    #menus
+    bpy.utils.unregister_class(DeviceMenu)
+    #text strings
     bpy.types.Scene.subject_id
     bpy.types.Scene.age
     bpy.types.Scene.subject_description
