@@ -26,6 +26,10 @@ class NeuronAnalysis(bpy.types.Panel):
         row = layout.row()
         row.menu(DeviceMenu.bl_idname, text = 'Microscope Selector')
 
+        #Add OpticalChannel menu:
+        row = layout.row()
+        row.menu(OpticalChannelMenu.bl_idname, text = 'Channel Selector')
+
         row = layout.row()
         #Add button that writes data from panel and object values to an NWB file
         row.operator('object.write_nwb', text = "Write NWB File")
@@ -42,7 +46,7 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "session_start_time")
         row.prop(context.scene, "session_description")
         
-#Row Operators
+#ROW OPERATORS
 
 #Row operator for that applies "separate by loose parts" to mesh    
 class ExplodingBits(bpy.types.Operator):
@@ -122,9 +126,33 @@ class TwoPhoton(bpy.types.Operator):
         print(device)
         return {'FINISHED'}
 
+class RedOpticalChannel(bpy.types.Operator):
+    bl_idname = 'object.red_optical_channel' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'RedOpticalChannel'
+    def execute(self, context):
+        red_wavelength = 500
+        optical_channel = OpticalChannel(
+            name = 'Red channel',
+            description = "Red channel",
+            emission_lambda = float(red_wavelength)  #Todo - check names and values
+        )
+        print(optical_channel)
+        return {'FINISHED'}
 
+class GreenOpticalChannel(bpy.types.Operator):
+    bl_idname = 'object.green_optical_channel' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'GreenOpticalChannel'
+    def execute(self, context):
+        green_wavelength = 500
+        optical_channel = OpticalChannel(
+            name = 'Red channel',
+            description = "Red channel",
+            emission_lambda = float(green_wavelength)  #Todo - check names and values
+        )
+        print(optical_channel)
+        return {'FINISHED'}
 
-#Menus
+#MENUS
 class DeviceMenu(bpy.types.Menu):
     bl_label = "Device Menu"
     bl_idname = "OBJECT_MT_device_menu"
@@ -134,3 +162,13 @@ class DeviceMenu(bpy.types.Menu):
 
         layout.operator("object.two_photon")
         layout.operator("object.wide_field")
+
+class OpticalChannelMenu(bpy.types.Menu):
+    bl_label = "Optical Channel Menu"
+    bl_idname = "OBJECT_MT_optical_channel_menu"
+
+    def draw(self, context):
+        layout = self.layout
+
+        layout.operator("object.red_optical_channel")
+        layout.operator("object.green_optical_channel")
