@@ -1,7 +1,8 @@
 import bpy
 from datetime import datetime
-from pynwb import NWBFile, NWBHDF5IO
-from pynwb.ophys import TwoPhotonSeries, OpticalChannel, ImageSegmentation
+from pynwb import NWBFile
+from pynwb import NWBHDF5IO
+from pynwb.ophys import TwoPhotonSeries, OpticalChannel, ImageSegmentation, ImagingPlane
 from pynwb.file import Subject
 from pynwb.device import Device
 
@@ -40,6 +41,18 @@ class NeuronAnalysis(bpy.types.Panel):
         #Add OpticalChannel menu:
         row = layout.row()
         row.menu(OpticalChannelMenu.bl_idname, text = 'Channel Selector')
+
+        #Add fields for Imaging Plane
+        row = self.layout.column(align = True)
+        row.prop(context.scene, "plane_name")
+        row.prop(context.scene, "plane_description")
+        row.prop(context.scene, "excitation_lambda")
+        row.prop(context.scene, "imaging_rate")
+        row.prop(context.scene, "indicator")
+        row.prop(context.scene, "location")
+        row.prop(context.scene, "grid_spacing")
+        row.prop(context.scene, "grid_spacing_unit")
+
 
         #Add button that separates dendrites        
         row = layout.row()
@@ -80,7 +93,7 @@ class WriteNWB(bpy.types.Operator):
         sex = bpy.context.scene.sex
         species = bpy.context.scene.species
         identifier = bpy.context.scene.identifier
-        #session_start_time = datetime(bpy.context.scene.session_start_time.tolist())  #Will need to do string manipulations of some sort to get this working
+        #session_start_time = datetime(bpy.context.scene.session_start_time.tolist())  #Will need to do int fields to get this working
         session_description = bpy.context.scene.session_description
 
         #Create filename 
@@ -103,7 +116,22 @@ class WriteNWB(bpy.types.Operator):
             subject = subject
             )  
 
-        nwbfile.add_device(device)
+        #Add selected device
+        device_name = bpy.types.Scene.device[1].get('name') #I don't know why the [1] is needed.  Neither did the tutorial: https://ontheothersideofthefirewall.wordpress.com/blender-change-textfield-on-click-of-a-button-dictionaries-and-stringproperty/
+        device = nwbfile.create_device(name = device_name)
+
+
+        # imaging_plane = nwbfile.create_imaging_plane(
+        #     plane_name, 
+        #     optical_channel, 
+        #     plane_description, 
+        #     device, 
+        #     excitation_lambda, 
+        #     imaging_rate, 
+        #     indicator, 
+        #     location, 
+        #     grid_spacing= [1,1,1], 
+        #     grid_spacing_unit = grid_spacing_unit)
 
         #Write the NWB file
         with NWBHDF5IO(nwbfile_name, 'w') as io:
@@ -112,12 +140,12 @@ class WriteNWB(bpy.types.Operator):
         return {'FINISHED'}
 
 #Row operator for selecting widefield as the device used
+#Because of Blender reserves the 'return' function, the way to access strings outside of classes is to store them as String Properties attached to the Scene.  
 class WideField(bpy.types.Operator):
     bl_idname = 'object.wide_field' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'Wide_field'
     def execute(self, context):
-        device = Device('Wide_field')
-        print(device)
+        bpy.types.Scene.device = bpy.types.Scene.wide_field
         return {'FINISHED'}
     
 
@@ -126,8 +154,7 @@ class TwoPhoton(bpy.types.Operator):
     bl_idname = 'object.two_photon' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'TwoPhoton'
     def execute(self, context):
-        device = Device('Two Photon')
-        print(device)
+        bpy.types.Scene.device = bpy.types.Scene.two_photon
         return {'FINISHED'}
 
 class RedOpticalChannel(bpy.types.Operator):
@@ -140,7 +167,7 @@ class RedOpticalChannel(bpy.types.Operator):
             description = "Red channel",
             emission_lambda = float(red_wavelength)  #Todo - check names and values
         )
-        print(optical_channel)
+        return optical_channel
         return {'FINISHED'}
 
 class GreenOpticalChannel(bpy.types.Operator):
@@ -153,7 +180,7 @@ class GreenOpticalChannel(bpy.types.Operator):
             description = "Red channel",
             emission_lambda = float(green_wavelength)  #Todo - check names and values
         )
-        print(optical_channel)
+        return optical_channel
         return {'FINISHED'}
 
 #MENUS

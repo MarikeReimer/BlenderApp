@@ -38,11 +38,20 @@ def register():
     bpy.utils.register_class(TwoPhoton)
     bpy.utils.register_class(RedOpticalChannel)
     bpy.utils.register_class(GreenOpticalChannel)
+    
     #menus
     bpy.utils.register_class(DeviceMenu)
     bpy.utils.register_class(OpticalChannelMenu)
 
-    #Subject Table Strings
+    #These strings are used to store values selected from the menus
+    bpy.types.Scene.device = bpy.props.StringProperty \
+      (name = "Device")
+    bpy.types.Scene.wide_field = bpy.props.StringProperty \
+      (name = "Wide Field")
+    bpy.types.Scene.two_photon = bpy.props.StringProperty \
+      (name = "Two Photon")
+
+    #Subject Table fields
     bpy.types.Scene.subject_id = bpy.props.StringProperty \
       (name = "Subject ID")
     bpy.types.Scene.age = bpy.props.StringProperty \
@@ -59,15 +68,34 @@ def register():
     bpy.types.Scene.identifier = bpy.props.StringProperty \
       (name = "Identifier")
     bpy.types.Scene.session_start_time = bpy.props.StringProperty \
-      (name = "Session Start Time")
+      (name = "Session Start Time", default = "hard coded")
     bpy.types.Scene.session_description = bpy.props.StringProperty \
       (name = "Session Description")
+    #Imaging Plane Fields
+    bpy.types.Scene.plane_name = bpy.props.StringProperty \
+      (name = "Plane Name")
+    bpy.types.Scene.plane_description = bpy.props.StringProperty \
+      (name = "Plane Description")
+    bpy.types.Scene.excitation_lambda = bpy.props.StringProperty \
+      (name = "Excitation Lambda")
+    bpy.types.Scene.imaging_rate = bpy.props.StringProperty \
+      (name = "Imaging Rate")
+    bpy.types.Scene.indicator = bpy.props.StringProperty \
+      (name = "Indicator")
+    bpy.types.Scene.location = bpy.props.StringProperty \
+      (name = "Location")
+    bpy.types.Scene.grid_spacing = bpy.props.StringProperty \
+      (name = "Grid Spacing", default = "hard coded")
+    bpy.types.Scene.grid_spacing_unit = bpy.props.StringProperty \
+      (name = "Grid Spacing Units")
+
 
 
 #Unregister classes so that they don't clash with other addons
 def unregister():
     #main panel
     bpy.utils.unregister_class(NeuronAnalysis)
+
     #operators
     bpy.utils.unregister_class(ExplodingBits)
     bpy.utils.unregister_class(WriteNWB)
@@ -75,15 +103,36 @@ def unregister():
     bpy.utils.unregister_class(TwoPhoton)
     bpy.utils.unregister_class(RedOpticalChannel)
     bpy.utils.unregister_class(GreenOpticalChannel)
+
     #menus
     bpy.utils.unregister_class(DeviceMenu)
     bpy.utils.unregister_class(OpticalChannelMenu)
-    #text strings
+
+    #Menu options placeholders
+    bpy.types.Scene.device 
+    
+    #Menu options
+    bpy.types.Scene.wide_field
+    bpy.types.Scene.two_photon 
+
+    #Subject fields
     bpy.types.Scene.subject_id
     bpy.types.Scene.age
     bpy.types.Scene.subject_description
     bpy.types.Scene.sex
     bpy.types.Scene.species
+    #NWBFile fields
+    bpy.types.Scene.identifier
+    bpy.types.Scene.session_start_time
+    bpy.types.Scene.session_description
 
-
+    #Imaging plane fields
+    bpy.types.Scene.plane_name
+    bpy.types.Scene.plane_description
+    bpy.types.Scene.excitation_lambda
+    bpy.types.Scene.imaging_rate
+    bpy.types.Scene.indicator
+    bpy.types.Scene.location
+    bpy.types.Scene.grid_spacing
+    bpy.types.Scene.grid_spacing_units
 
