@@ -93,6 +93,11 @@ def register():
       (name = "Grid Spacing", default = "hard coded")
     bpy.types.Scene.grid_spacing_unit = bpy.props.StringProperty \
       (name = "Grid Spacing Units")
+    #Optical Channel Fields - names are set in the Red/Green channel operators
+    bpy.types.Scene.optical_channel_name = bpy.props.StringProperty 
+    bpy.types.Scene.optical_channel_description = bpy.props.StringProperty
+    bpy.types.Scene.emission_lambda = bpy.props.FloatProperty \
+      (name = "emission_lambda")
 
   
 
