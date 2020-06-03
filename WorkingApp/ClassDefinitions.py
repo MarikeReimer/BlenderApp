@@ -101,8 +101,8 @@ class WriteNWB(bpy.types.Operator):
         #Extract Imaging Plane Strings
         plane_name = bpy.context.scene.plane_name
         plane_description = bpy.context.scene.plane_description
-        excitation_lambda = bpy.context.scene.excitation_lambda
-        imaging_rate = bpy.context.scene.imaging_rate
+        excitation_lambda = float(bpy.context.scene.excitation_lambda)
+        imaging_rate = float(bpy.context.scene.imaging_rate)
         indicator = bpy.context.scene.indicator
         location = bpy.context.scene.location
         indicator = bpy.context.scene.indicator
@@ -131,27 +131,19 @@ class WriteNWB(bpy.types.Operator):
         #Add selected device
         device_name = bpy.types.Scene.device[1].get('name') #I don't know why the [1] is needed.  Neither did the tutorial: https://ontheothersideofthefirewall.wordpress.com/blender-change-textfield-on-click-of-a-button-dictionaries-and-stringproperty/
         device = nwbfile.create_device(name = device_name)
-
-        #Extract values stored in the OpticalChannelGroup and pass them to NWB's OpticalChannel class
-        # my_item = bpy.context.scene.my_settings.get(optical_channel_name)
-        # print(my_item)
-
-        # bpy.types.Scene.my_settings = bpy.props.CollectionProperty(type = OpticalChannelGroup)
         
+        #Retrieve strings and floats stored in optical channel properties
         optical_channel_name = bpy.types.Scene.optical_channel_name[1].get('name')
         optical_channel_description = bpy.types.Scene.optical_channel_description[1].get('name')
         emission_lambda = bpy.types.Scene.emission_lambda[1].get('default')
         
-
-        print(optical_channel_name)
-        # optical_channel_description = my_item.optical_channel_description
-        # emission_lambda =  my_item.emission_lambda
-        
+        #Create optical channel
         optical_channel = OpticalChannel(
             optical_channel_name,
             optical_channel_description,
             emission_lambda)
 
+        #Create imaging plane
         imaging_plane = nwbfile.create_imaging_plane(
             plane_name, 
             optical_channel, 
@@ -212,16 +204,24 @@ class GreenOpticalChannel(bpy.types.Operator):
     bl_label = 'GreenOpticalChannel'
 
     def execute(self, context):
-        wavelength = 500 #The emission wavelength for the green channel        
+        wavelength = 500 #The emission wavelength for the green channel 
+        
+        #Keeping the property group code here in case it's needed later.  Was not able to access my_item outside this class       
         #Use the add() functionality to update OpticalChannelGroup values
-        my_item = bpy.context.scene.my_settings.add()
-        my_item.optical_channel_name = "Green"
-        my_item.optical_channel_description = "The Green channel"
-        my_item.emission_lambda = wavelength
+        # my_item = bpy.context.scene.my_settings.add()
+        # my_item.optical_channel_name = "Green"
+        # my_item.optical_channel_description = "The Green channel"
+        # my_item.emission_lambda = wavelength
 
-        print(my_item.optical_channel_name)
-        print(my_item.optical_channel_description)
-        print(my_item.emission_lambda)
+        # print(my_item.optical_channel_name)
+        # print(my_item.optical_channel_description)
+        # print(my_item.emission_lambda)
+        bpy.types.Scene.optical_channel_name = bpy.props.StringProperty \
+        (name = "Green Channel")
+        bpy.types.Scene.optical_channel_description = bpy.props.StringProperty \
+        (name = "Description of Green Channel")
+        bpy.types.Scene.emission_lambda = bpy.props.FloatProperty \
+        (default = wavelength)
 
         return {'FINISHED'}
 
@@ -246,14 +246,14 @@ class OpticalChannelMenu(bpy.types.Menu):
         layout.operator("object.red_optical_channel")
         layout.operator("object.green_optical_channel")
 
-class OpticalChannelGroup(bpy.types.PropertyGroup):
-    #Property groups use an annotation ':' instead of an '='
-    optical_channel_name : bpy.props.StringProperty()
-    optical_channel_description : bpy.props.StringProperty()
-    emission_lambda : bpy.props.FloatProperty()
 
-bpy.utils.register_class(OpticalChannelGroup)
-#Associate the OpticalChannelGroup fields with the Scene in an object called 'my_settings"
-bpy.types.Scene.my_settings = bpy.props.CollectionProperty(type = OpticalChannelGroup)
-#Propertypointer attempt
-#bpy.types.Scene.my_settings = bpy.props.PointerProperty(type = OpticalChannelGroup)
+#Keeping this here just in case it's needed later
+# class OpticalChannelGroup(bpy.types.PropertyGroup):
+#     #Property groups use an annotation ':' instead of an '='
+#     optical_channel_name : bpy.props.StringProperty()
+#     optical_channel_description : bpy.props.StringProperty()
+#     emission_lambda : bpy.props.FloatProperty()
+
+# bpy.utils.register_class(OpticalChannelGroup)
+# #Associate the OpticalChannelGroup fields with the Scene in an object called 'my_settings"
+# bpy.types.Scene.my_settings = bpy.props.CollectionProperty(type = OpticalChannelGroup)
