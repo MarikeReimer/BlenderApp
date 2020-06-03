@@ -38,6 +38,11 @@ def register():
     bpy.utils.register_class(TwoPhoton)
     bpy.utils.register_class(RedOpticalChannel)
     bpy.utils.register_class(GreenOpticalChannel)
+    #This is where registration *should* happen for OpticalChannelGroup, but it doesn't work, so this is currently done in ClassDefinitions
+    # bpy.utils.register_class(OpticalChannelGroup)
+    # #Associate the OpticalChannelGroup fields with the Scene in an object called 'my_settings"
+    # bpy.types.Scene.my_settings = bpy.props.CollectionProperty(type = OpticalChannelGroup)
+
     
     #menus
     bpy.utils.register_class(DeviceMenu)
@@ -89,7 +94,7 @@ def register():
     bpy.types.Scene.grid_spacing_unit = bpy.props.StringProperty \
       (name = "Grid Spacing Units")
 
-
+  
 
 #Unregister classes so that they don't clash with other addons
 def unregister():

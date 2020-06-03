@@ -157,30 +157,43 @@ class TwoPhoton(bpy.types.Operator):
         bpy.types.Scene.device = bpy.types.Scene.two_photon
         return {'FINISHED'}
 
+
 class RedOpticalChannel(bpy.types.Operator):
     bl_idname = 'object.red_optical_channel' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'RedOpticalChannel'
     def execute(self, context):
-        red_wavelength = 500
-        optical_channel = OpticalChannel(
-            name = 'Red channel',
-            description = "Red channel",
-            emission_lambda = float(red_wavelength)  #Todo - check names and values
-        )
-        return optical_channel
-        return {'FINISHED'}
 
+        wavelength = 300 #The emission wavelength for the red channel
+        
+        #Use the add() functionality to update OpticalChannelGroup values
+        my_item = bpy.context.scene.my_settings.add()
+        my_item.optical_channel_name = "Red"
+        my_item.optical_channel_description = "The Red channel"
+        my_item.emission_lambda = wavelength
+
+        print(my_item.optical_channel_name)
+        print(my_item.optical_channel_description)
+        print(my_item.emission_lambda)
+
+        return {'FINISHED'}
+   
 class GreenOpticalChannel(bpy.types.Operator):
     bl_idname = 'object.green_optical_channel' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'GreenOpticalChannel'
     def execute(self, context):
-        green_wavelength = 500
-        optical_channel = OpticalChannel(
-            name = 'Red channel',
-            description = "Red channel",
-            emission_lambda = float(green_wavelength)  #Todo - check names and values
-        )
-        return optical_channel
+
+        wavelength = 500 #The emission wavelength for the green channel
+        
+        #Use the add() functionality to update OpticalChannelGroup values
+        my_item = bpy.context.scene.my_settings.add()
+        my_item.optical_channel_name = "Green"
+        my_item.optical_channel_description = "The Green channel"
+        my_item.emission_lambda = wavelength
+
+        print(my_item.optical_channel_name)
+        print(my_item.optical_channel_description)
+        print(my_item.emission_lambda)
+
         return {'FINISHED'}
 
 #MENUS
@@ -203,3 +216,13 @@ class OpticalChannelMenu(bpy.types.Menu):
 
         layout.operator("object.red_optical_channel")
         layout.operator("object.green_optical_channel")
+
+class OpticalChannelGroup(bpy.types.PropertyGroup):
+    #Property groups use an annotation ':' instead of an '='
+    optical_channel_name : bpy.props.StringProperty()
+    optical_channel_description : bpy.props.StringProperty()
+    emission_lambda : bpy.props.FloatProperty()
+
+bpy.utils.register_class(OpticalChannelGroup)
+#Associate the OpticalChannelGroup fields with the Scene in an object called 'my_settings"
+bpy.types.Scene.my_settings = bpy.props.CollectionProperty(type = OpticalChannelGroup)
