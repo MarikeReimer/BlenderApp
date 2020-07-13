@@ -135,7 +135,7 @@ class WriteNWB(bpy.types.Operator):
         #Retrieve strings and floats stored in optical channel properties
         optical_channel_name = bpy.types.Scene.optical_channel_name[1].get('name')
         optical_channel_description = bpy.types.Scene.optical_channel_description[1].get('name')
-        emission_lambda = bpy.types.Scene.emission_lambda[1].get('default')
+        emission_lambda = float(bpy.types.Scene.emission_lambda[1].get('default'))
         
         #Create optical channel
         optical_channel = OpticalChannel(

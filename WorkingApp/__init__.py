@@ -144,5 +144,5 @@ def unregister():
     bpy.types.Scene.indicator
     bpy.types.Scene.location
     bpy.types.Scene.grid_spacing
-    bpy.types.Scene.grid_spacing_units
+    bpy.types.Scene.grid_spacing_unit
 
