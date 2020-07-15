@@ -58,41 +58,41 @@ def register():
 
     #Subject Table fields
     bpy.types.Scene.subject_id = bpy.props.StringProperty \
-      (name = "Subject ID")
+      (name = "Subject ID", default = "Anm_")
     bpy.types.Scene.age = bpy.props.StringProperty \
-      (name = "Age")
+      (name = "Age", default = "PD#")
     bpy.types.Scene.subject_description = bpy.props.StringProperty \
-      (name = "Description")
+      (name = "Description", default = 'fuzzy')
     bpy.types.Scene.genotype = bpy.props.StringProperty \
-      (name = "Genotype")
+      (name = "Genotype", default = 'B6')
     bpy.types.Scene.sex = bpy.props.StringProperty \
-      (name = "Sex")
+      (name = "Sex", default = "F")
     bpy.types.Scene.species = bpy.props.StringProperty \
-      (name = "Species")
+      (name = "Species", default = "Mus musculus")
     #NWBfile fields
     bpy.types.Scene.identifier = bpy.props.StringProperty \
       (name = "Identifier")
     bpy.types.Scene.session_start_time = bpy.props.StringProperty \
       (name = "Session Start Time", default = "hard coded")
     bpy.types.Scene.session_description = bpy.props.StringProperty \
-      (name = "Session Description")
+      (name = "Session Description", default = "We imaged neurons")
     #Imaging Plane Fields
     bpy.types.Scene.plane_name = bpy.props.StringProperty \
-      (name = "Plane Name")
+      (name = "Plane Name", default = "my plane")
     bpy.types.Scene.plane_description = bpy.props.StringProperty \
-      (name = "Plane Description")
+      (name = "Plane Description", default = "plane description")
     bpy.types.Scene.excitation_lambda = bpy.props.StringProperty \
       (name = "Excitation Lambda")
     bpy.types.Scene.imaging_rate = bpy.props.StringProperty \
       (name = "Imaging Rate")
     bpy.types.Scene.indicator = bpy.props.StringProperty \
-      (name = "Indicator")
+      (name = "Indicator", default = "YFP")
     bpy.types.Scene.location = bpy.props.StringProperty \
-      (name = "Location")
+      (name = "Location", default = "spinal cord")
     bpy.types.Scene.grid_spacing = bpy.props.StringProperty \
       (name = "Grid Spacing", default = "hard coded")
     bpy.types.Scene.grid_spacing_unit = bpy.props.StringProperty \
-      (name = "Grid Spacing Units")
+      (name = "Grid Spacing Units", default = 'mm')
     #Optical Channel Fields - names are set in the Red/Green channel operators
     bpy.types.Scene.optical_channel_name = bpy.props.StringProperty 
     bpy.types.Scene.optical_channel_description = bpy.props.StringProperty

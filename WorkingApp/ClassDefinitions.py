@@ -1,5 +1,6 @@
 import bpy
-import os #todo - add to autoinstaller
+import bmesh
+import os #<todo> - add to autoinstaller?
 from datetime import datetime
 from pynwb import NWBFile, NWBHDF5IO, image
 from pynwb.ophys import TwoPhotonSeries, OpticalChannel, ImageSegmentation, ImagingPlane
@@ -179,10 +180,10 @@ class WriteNWB(bpy.types.Operator):
         plane_segmentation = image_segmentation.create_plane_segmentation('output from segmenting a mesh in Blender',
                                        imaging_plane, 'mesh_segmentaton', raw_data) #<to do> mesh segmentaton should be replaced by name of mesh object
 
-        #Extract data from Blender before passing to ROI columns
+        # Extract data from Blender before passing to ROI columns
         obj = bpy.context.active_object
 
-        bpy.ops.object.origin_set(type = 'ORIGIN_CENTER_OF_MASS')
+        #bpy.ops.object.origin_set(type = 'ORIGIN_CENTER_OF_MASS')
         center_of_mass = obj.location
 
         #Extract XYZ coordinates 
