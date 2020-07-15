@@ -1,5 +1,5 @@
 import bpy
-import h5py #todo - add to autoinstaller
+import os #todo - add to autoinstaller
 from datetime import datetime
 from pynwb import NWBFile, NWBHDF5IO, image
 from pynwb.ophys import TwoPhotonSeries, OpticalChannel, ImageSegmentation, ImagingPlane
@@ -175,12 +175,19 @@ class WriteNWB(bpy.types.Operator):
         #Add the image segmentation to the module
         module.add(image_segmentation)
 
-        #volume = hdmf.common.table.VectorData('data', 'my volume', 'description', 'the x coordinate of the channel location')
-
         #Create plane segmentation
         plane_segmentation = image_segmentation.create_plane_segmentation('output from segmenting a mesh in Blender',
-                                       imaging_plane, 'mesh_segmentaton', raw_data, columns = ['volume'], colnames = ['volume'] )
+                                       imaging_plane, 'mesh_segmentaton', raw_data) #<to do> mesh segmentaton should be replaced by name of mesh object
 
+        plane_segmentation.add_column('volume', 'desc of volume')
+        volume = 2
+
+        pix_mask1 = [(1,1,2)]
+
+        plane_segmentation.add_roi(pixel_mask=pix_mask1, volume=volume)
+
+        #
+        os.chdir('C:/Users/Mrika/Downloads')
         #Write the NWB file
         with NWBHDF5IO(nwbfile_name, 'w') as io:
             io.write(nwbfile)
