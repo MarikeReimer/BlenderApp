@@ -180,27 +180,41 @@ class WriteNWB(bpy.types.Operator):
         plane_segmentation = image_segmentation.create_plane_segmentation('output from segmenting a mesh in Blender',
                                        imaging_plane, 'mesh_segmentaton', raw_data) #<to do> mesh segmentaton should be replaced by name of mesh object
 
-        # Extract data from Blender before passing to ROI columns
+        #Create columns for Plane Segmentation
+        plane_segmentation.add_column('center_of_mass', 'center of mass of mesh')
+        plane_segmentation.add_column('volume', 'volume of mesh in X units')
+        plane_segmentation.add_column('surface_area', 'surface area of mesh in X units')
+        
+        #CENTER OF MASS
+        #Extract data from Blender before passing to ROI columns
         obj = bpy.context.active_object
 
-        #bpy.ops.object.origin_set(type = 'ORIGIN_CENTER_OF_MASS')
         center_of_mass = obj.location
 
         #Extract XYZ coordinates 
         center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
 
-        plane_segmentation.add_column('volume', 'volume of mesh in X units')
-        plane_segmentation.add_column('center_of_mass', 'center of mass of mesh')
+        #VOLUME
+        mesh = bpy.context.object.data
 
+        #Get a BMesh representation)
+        bm = bmesh.new()   # create an empty BMesh
+        bm.from_mesh(mesh)   # fill it in from a Mesh
 
-        volume = 2 #<to do> replace with volume
+        volume = bm.calc_volume(signed=False)
+
+        #SURFACE AREA
+        surface_area = sum(i.calc_area() for i in bm.faces)
+        print(surface_area)
+
+        bm.free()  # free and prevent further access
 
         pix_mask1 = [(1,1,2)] #<to do> replace with xyz of vertex points
 
-        plane_segmentation.add_roi(pixel_mask = pix_mask1, volume = volume, center_of_mass = center_of_mass)
+        plane_segmentation.add_roi(pixel_mask = pix_mask1, volume = volume, center_of_mass = center_of_mass, surface_area = surface_area)
 
         #
-        os.chdir('C:/Users/Mrika/Downloads')
+        os.chdir('C:/Users/Mrika/Downloads') #<to do> How do I handle this for the final version?
         #Write the NWB file
         with NWBHDF5IO(nwbfile_name, 'w') as io:
             io.write(nwbfile)
