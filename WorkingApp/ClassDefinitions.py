@@ -1,7 +1,7 @@
 import bpy
+import h5py #todo - add to autoinstaller
 from datetime import datetime
-from pynwb import NWBFile
-from pynwb import NWBHDF5IO
+from pynwb import NWBFile, NWBHDF5IO, image
 from pynwb.ophys import TwoPhotonSeries, OpticalChannel, ImageSegmentation, ImagingPlane
 from pynwb.file import Subject
 from pynwb.device import Device
@@ -32,7 +32,7 @@ class NeuronAnalysis(bpy.types.Panel):
         #Add fields for NWBFile strings
         row.prop(context.scene, "identifier")
         row.prop(context.scene, "session_start_time")
-        row.prop(context.scene, "session_description")        
+        row.prop(context.scene, "session_description")
 
         #Add Device menu:
         row = layout.row()
@@ -155,6 +155,31 @@ class WriteNWB(bpy.types.Operator):
             location, 
             grid_spacing= [1,1,1], 
             grid_spacing_unit = grid_spacing_unit)
+
+        #Create image series and add a link to the raw image stack to the file
+        raw_data = image.ImageSeries(
+            'Raw Data',
+            format = 'external',
+            rate = imaging_rate, #Unit is Hz
+            external_file = ['raw_data_link'], #<to do> Remove hard coding
+            starting_frame = [1])
+
+        nwbfile.add_acquisition(raw_data)
+
+        #Create processing module
+        module = nwbfile.create_processing_module('Blender Data', 'contains processed neuromorphology data from Blender')
+        
+        #Create image segmentation
+        image_segmentation = ImageSegmentation()
+
+        #Add the image segmentation to the module
+        module.add(image_segmentation)
+
+        #volume = hdmf.common.table.VectorData('data', 'my volume', 'description', 'the x coordinate of the channel location')
+
+        #Create plane segmentation
+        plane_segmentation = image_segmentation.create_plane_segmentation('output from segmenting a mesh in Blender',
+                                       imaging_plane, 'mesh_segmentaton', raw_data, columns = ['volume'], colnames = ['volume'] )
 
         #Write the NWB file
         with NWBHDF5IO(nwbfile_name, 'w') as io:
