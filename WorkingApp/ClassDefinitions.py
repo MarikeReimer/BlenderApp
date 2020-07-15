@@ -179,12 +179,24 @@ class WriteNWB(bpy.types.Operator):
         plane_segmentation = image_segmentation.create_plane_segmentation('output from segmenting a mesh in Blender',
                                        imaging_plane, 'mesh_segmentaton', raw_data) #<to do> mesh segmentaton should be replaced by name of mesh object
 
-        plane_segmentation.add_column('volume', 'desc of volume')
-        volume = 2
+        #Extract data from Blender before passing to ROI columns
+        obj = bpy.context.active_object
 
-        pix_mask1 = [(1,1,2)]
+        bpy.ops.object.origin_set(type = 'ORIGIN_CENTER_OF_MASS')
+        center_of_mass = obj.location
 
-        plane_segmentation.add_roi(pixel_mask=pix_mask1, volume=volume)
+        #Extract XYZ coordinates 
+        center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
+
+        plane_segmentation.add_column('volume', 'volume of mesh in X units')
+        plane_segmentation.add_column('center_of_mass', 'center of mass of mesh')
+
+
+        volume = 2 #<to do> replace with volume
+
+        pix_mask1 = [(1,1,2)] #<to do> replace with xyz of vertex points
+
+        plane_segmentation.add_roi(pixel_mask = pix_mask1, volume = volume, center_of_mass = center_of_mass)
 
         #
         os.chdir('C:/Users/Mrika/Downloads')
