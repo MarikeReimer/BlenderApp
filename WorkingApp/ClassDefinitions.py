@@ -189,25 +189,34 @@ class WriteNWB(bpy.types.Operator):
         #This code extracts the coordinates from vertices in scene collection.  It should be expanded to work with the other meshes
 
         for i in bpy.context.scene.objects:
-            if i.type == 'MESH' and len(i.data.vertices) == 1:
-            # Get the active mesh
-                obj = bpy.context.edit_object
-                me = obj.data
+            if i.type == 'MESH': 
+                if len(i.data.vertices) == 1:
+                # Get the active mesh
+                    obj = bpy.context.edit_object
+                    me = obj.data
 
-                # Get a BMesh representation
-                bm = bmesh.from_edit_mesh(me)
+                    # Get a BMesh representation
+                    bm = bmesh.from_edit_mesh(me)
 
-                for v in bm.verts:
-                    print("vert location", v.co)
-            elif i.type == 'MESH':
-                print(i.name,'found mesh')
-                obj = bpy.context.edit_object
-                me = bpy.context.object.data
-                bm = bmesh.new()  
+                    for v in bm.verts:
+                        print("vert location", v.co)
 
-                # Get a BMesh representation
-                bm = bmesh.from_edit_mesh(me)
-                print(bm.calc_volume(signed=False))
+                else:
+                    print(i.name,'found mesh')
+                    ##obj = bpy.context.edit_object #What was this doing?
+                    
+                    #Get mesh data from the objects in the Scene Collection
+                    me = bpy.context.object.data
+
+                    #Create an empty BMesh
+                    bm = bmesh.new()
+                    #Fill Bmesh with the mesh data from the object  
+                    bm.from_mesh(me)
+
+                    # Get a BMesh representation
+                    #bm = bmesh.from_edit_mesh(me)
+                    
+                    print(bm.calc_volume(signed=False))
                 
 
 
