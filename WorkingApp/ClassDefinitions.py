@@ -186,7 +186,7 @@ class WriteNWB(bpy.types.Operator):
         plane_segmentation.add_column('volume', 'volume of mesh in X units')
         plane_segmentation.add_column('surface_area', 'surface area of mesh in X units')
         
-        #This bi
+        #This code extracts the coordinates from vertices in scene collection.  It should be expanded to work with the other meshes
 
         for i in bpy.context.scene.objects:
             if i.type == 'MESH' and len(i.data.vertices) == 1:
@@ -197,11 +197,20 @@ class WriteNWB(bpy.types.Operator):
                 # Get a BMesh representation
                 bm = bmesh.from_edit_mesh(me)
 
-                # Modify the BMesh, can do anything here...
                 for v in bm.verts:
                     print("vert location", v.co)
+            elif i.type == 'MESH':
+                print(i.name,'found mesh')
+                obj = bpy.context.edit_object
+                me = bpy.context.object.data
+                bm = bmesh.new()  
 
-        
+                # Get a BMesh representation
+                bm = bmesh.from_edit_mesh(me)
+                print(bm.calc_volume(signed=False))
+                
+
+
         #CENTER OF MASS
         #Extract data from Blender before passing to ROI columns
         obj = bpy.context.active_object
