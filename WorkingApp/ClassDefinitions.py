@@ -1,5 +1,6 @@
 import bpy
 import bmesh
+from mathutils import Vector
 import os #<todo> - add to autoinstaller?
 from datetime import datetime
 from pynwb import NWBFile, NWBHDF5IO, image
@@ -185,6 +186,22 @@ class WriteNWB(bpy.types.Operator):
         plane_segmentation.add_column('volume', 'volume of mesh in X units')
         plane_segmentation.add_column('surface_area', 'surface area of mesh in X units')
         
+        #This bi
+
+        for i in bpy.context.scene.objects:
+            if i.type == 'MESH' and len(i.data.vertices) == 1:
+            # Get the active mesh
+                obj = bpy.context.edit_object
+                me = obj.data
+
+                # Get a BMesh representation
+                bm = bmesh.from_edit_mesh(me)
+
+                # Modify the BMesh, can do anything here...
+                for v in bm.verts:
+                    print("vert location", v.co)
+
+        
         #CENTER OF MASS
         #Extract data from Blender before passing to ROI columns
         obj = bpy.context.active_object
@@ -193,6 +210,7 @@ class WriteNWB(bpy.types.Operator):
 
         #Extract XYZ coordinates 
         center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
+        print('center of mass', center_of_mass)
 
         #VOLUME
         mesh = bpy.context.object.data
@@ -202,12 +220,18 @@ class WriteNWB(bpy.types.Operator):
         bm.from_mesh(mesh)   # fill it in from a Mesh
 
         volume = bm.calc_volume(signed=False)
+        print('volume', volume)
+        
 
         #SURFACE AREA
         surface_area = sum(i.calc_area() for i in bm.faces)
-        print(surface_area)
 
         bm.free()  # free and prevent further access
+
+
+        #Start here: Trying to find the verts from the scene collection
+        for obj in bpy.context.object.children:
+                print(obj.type)
 
         pix_mask1 = [(1,1,2)] #<to do> replace with xyz of vertex points
 
@@ -253,8 +277,6 @@ class RedOpticalChannel(bpy.types.Operator):
         (name = "Description of Red Channel")
         bpy.types.Scene.emission_lambda = bpy.props.FloatProperty \
         (default = wavelength)
-
-        print(bpy.types.Scene.optical_channel_name)
 
         return {'FINISHED'}
    
