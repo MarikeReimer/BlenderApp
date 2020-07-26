@@ -189,32 +189,41 @@ class WriteNWB(bpy.types.Operator):
         #This code extracts the coordinates from vertices and meshes in scene collection.  
 
         for i in bpy.context.scene.objects:
-            #Find the objects that are single verts
+            #i.select_set(True)
+            print(i.name, i.type)
             if i.type == 'MESH' and len(i.data.vertices) == 1:
                 # Get the active mesh
                     obj = bpy.context.edit_object
+                    print('obj:', obj)
                     me = obj.data
+                    print('me', me)
 
                     # Get a BMesh representation
                     bm = bmesh.from_edit_mesh(me)
+                    print('bm:', bm)
 
                     for v in bm.verts:
                         print("vert location", v.co)
 
-            #Find other meshes
             elif i.type == 'MESH':
-                print(i.name,'found mesh')              
-                #Get mesh data from the object in the Scene Collection
-                me = bpy.context.object.data
+                #i.select_set(True)
+                print(i.name,'found mesh')
+                ##obj = bpy.context.edit_object #What was this doing?
+                
+                #Get mesh data from the objects in the Scene Collection
+                me = bpy.context.active_object.data
+                #me = bpy.context.object.data
 
                 #Create an empty BMesh
                 bm = bmesh.new()
                 #Fill Bmesh with the mesh data from the object  
                 bm.from_mesh(me)
-              
+
+                # Get a BMesh representation
+                #bm = bmesh.from_edit_mesh(me)
+                
+                print('Is this our volume?:')
                 print(bm.calc_volume(signed=False))
-            else:
-                pass
 
         #CENTER OF MASS
         #Extract data from Blender before passing to ROI columns
