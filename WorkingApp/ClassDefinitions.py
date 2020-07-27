@@ -212,7 +212,14 @@ class WriteNWB(bpy.types.Operator):
         for i in bpy.context.scene.objects:
             if i.type == 'MESH' and len(i.data.vertices) > 1:
                 print(i.name, i.type, 'entering volume loop')
-                    
+                
+                #CENTER OF MASS
+                center_of_mass = i.matrix_world.translation
+
+                #Extract XYZ coordinates 
+                center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
+                print('center of mass', center_of_mass)
+            
                 #Get mesh data from the active object in the Scene Collection
                 mesh = i.data
 
@@ -230,13 +237,8 @@ class WriteNWB(bpy.types.Operator):
                 surface_area = sum(i.calc_area() for i in bm.faces)
                 print('Surface area:', surface_area)
                 
-                #CENTER OF MASS
-                center_of_mass = i.location
-
-                #Extract XYZ coordinates 
-                center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
-                print('center of mass', center_of_mass)
                 bm.free()
+
 
 
 
