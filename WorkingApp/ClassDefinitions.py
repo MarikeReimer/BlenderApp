@@ -189,70 +189,58 @@ class WriteNWB(bpy.types.Operator):
         
         #This code extracts the coordinates from vertices and meshes in scene collection.  
 
+        vert_list = []
 
         #Vert loop
         for i in bpy.context.scene.objects:
             if i.type == 'MESH' and len(i.data.vertices) == 1:
                 print(i.name, i.type, 'entering vert loop', datetime.now())
                 # Get the active mesh
-                #i = bpy.context.edit_object
-
-                me = i.data
+                mesh = i.data
 
                 # Get a BMesh representation
                 bm = bmesh.new()
                 #Fill Bmesh with the mesh data from the object  
-                bm.from_mesh(me)
+                bm.from_mesh(mesh)
                 for v in bm.verts:
                     print("vert coordinates", v.co)
+                    vert_list.append(v.co)
+        
+        print('vert list', vert_list)
 
-        #Volume loop
+        #Mesh loop
         for i in bpy.context.scene.objects:
             if i.type == 'MESH' and len(i.data.vertices) > 1:
                 print(i.name, i.type, 'entering volume loop')
                     
                 #Get mesh data from the active object in the Scene Collection
-                me = i.data
+                mesh = i.data
 
                 #Create an empty BMesh
                 bm = bmesh.new()
                 #Fill Bmesh with the mesh data from the object  
-                bm.from_mesh(me)
+                bm.from_mesh(mesh)
+
+                volume = bm.calc_volume(signed=False)
 
                 print('Volume:', bm.calc_volume(signed=False))
+
+
+                #SURFACE AREA
+                surface_area = sum(i.calc_area() for i in bm.faces)
+                print('Surface area:', surface_area)
+                
+                #CENTER OF MASS
+                center_of_mass = i.location
+
+                #Extract XYZ coordinates 
+                center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
+                print('center of mass', center_of_mass)
                 bm.free()
 
-        #CENTER OF MASS
-        #Extract data from Blender before passing to ROI columns
-        obj = bpy.context.active_object
-
-        center_of_mass = obj.location
-
-        #Extract XYZ coordinates 
-        center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
-        print('center of mass', center_of_mass)
-
-        #VOLUME
-        mesh = bpy.context.object.data
-
-        #Get a BMesh representation)
-        bm = bmesh.new()   # create an empty BMesh
-        bm.from_mesh(mesh)   # fill it in from a Mesh
-
-        volume = bm.calc_volume(signed=False)
-        print('volume', volume)
-        
-
-        #SURFACE AREA
-        surface_area = sum(i.calc_area() for i in bm.faces)
-
-        bm.free()  # free and prevent further access
 
 
-        #Start here: Trying to find the verts from the scene collection
-        for obj in bpy.context.object.children:
-                print(obj.type)
-
+       
         pix_mask1 = [(1,1,2)] #<to do> replace with xyz of vertex points
 
         plane_segmentation.add_roi(pixel_mask = pix_mask1, volume = volume, center_of_mass = center_of_mass, surface_area = surface_area)
