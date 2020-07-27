@@ -186,8 +186,9 @@ class WriteNWB(bpy.types.Operator):
         plane_segmentation.add_column('center_of_mass', 'center of mass of mesh')
         plane_segmentation.add_column('volume', 'volume of mesh in X units')
         plane_segmentation.add_column('surface_area', 'surface area of mesh in X units')
+        plane_segmentation.add_column('length', 'difference between two Verts')
         
-        #This code extracts the coordinates from vertices and meshes in scene collection.  
+        #This code extracts the coordinates from vertices in scene collection.  
 
         vert_list = []
 
@@ -205,8 +206,24 @@ class WriteNWB(bpy.types.Operator):
                 for v in bm.verts:
                     print("vert coordinates", v.co)
                     vert_list.append(v.co)
-        
-        print('vert list', vert_list)
+               
+                print('vert list', vert_list, 'first vert', vert_list[0])
+
+        #Extract coordinates of the Verts
+        #The mesh loop breaks the Vert list, so it lives here 
+        point1 = vert_list[0]
+        x1 = point1[0]
+        y1 = point1[1]
+        z1 = point1[2]
+
+        point2 = vert_list[1]
+        x2 = point2[0]
+        y2 = point2[1]
+        z2 = point2[2]
+
+        length = (point1 - point2).length
+        print('length', length)
+
 
         #Mesh loop
         for i in bpy.context.scene.objects:
@@ -239,13 +256,14 @@ class WriteNWB(bpy.types.Operator):
                 
                 bm.free()
 
-
-
-
        
-        pix_mask1 = [(1,1,2)] #<to do> replace with xyz of vertex points
+        pix_mask1 = [(x1,y1,z1)] 
+        print(pix_mask1)
+        plane_segmentation.add_roi(pixel_mask = pix_mask1, volume = volume, center_of_mass = center_of_mass, surface_area = surface_area, length = length)
 
-        plane_segmentation.add_roi(pixel_mask = pix_mask1, volume = volume, center_of_mass = center_of_mass, surface_area = surface_area)
+        pix_mask2 = [(x2,y2,z2)] 
+        plane_segmentation.add_roi(pixel_mask = pix_mask2, volume = volume, center_of_mass = center_of_mass, surface_area = surface_area, length = length)
+        print(pix_mask2)
 
         #
         os.chdir('C:/Users/Mrika/Downloads') #<to do> How do I handle this for the final version?
