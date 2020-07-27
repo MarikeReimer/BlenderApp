@@ -7,6 +7,7 @@ from pynwb import NWBFile, NWBHDF5IO, image
 from pynwb.ophys import TwoPhotonSeries, OpticalChannel, ImageSegmentation, ImagingPlane
 from pynwb.file import Subject
 from pynwb.device import Device
+from datetime import datetime
 
 #NeuronAnalysis creates a 3Dview panel and add rows for fields and buttons. 
 #Blender's documentation describes what the strings that start with "bl_" do: https://docs.blender.org/api/blender_python_api_2_70_5/bpy.types.Panel.html#bpy.types.Panel.bl_idname
@@ -188,42 +189,38 @@ class WriteNWB(bpy.types.Operator):
         
         #This code extracts the coordinates from vertices and meshes in scene collection.  
 
+
+        #Vert loop
         for i in bpy.context.scene.objects:
-            #i.select_set(True)
-            print(i.name, i.type)
             if i.type == 'MESH' and len(i.data.vertices) == 1:
+                print(i.name, i.type, 'entering vert loop', datetime.now())
                 # Get the active mesh
-                    obj = bpy.context.edit_object
-                    print('obj:', obj)
-                    me = obj.data
-                    print('me', me)
+                #i = bpy.context.edit_object
 
-                    # Get a BMesh representation
-                    bm = bmesh.from_edit_mesh(me)
-                    print('bm:', bm)
+                me = i.data
 
-                    for v in bm.verts:
-                        print("vert location", v.co)
+                # Get a BMesh representation
+                bm = bmesh.new()
+                #Fill Bmesh with the mesh data from the object  
+                bm.from_mesh(me)
+                for v in bm.verts:
+                    print("vert coordinates", v.co)
 
-            elif i.type == 'MESH':
-                #i.select_set(True)
-                print(i.name,'found mesh')
-                ##obj = bpy.context.edit_object #What was this doing?
-                
-                #Get mesh data from the objects in the Scene Collection
-                me = bpy.context.active_object.data
-                #me = bpy.context.object.data
+        #Volume loop
+        for i in bpy.context.scene.objects:
+            if i.type == 'MESH' and len(i.data.vertices) > 1:
+                print(i.name, i.type, 'entering volume loop')
+                    
+                #Get mesh data from the active object in the Scene Collection
+                me = i.data
 
                 #Create an empty BMesh
                 bm = bmesh.new()
                 #Fill Bmesh with the mesh data from the object  
                 bm.from_mesh(me)
 
-                # Get a BMesh representation
-                #bm = bmesh.from_edit_mesh(me)
-                
-                print('Is this our volume?:')
-                print(bm.calc_volume(signed=False))
+                print('Volume:', bm.calc_volume(signed=False))
+                bm.free()
 
         #CENTER OF MASS
         #Extract data from Blender before passing to ROI columns
