@@ -187,18 +187,7 @@ class WriteNWB(bpy.types.Operator):
         image_segmentation = ImageSegmentation()
 
         #Add the image segmentation to the module
-        module.add(image_segmentation)
-
-        #Create plane segmentation
-        plane_segmentation = image_segmentation.create_plane_segmentation('output from segmenting a mesh in Blender',
-                                       imaging_plane, 'mesh_segmentaton', raw_data) #<to do> mesh segmentaton should be replaced by name of mesh object
-                                       
-
-        #Create columns for Plane Segmentation
-        plane_segmentation.add_column('center_of_mass', 'center of mass of mesh')
-        plane_segmentation.add_column('volume', 'volume of mesh in X units')
-        plane_segmentation.add_column('surface_area', 'surface area of mesh in X units')
-        plane_segmentation.add_column('length', 'difference between two Verts')
+        module.add(image_segmentation)   
         
         #This code extracts the coordinates from vertices in scene collection.  
 
@@ -265,35 +254,46 @@ class WriteNWB(bpy.types.Operator):
                 #SURFACE AREA
                 surface_area = sum(i.calc_area() for i in bm.faces)
                 print('Surface area:', surface_area)
+
+                #Add variables to mesh_surface NWB extension
+
+                mesh_surface = MeshSurface(vertices=[[0.0, 1.0, 1.0],
+                                [1.0, 1.0, 2.0],
+                                [2.0, 2.0, 1.0],
+                                [2.0, 1.0, 1.0],
+                                [1.0, 2.0, 1.0]],
+                    volume = volume,
+                    faces = np.array([[0, 1, 2], [1, 2, 3]]).astype('uint'),
+                    center_of_mass = center_of_mass,
+                    surface_area = surface_area,
+                    name = i.name)
                 
-                bm.free()
+                #Create unique name
+                segmentation_name = i.name + ' mesh plane_segmentaton'
 
-       
-        
-        mesh_surface = MeshSurface(vertices=[[0.0, 1.0, 1.0],
-                                        [1.0, 1.0, 2.0],
-                                        [2.0, 2.0, 1.0],
-                                        [2.0, 1.0, 1.0],
-                                        [1.0, 2.0, 1.0]],
-                            volume = volume,
-                            faces= np.array([[0, 1, 2], [1, 2, 3]]).astype('uint'),
-                            center_of_mass = center_of_mass,
-                            surface_area = surface_area,
-                            name='mesh body')
+                #Create plane segmentation from our NWB extension    
+                mesh_plane_segmentation = MeshPlaneSegmentation('output from segmenting a mesh in Blender',
+                                       imaging_plane, mesh_surface, segmentation_name, raw_data)
 
-        mesh_plane_segmentation = MeshPlaneSegmentation('output from segmenting a mesh in Blender',
-                                       imaging_plane, mesh_surface, 'mesh_segmentaton', raw_data)
+                image_segmentation.add_plane_segmentation(mesh_plane_segmentation) 
 
-        #image_segmentation.add_plane_segmentation(mesh_plane_segmentation) #Not needed? ValueError: 'mesh_segmentaton' already exists in 'ImageSegmentation'
+                #Add column to mesh plane segmentation to store Length. <to do> This should live in the loop 
+                mesh_plane_segmentation.add_column('length', 'difference between two Verts')
+                
+                bm.free()      
+
+
+
 
         print(image_segmentation)
 
         pix_mask1 = [(x1,y1,z1)] 
         print(pix_mask1)
-        plane_segmentation.add_roi(pixel_mask = pix_mask1, volume = volume, center_of_mass = center_of_mass, surface_area = surface_area, length = length)
+
+        mesh_plane_segmentation.add_roi(pixel_mask = pix_mask1, length = length)
 
         pix_mask2 = [(x2,y2,z2)] 
-        plane_segmentation.add_roi(pixel_mask = pix_mask2, volume = volume, center_of_mass = center_of_mass, surface_area = surface_area, length = length)
+        mesh_plane_segmentation.add_roi(pixel_mask = pix_mask2, length = length)
         print(pix_mask2)
 
         #

@@ -78,7 +78,7 @@ def register():
       (name = "Species", default = "Mus musculus")
     #NWBfile fields
     bpy.types.Scene.identifier = bpy.props.StringProperty \
-      (name = "Identifier")
+      (name = "Identifier", default = 'findme')
     bpy.types.Scene.session_start_time = bpy.props.StringProperty \
       (name = "Session Start Time", default = "hard coded")
     bpy.types.Scene.session_description = bpy.props.StringProperty \
