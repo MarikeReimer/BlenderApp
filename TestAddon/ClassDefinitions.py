@@ -275,16 +275,18 @@ class WriteNWB(bpy.types.Operator):
                                         [2.0, 2.0, 1.0],
                                         [2.0, 1.0, 1.0],
                                         [1.0, 2.0, 1.0]],
-                            volume = 12.1,
+                            volume = volume,
                             faces= np.array([[0, 1, 2], [1, 2, 3]]).astype('uint'),
-                            center_of_mass = np.array([0, 1, 2]),
-                            surface_area = 14.2,
+                            center_of_mass = center_of_mass,
+                            surface_area = surface_area,
                             name='mesh body')
 
         mesh_plane_segmentation = MeshPlaneSegmentation('output from segmenting a mesh in Blender',
                                        imaging_plane, mesh_surface, 'mesh_segmentaton', raw_data)
 
-        print(mesh_plane_segmentation)
+        #image_segmentation.add_plane_segmentation(mesh_plane_segmentation) #Not needed? ValueError: 'mesh_segmentaton' already exists in 'ImageSegmentation'
+
+        print(image_segmentation)
 
         pix_mask1 = [(x1,y1,z1)] 
         print(pix_mask1)
