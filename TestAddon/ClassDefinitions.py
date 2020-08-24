@@ -1,6 +1,7 @@
 import bpy
 import bmesh
-import os 
+import os
+import numpy as np #Delete - only used for testing
 from datetime import datetime
 from pynwb import NWBFile, NWBHDF5IO, image, load_namespaces, get_class
 from pynwb.ophys import TwoPhotonSeries, OpticalChannel, ImageSegmentation, ImagingPlane
@@ -155,6 +156,7 @@ class WriteNWB(bpy.types.Operator):
 
         print('indicator',indicator, 'imaging rate', imaging_rate)
 
+
         #Create imaging plane
         imaging_plane = nwbfile.create_imaging_plane(
             plane_name, 
@@ -190,6 +192,7 @@ class WriteNWB(bpy.types.Operator):
         #Create plane segmentation
         plane_segmentation = image_segmentation.create_plane_segmentation('output from segmenting a mesh in Blender',
                                        imaging_plane, 'mesh_segmentaton', raw_data) #<to do> mesh segmentaton should be replaced by name of mesh object
+                                       
 
         #Create columns for Plane Segmentation
         plane_segmentation.add_column('center_of_mass', 'center of mass of mesh')
@@ -266,6 +269,23 @@ class WriteNWB(bpy.types.Operator):
                 bm.free()
 
        
+        
+        mesh_surface = MeshSurface(vertices=[[0.0, 1.0, 1.0],
+                                        [1.0, 1.0, 2.0],
+                                        [2.0, 2.0, 1.0],
+                                        [2.0, 1.0, 1.0],
+                                        [1.0, 2.0, 1.0]],
+                            volume = 12.1,
+                            faces= np.array([[0, 1, 2], [1, 2, 3]]).astype('uint'),
+                            center_of_mass = np.array([0, 1, 2]),
+                            surface_area = 14.2,
+                            name='mesh body')
+
+        mesh_plane_segmentation = MeshPlaneSegmentation('output from segmenting a mesh in Blender',
+                                       imaging_plane, mesh_surface, 'mesh_segmentaton', raw_data)
+
+        print(mesh_plane_segmentation)
+
         pix_mask1 = [(x1,y1,z1)] 
         print(pix_mask1)
         plane_segmentation.add_roi(pixel_mask = pix_mask1, volume = volume, center_of_mass = center_of_mass, surface_area = surface_area, length = length)
@@ -275,7 +295,7 @@ class WriteNWB(bpy.types.Operator):
         print(pix_mask2)
 
         #
-        os.chdir('C:/Users/Mrika/Downloads') #<to do> How do I handle this for the final version?
+        os.chdir('C:/Users/meowm/Downloads') #<to do> How do I handle this for the final version?
         #Write the NWB file
         with NWBHDF5IO(nwbfile_name, 'w') as io:
             io.write(nwbfile)
