@@ -1,0 +1,7 @@
+namespaces:
+- doc: Extension for storing attributes of 3D meshes
+  name: TanLab
+  schema:
+  - namespace: core
+  - source: MeshClasses.extensions.yaml
+  version: 0.1.0

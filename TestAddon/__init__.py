@@ -16,6 +16,13 @@ from . ClassDefinitions import GreenOpticalChannel
 from . ClassDefinitions import DeviceMenu
 from . ClassDefinitions import OpticalChannelMenu
 
+# #Import NWB Extension
+
+
+# load_namespaces('MeshClasses.namespace.yaml')
+# MeshSurface = get_class('MeshAttributes', 'TanLab')
+# MeshPlaneSegmentation = get_class('MeshPlaneSegmentation', 'TanLab')
+
 #Information about the Addon created by the Blender Development VSCode Extension
 bl_info = {
     "name" : "TestAddon",

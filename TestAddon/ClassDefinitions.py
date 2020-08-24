@@ -1,13 +1,18 @@
 import bpy
 import bmesh
-from mathutils import Vector
-import os #<todo> - add to autoinstaller?
+import os 
 from datetime import datetime
-from pynwb import NWBFile, NWBHDF5IO, image
+from pynwb import NWBFile, NWBHDF5IO, image, load_namespaces, get_class
 from pynwb.ophys import TwoPhotonSeries, OpticalChannel, ImageSegmentation, ImagingPlane
 from pynwb.file import Subject
 from pynwb.device import Device
 from datetime import datetime
+from mathutils import Vector
+ 
+#Load NWB extension for meshes
+load_namespaces('MeshClasses.namespace.yaml')
+MeshSurface = get_class('MeshAttributes', 'TanLab')
+MeshPlaneSegmentation = get_class('MeshPlaneSegmentation', 'TanLab')
 
 #NeuronAnalysis creates a 3Dview panel and add rows for fields and buttons. 
 #Blender's documentation describes what the strings that start with "bl_" do: https://docs.blender.org/api/blender_python_api_2_70_5/bpy.types.Panel.html#bpy.types.Panel.bl_idname
@@ -89,6 +94,7 @@ class WriteNWB(bpy.types.Operator):
     #Extract data from panel and object
     def execute(self, context):
         #Extract subject table strings
+        print('writing file at', datetime.now())
         subject_id = bpy.context.scene.subject_id 
         age = bpy.context.scene.age
         subject_description = bpy.context.scene.subject_description
@@ -111,6 +117,7 @@ class WriteNWB(bpy.types.Operator):
         indicator = bpy.context.scene.indicator
         grid_spacing_unit = bpy.context.scene.grid_spacing_unit
 
+        
         #Create filename 
         nwbfile_name = identifier + '.nwb'
 
@@ -146,6 +153,8 @@ class WriteNWB(bpy.types.Operator):
             optical_channel_description,
             emission_lambda)
 
+        print('indicator',indicator, 'imaging rate', imaging_rate)
+
         #Create imaging plane
         imaging_plane = nwbfile.create_imaging_plane(
             plane_name, 
@@ -153,9 +162,9 @@ class WriteNWB(bpy.types.Operator):
             plane_description, 
             device, 
             excitation_lambda, 
-            imaging_rate, 
             indicator, 
             location, 
+            imaging_rate, 
             grid_spacing= [1,1,1], 
             grid_spacing_unit = grid_spacing_unit)
 

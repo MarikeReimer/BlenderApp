@@ -1,0 +1,39 @@
+groups:
+- neurodata_type_def: MeshPlaneSegmentation
+  neurodata_type_inc: PlaneSegmentation
+  doc: A plane segmentation to store attributes of 3D meshes
+  groups:
+  - neurodata_type_def: MeshAttributes
+    neurodata_type_inc: NWBDataInterface
+    doc: Stores attributes of 3D meshes
+    attributes:
+    - name: volume
+      dtype: float
+      doc: Volume of mesh
+    - name: surface_area
+      dtype: float
+      doc: Surface area of mesh
+    datasets:
+    - name: faces
+      dtype: uint
+      dims:
+      - face_number
+      - vertex_index
+      shape:
+      - null
+      - 3
+      doc: Faces for surface, indexes vertices
+    - name: center_of_mass
+      dtype: float
+      shape:
+      - 3
+      doc: Center of mass of mesh
+    - name: vertices
+      dtype: float
+      dims:
+      - vertex_number
+      - xyz
+      shape:
+      - null
+      - 3
+      doc: Vertices for surface, points in 3D space
