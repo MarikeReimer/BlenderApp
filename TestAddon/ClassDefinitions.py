@@ -192,6 +192,7 @@ class WriteNWB(bpy.types.Operator):
         #This code extracts the coordinates from vertices in scene collection.  
 
         vert_list = []
+        face_verts = []
 
         #Vert loop
         for i in bpy.context.scene.objects:
@@ -257,13 +258,19 @@ class WriteNWB(bpy.types.Operator):
 
                 #Add variables to mesh_surface NWB extension
 
+                for face in mesh.polygons:
+                    vertices = face.vertices
+                    face_vert_list = [vertices[0], vertices[1], vertices[2]]
+                    face_verts.append(face_vert_list)
+
+
                 mesh_surface = MeshSurface(vertices=[[0.0, 1.0, 1.0],
                                 [1.0, 1.0, 2.0],
                                 [2.0, 2.0, 1.0],
                                 [2.0, 1.0, 1.0],
                                 [1.0, 2.0, 1.0]],
                     volume = volume,
-                    faces = np.array([[0, 1, 2], [1, 2, 3]]).astype('uint'),
+                    faces = face_verts,
                     center_of_mass = center_of_mass,
                     surface_area = surface_area,
                     name = i.name)
