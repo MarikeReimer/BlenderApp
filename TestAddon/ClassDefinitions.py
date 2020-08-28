@@ -154,9 +154,6 @@ class WriteNWB(bpy.types.Operator):
             optical_channel_description,
             emission_lambda)
 
-        print('indicator',indicator, 'imaging rate', imaging_rate)
-
-
         #Create imaging plane
         imaging_plane = nwbfile.create_imaging_plane(
             plane_name, 
@@ -190,9 +187,12 @@ class WriteNWB(bpy.types.Operator):
         module.add(image_segmentation)   
         
         #This code extracts the coordinates from vertices in scene collection.  
-
-        vert_list = []
-        face_verts = []
+        #Vertices from single points/ROIs used to calculate length
+        vert_list = [] 
+        #Faces from mesh
+        faces = []
+        #Vertices from mesh
+        mesh_verts = []
 
         #Vert loop
         for i in bpy.context.scene.objects:
@@ -202,6 +202,7 @@ class WriteNWB(bpy.types.Operator):
                 mesh = i.data
 
                 # Get a BMesh representation
+                #<to do> refactor: define this function outside the loop since I use it more than once
                 bm = bmesh.new()
                 #Fill Bmesh with the mesh data from the object  
                 bm.from_mesh(mesh)
@@ -209,7 +210,6 @@ class WriteNWB(bpy.types.Operator):
                     print("vert coordinates", v.co)
                     vert_list.append(v.co)
                
-                print('vert list', vert_list, 'first vert', vert_list[0])
 
         #Extract coordinates of the Verts
         #The mesh loop breaks the Vert list, so it lives here 
@@ -237,7 +237,6 @@ class WriteNWB(bpy.types.Operator):
 
                 #Extract XYZ coordinates 
                 center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
-                print('center of mass', center_of_mass)
             
                 #Get mesh data from the active object in the Scene Collection
                 mesh = i.data
@@ -249,28 +248,27 @@ class WriteNWB(bpy.types.Operator):
 
                 volume = bm.calc_volume(signed=False)
 
-                print('Volume:', bm.calc_volume(signed=False))
-
 
                 #SURFACE AREA
                 surface_area = sum(i.calc_area() for i in bm.faces)
-                print('Surface area:', surface_area)
-
+                
                 #Add variables to mesh_surface NWB extension
 
+                for v in bm.verts:
+                    mesh_verts.append(v.co)
+               
                 for face in mesh.polygons:
                     vertices = face.vertices
                     face_vert_list = [vertices[0], vertices[1], vertices[2]]
-                    face_verts.append(face_vert_list)
+                    faces.append(face_vert_list)
 
+                
+                mesh_verts = np.array(mesh_verts)
+                print(mesh_verts)
 
-                mesh_surface = MeshSurface(vertices=[[0.0, 1.0, 1.0],
-                                [1.0, 1.0, 2.0],
-                                [2.0, 2.0, 1.0],
-                                [2.0, 1.0, 1.0],
-                                [1.0, 2.0, 1.0]],
+                mesh_surface = MeshSurface(vertices=mesh_verts,
                     volume = volume,
-                    faces = face_verts,
+                    faces = faces,
                     center_of_mass = center_of_mass,
                     surface_area = surface_area,
                     name = i.name)
@@ -291,17 +289,12 @@ class WriteNWB(bpy.types.Operator):
 
 
 
-
-        print(image_segmentation)
-
         pix_mask1 = [(x1,y1,z1)] 
-        print(pix_mask1)
 
         mesh_plane_segmentation.add_roi(pixel_mask = pix_mask1, length = length)
 
         pix_mask2 = [(x2,y2,z2)] 
         mesh_plane_segmentation.add_roi(pixel_mask = pix_mask2, length = length)
-        print(pix_mask2)
 
         #
         os.chdir('C:/Users/meowm/Downloads') #<to do> How do I handle this for the final version?
