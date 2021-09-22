@@ -3,6 +3,12 @@ import bmesh
 import os
 import numpy as np #Delete - only used for testing
 from datetime import datetime
+
+#The new way of adding python libraries
+import sys
+packages_path = "C:\\Users\\Pablo\\AppData\\Roaming\\Python\\Python39\\site-packages"
+sys.path.insert(0, packages_path )
+
 from pynwb import NWBFile, NWBHDF5IO, image, load_namespaces, get_class
 from pynwb.ophys import TwoPhotonSeries, OpticalChannel, ImageSegmentation, ImagingPlane
 from pynwb.file import Subject
@@ -140,7 +146,7 @@ class WriteNWB(bpy.types.Operator):
             )  
 
         #Add selected device
-        device_name = bpy.types.Scene.device[1].get('name') #I don't know why the [1] is needed.  Neither did the tutorial: https://ontheothersideofthefirewall.wordpress.com/blender-change-textfield-on-click-of-a-button-dictionaries-and-stringproperty/
+        device_name: bpy.types.Scene.device[1].get('name') #I don't know why the [1] is needed.  Neither did the tutorial: https://ontheothersideofthefirewall.wordpress.com/blender-change-textfield-on-click-of-a-button-dictionaries-and-stringproperty/
         device = nwbfile.create_device(name = device_name)
         
         #Retrieve strings and floats stored in optical channel properties
@@ -297,7 +303,7 @@ class WriteNWB(bpy.types.Operator):
         mesh_plane_segmentation.add_roi(pixel_mask = pix_mask2, length = length)
 
         #
-        os.chdir('C:/Users/meowm/Downloads') #<to do> How do I handle this for the final version?
+        os.chdir('C:/Users/Pablo/Downloads') #<to do> How do I handle this for the final version?
         #Write the NWB file
         with NWBHDF5IO(nwbfile_name, 'w') as io:
             io.write(nwbfile)
