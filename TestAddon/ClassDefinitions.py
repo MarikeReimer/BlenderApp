@@ -1,13 +1,14 @@
 import bpy
 
+#Used for importing dropdown menu parts
+# from bpy.types import Panel, PropertyGroup, Scene, WindowManager
+# from bpy.props import (
+#     IntProperty,
+#     EnumProperty,
+#     StringProperty,
+#     PointerProperty,
+# )
 
-from bpy.types import Panel, PropertyGroup, Scene, WindowManager
-from bpy.props import (
-    IntProperty,
-    EnumProperty,
-    StringProperty,
-    PointerProperty,
-)
 import bmesh
 import os
 import numpy as np #Delete - only used for testing
@@ -27,9 +28,9 @@ from mathutils import Vector
 
 
 #Load NWB extension for meshes
-load_namespaces('MeshClasses.namespace.yaml')
-MeshSurface = get_class('MeshAttributes', 'TanLab')
-MeshPlaneSegmentation = get_class('MeshPlaneSegmentation', 'TanLab')
+# load_namespaces('MeshClasses.namespace.yaml')
+# MeshSurface = get_class('MeshAttributes', 'TanLab')
+# MeshPlaneSegmentation = get_class('MeshPlaneSegmentation', 'TanLab')
 
 #NeuronAnalysis creates a 3Dview panel and add rows for fields and buttons. 
 #Blender's documentation describes what the strings that start with "bl_" do: https://docs.blender.org/api/blender_python_api_2_70_5/bpy.types.Panel.html#bpy.types.Panel.bl_idname
@@ -59,18 +60,13 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "session_start_time")
         row.prop(context.scene, "session_description")
 
-        #Add Device menu:
-        row = layout.row()
-        row.menu(DeviceMenu.bl_idname, text = 'Microscope Selector')
-
-        #New method for dropdowns
-
-        placeholder = context.scene.placeholder
-        row.prop(placeholder, "dropdown_box", text="Dropdown")
-
-        #Add OpticalChannel menu:
-        row = layout.row()
-        row.menu(OpticalChannelMenu.bl_idname, text = 'Channel Selector')
+        #Add Device menu (someday):
+        row.prop(context.scene, "device")
+    
+        #Add OpticalChannel menu (someday):
+        row.prop(context.scene, "optical_channel_name")
+        row.prop(context.scene, "optical_channel_description")
+        row.prop(context.scene, "emission_lambda")
 
         #Add fields for Imaging Plane
         row = self.layout.column(align = True)
@@ -94,17 +90,19 @@ class NeuronAnalysis(bpy.types.Panel):
 
 #Add functionality to dropdowns
 
-class PlaceholderProperties(PropertyGroup):
-    dropdown_box: EnumProperty(
-        items=(
-            ("A", "Ahh", "Tooltip for A"),
-            ("B", "Be", "Tooltip for B"),
-            ("C", "Ce", "Tooltip for C"),
-        ),
-        name="Description for the Elements",
-        default="A",
-        description="Tooltip for the Dropdownbox",
-    )
+# class PlaceholderProperties(PropertyGroup):
+#     dropdown_box: EnumProperty(
+#         items=(
+#             ("A", "Ahh", "Tooltip for A"),
+#             ("B", "Be", "Tooltip for B"),
+#             ("C", "Ce", "Tooltip for C"),
+#         ),
+#         name="Description for the Elements",
+#         default="A",
+#         description="Tooltip for the Dropdownbox",
+#     )
+
+
 
 #ROW OPERATORS
 
@@ -173,15 +171,25 @@ class WriteNWB(bpy.types.Operator):
             subject = subject
             )  
 
-        #Add selected device
-        device_name = bpy.types.Scene.device[1].get('name') #I don't know why the [1] is needed.  Neither did the tutorial: https://ontheothersideofthefirewall.wordpress.com/blender-change-textfield-on-click-of-a-button-dictionaries-and-stringproperty/
-        device = nwbfile.create_device(name = device_name)
+        #Extract Strings Which Belong in Dropdown Menus
+        plane_name = bpy.context.scene.plane_name
+        device = bpy.context.scene.device
+        optical_channel_name = bpy.context.scene.optical_channel_name
+        optical_channel_description = bpy.context.scene.optical_channel_description
+        emission_lambda = bpy.context.scene.emission_lambda
+
+        #Add selected device        
+        # device_name = bpy.types.Scene.device[1].get('name') #I don't know why the [1] is needed.  Neither did the tutorial: https://ontheothersideofthefirewall.wordpress.com/blender-change-textfield-on-click-of-a-button-dictionaries-and-stringproperty/
+        device = nwbfile.create_device(name = device)
         
         #Retrieve strings and floats stored in optical channel properties
-        optical_channel_name = bpy.types.Scene.optical_channel_name[1].get('name')
-        optical_channel_description = bpy.types.Scene.optical_channel_description[1].get('name')
-        emission_lambda = float(bpy.types.Scene.emission_lambda[1].get('default'))
+        # optical_channel_name = bpy.types.Scene.optical_channel_name[1].get('name')
+        # optical_channel_description = bpy.types.Scene.optical_channel_description[1].get('name')
+        #emission_lambda = float(bpy.types.Scene.emission_lambda[1].get('default'))
+
         
+
+
         #Create optical channel
         optical_channel = OpticalChannel(
             optical_channel_name,
@@ -198,7 +206,7 @@ class WriteNWB(bpy.types.Operator):
             indicator, 
             location, 
             imaging_rate, 
-            grid_spacing= [1,1,1], 
+            grid_spacing= [1,1,1], #shouldn't be hardcoded
             grid_spacing_unit = grid_spacing_unit)
 
         #Create image series and add a link to the raw image stack to the file
@@ -340,85 +348,85 @@ class WriteNWB(bpy.types.Operator):
 
 #Row operator for selecting widefield as the device used
 #Because of Blender reserves the 'return' function, the way to access strings outside of classes is to store them as String Properties attached to the Scene.  
-class WideField(bpy.types.Operator):
-    bl_idname = 'object.wide_field' #operators must follow the naming convention of object.lowercase_letters
-    bl_label = 'Wide_field'
-    def execute(self, context):
-        bpy.types.Scene.device = bpy.types.Scene.wide_field
-        return {'FINISHED'}
+# class WideField(bpy.types.Operator):
+#     bl_idname = 'object.wide_field' #operators must follow the naming convention of object.lowercase_letters
+#     bl_label = 'Wide_field'
+#     def execute(self, context):
+#         bpy.types.Scene.device = bpy.types.Scene.wide_field
+#         return {'FINISHED'}
     
 
 #Row operator for selecting 2P as the device used
-class TwoPhoton(bpy.types.Operator):
-    bl_idname = 'object.two_photon' #operators must follow the naming convention of object.lowercase_letters
-    bl_label = 'TwoPhoton'
-    def execute(self, context):
-        bpy.types.Scene.device = bpy.types.Scene.two_photon
-        return {'FINISHED'}
+# class TwoPhoton(bpy.types.Operator):
+#     bl_idname = 'object.two_photon' #operators must follow the naming convention of object.lowercase_letters
+#     bl_label = 'TwoPhoton'
+#     def execute(self, context):
+#         bpy.types.Scene.device = bpy.types.Scene.two_photon
+#         return {'FINISHED'}
 
 
-class RedOpticalChannel(bpy.types.Operator):
-    bl_idname = 'object.red_optical_channel' #operators must follow the naming convention of object.lowercase_letters
-    bl_label = 'RedOpticalChannel'
+# class RedOpticalChannel(bpy.types.Operator):
+#     bl_idname = 'object.red_optical_channel' #operators must follow the naming convention of object.lowercase_letters
+#     bl_label = 'RedOpticalChannel'
 
-    def execute(self, context):
-        wavelength = 300.1 #The emission wavelength for the red channel      
+#     def execute(self, context):
+#         wavelength = 300.1 #The emission wavelength for the red channel      
 
-        bpy.types.Scene.optical_channel_name = bpy.props.StringProperty \
-        (name = "Red Channel")
-        bpy.types.Scene.optical_channel_description = bpy.props.StringProperty \
-        (name = "Description of Red Channel")
-        bpy.types.Scene.emission_lambda = bpy.props.FloatProperty \
-        (default = wavelength)
+#         bpy.types.Scene.optical_channel_name = bpy.props.StringProperty \
+#         (name = "Red Channel")
+#         bpy.types.Scene.optical_channel_description = bpy.props.StringProperty \
+#         (name = "Description of Red Channel")
+#         bpy.types.Scene.emission_lambda = bpy.props.FloatProperty \
+#         (default = wavelength)
 
-        return {'FINISHED'}
+#         return {'FINISHED'}
    
-class GreenOpticalChannel(bpy.types.Operator):
-    bl_idname = 'object.green_optical_channel' #operators must follow the naming convention of object.lowercase_letters
-    bl_label = 'GreenOpticalChannel'
+# class GreenOpticalChannel(bpy.types.Operator):
+#     bl_idname = 'object.green_optical_channel' #operators must follow the naming convention of object.lowercase_letters
+#     bl_label = 'GreenOpticalChannel'
 
-    def execute(self, context):
-        wavelength = 500 #The emission wavelength for the green channel 
+#     def execute(self, context):
+#         wavelength = 500 #The emission wavelength for the green channel 
         
-        #Keeping the property group code here in case it's needed later.  Was not able to access my_item outside this class       
-        #Use the add() functionality to update OpticalChannelGroup values
-        # my_item = bpy.context.scene.my_settings.add()
-        # my_item.optical_channel_name = "Green"
-        # my_item.optical_channel_description = "The Green channel"
-        # my_item.emission_lambda = wavelength
+#         #Keeping the property group code here in case it's needed later.  Was not able to access my_item outside this class       
+#         #Use the add() functionality to update OpticalChannelGroup values
+#         # my_item = bpy.context.scene.my_settings.add()
+#         # my_item.optical_channel_name = "Green"
+#         # my_item.optical_channel_description = "The Green channel"
+#         # my_item.emission_lambda = wavelength
 
-        # print(my_item.optical_channel_name)
-        # print(my_item.optical_channel_description)
-        # print(my_item.emission_lambda)
-        bpy.types.Scene.optical_channel_name = bpy.props.StringProperty \
-        (name = "Green Channel")
-        bpy.types.Scene.optical_channel_description = bpy.props.StringProperty \
-        (name = "Description of Green Channel")
-        bpy.types.Scene.emission_lambda = bpy.props.FloatProperty \
-        (default = wavelength)
+#         # print(my_item.optical_channel_name)
+#         # print(my_item.optical_channel_description)
+#         # print(my_item.emission_lambda)
+#         bpy.types.Scene.optical_channel_name = bpy.props.StringProperty \
+#         (name = "Green Channel")
+#         bpy.types.Scene.optical_channel_description = bpy.props.StringProperty \
+#         (name = "Description of Green Channel")
+#         bpy.types.Scene.emission_lambda = bpy.props.FloatProperty \
+#         (default = wavelength)
 
-        return {'FINISHED'}
+#         return {'FINISHED'}
 
 #MENUS
-class DeviceMenu(bpy.types.Menu):
-    bl_label = "Device Menu"
-    bl_idname = "OBJECT_MT_device_menu"
+# class DeviceMenu(bpy.types.Menu):
+#     bl_label = "Device Menu"
+#     bl_idname = "OBJECT_MT_device_menu"
 
-    def draw(self, context):
-        layout = self.layout
+#     def draw(self, context):
+#         layout = self.layout
 
-        layout.operator("object.two_photon")
-        layout.operator("object.wide_field")
+#         layout.operator("object.two_photon")
+#         layout.operator("object.wide_field")
 
-class OpticalChannelMenu(bpy.types.Menu):
-    bl_label = "Optical Channel Menu"
-    bl_idname = "OBJECT_MT_optical_channel_menu"
+# class OpticalChannelMenu(bpy.types.Menu):
+#     bl_label = "Optical Channel Menu"
+#     bl_idname = "OBJECT_MT_optical_channel_menu"
 
-    def draw(self, context):
-        layout = self.layout
+#     def draw(self, context):
+#         layout = self.layout
 
-        layout.operator("object.red_optical_channel")
-        layout.operator("object.green_optical_channel")
+#         layout.operator("object.red_optical_channel")
+#         layout.operator("object.green_optical_channel")
 
 
 #Keeping this here just in case it's needed later
