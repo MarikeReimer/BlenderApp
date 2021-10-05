@@ -308,35 +308,52 @@ class WriteNWB(bpy.types.Operator):
                 mesh_verts = np.array(mesh_verts)
                 print(mesh_verts)
 
-                mesh_surface = MeshSurface(vertices=mesh_verts,
-                    volume = volume,
-                    faces = faces,
-                    center_of_mass = center_of_mass,
-                    surface_area = surface_area,
-                    name = i.name)
+                # mesh_surface = MeshSurface(vertices=mesh_verts,
+                #     volume = volume,
+                #     faces = faces,
+                #     center_of_mass = center_of_mass,
+                #     surface_area = surface_area,
+                #     name = i.name)
                 
                 #Create unique name
                 segmentation_name = i.name + ' mesh plane_segmentaton'
 
                 #Create plane segmentation from our NWB extension    
-                mesh_plane_segmentation = MeshPlaneSegmentation('output from segmenting a mesh in Blender',
-                                       imaging_plane, mesh_surface, segmentation_name, raw_data)
+                # plane_segmentation = PlaneSegmentation('output from segmenting a mesh in Blender',
+                #                        imaging_plane, mesh_surface, segmentation_name, raw_data)
 
-                image_segmentation.add_plane_segmentation(mesh_plane_segmentation) 
+                plane_segmentation = image_segmentation.create_plane_segmentation(
+                    name = segmentation_name,
+                    description = 'output from segmenting a mesh in Blender',
+                    imaging_plane = imaging_plane,     
+                    reference_images = raw_data
+                )                       
+
 
                 #Add column to mesh plane segmentation to store Length. <to do> This should live in the loop 
-                mesh_plane_segmentation.add_column('length', 'difference between two Verts')
+                #plane_segmentation.add_column('length', 'difference between two Verts')
+                plane_segmentation.add_column('faces', 'faces of mesh', index=True)
+                plane_segmentation.add_column('vertices', 'vertices of mesh', index=True)
+                plane_segmentation.add_column('volume', 'volume')
+
+                plane_segmentation.add_roi(
+                    image_mask=np.ones((4,4)),
+                    faces=faces,
+                    vertices=vertices,
+                    volume=volume,
+                )
+
                 
                 bm.free()      
 
 
 
-        pix_mask1 = [(x1,y1,z1)] 
+        # pix_mask1 = [(x1,y1,z1)] 
 
-        mesh_plane_segmentation.add_roi(pixel_mask = pix_mask1, length = length)
+        # mesh_plane_segmentation.add_roi(pixel_mask = pix_mask1, length = length)
 
-        pix_mask2 = [(x2,y2,z2)] 
-        mesh_plane_segmentation.add_roi(pixel_mask = pix_mask2, length = length)
+        # pix_mask2 = [(x2,y2,z2)] 
+        # mesh_plane_segmentation.add_roi(pixel_mask = pix_mask2, length = length)
 
         #
         os.chdir('C:/Users/Pablo/Downloads') #<to do> How do I handle this for the final version?
