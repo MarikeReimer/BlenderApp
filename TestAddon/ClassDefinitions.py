@@ -1,4 +1,13 @@
 import bpy
+
+
+from bpy.types import Panel, PropertyGroup, Scene, WindowManager
+from bpy.props import (
+    IntProperty,
+    EnumProperty,
+    StringProperty,
+    PointerProperty,
+)
 import bmesh
 import os
 import numpy as np #Delete - only used for testing
@@ -15,7 +24,8 @@ from pynwb.file import Subject
 from pynwb.device import Device
 from datetime import datetime
 from mathutils import Vector
- 
+
+
 #Load NWB extension for meshes
 load_namespaces('MeshClasses.namespace.yaml')
 MeshSurface = get_class('MeshAttributes', 'TanLab')
@@ -53,6 +63,11 @@ class NeuronAnalysis(bpy.types.Panel):
         row = layout.row()
         row.menu(DeviceMenu.bl_idname, text = 'Microscope Selector')
 
+        #New method for dropdowns
+
+        placeholder = context.scene.placeholder
+        row.prop(placeholder, "dropdown_box", text="Dropdown")
+
         #Add OpticalChannel menu:
         row = layout.row()
         row.menu(OpticalChannelMenu.bl_idname, text = 'Channel Selector')
@@ -77,6 +92,19 @@ class NeuronAnalysis(bpy.types.Panel):
         row = layout.row()
         row.operator('object.write_nwb', text = "Write NWB File")
 
+#Add functionality to dropdowns
+
+class PlaceholderProperties(PropertyGroup):
+    dropdown_box: EnumProperty(
+        items=(
+            ("A", "Ahh", "Tooltip for A"),
+            ("B", "Be", "Tooltip for B"),
+            ("C", "Ce", "Tooltip for C"),
+        ),
+        name="Description for the Elements",
+        default="A",
+        description="Tooltip for the Dropdownbox",
+    )
 
 #ROW OPERATORS
 
@@ -146,7 +174,7 @@ class WriteNWB(bpy.types.Operator):
             )  
 
         #Add selected device
-        device_name: bpy.types.Scene.device[1].get('name') #I don't know why the [1] is needed.  Neither did the tutorial: https://ontheothersideofthefirewall.wordpress.com/blender-change-textfield-on-click-of-a-button-dictionaries-and-stringproperty/
+        device_name = bpy.types.Scene.device[1].get('name') #I don't know why the [1] is needed.  Neither did the tutorial: https://ontheothersideofthefirewall.wordpress.com/blender-change-textfield-on-click-of-a-button-dictionaries-and-stringproperty/
         device = nwbfile.create_device(name = device_name)
         
         #Retrieve strings and floats stored in optical channel properties

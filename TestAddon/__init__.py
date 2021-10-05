@@ -1,4 +1,13 @@
 import bpy
+
+from bpy.types import Panel, PropertyGroup, Scene, WindowManager
+from bpy.props import (
+    IntProperty,
+    EnumProperty,
+    StringProperty,
+    PointerProperty,
+)
+
 #Import a function that checks for pynwb and installs it
 from . LibraryChecker import library_checker
 library_checker()
@@ -15,6 +24,9 @@ from . ClassDefinitions import GreenOpticalChannel
 
 from . ClassDefinitions import DeviceMenu
 from . ClassDefinitions import OpticalChannelMenu
+from . ClassDefinitions import PlaceholderProperties 
+
+
 
 # #Import NWB Extension
 
@@ -36,6 +48,10 @@ bl_info = {
 
 #Register classes so that Blender can find them
 def register():
+    #Protype for dropdowns
+    bpy.utils.register_class(PlaceholderProperties)
+    Scene.placeholder = PointerProperty(type=PlaceholderProperties)
+
     #main panel
     bpy.utils.register_class(NeuronAnalysis)
     #operators
@@ -110,6 +126,9 @@ def register():
 
 #Unregister classes so that they don't clash with other addons
 def unregister():
+    #Dropdown prototype
+    bpy.utils.unregister_class(PlaceholderProperties)
+    del Scene.placeholder
     #main panel
     bpy.utils.unregister_class(NeuronAnalysis)
 
