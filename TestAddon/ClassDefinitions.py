@@ -19,18 +19,12 @@ import sys
 packages_path = "C:\\Users\\Pablo\\AppData\\Roaming\\Python\\Python39\\site-packages"
 sys.path.insert(0, packages_path )
 
-from pynwb import NWBFile, NWBHDF5IO, image, load_namespaces, get_class
+from pynwb import NWBFile, NWBHDF5IO, image
 from pynwb.ophys import TwoPhotonSeries, OpticalChannel, ImageSegmentation, ImagingPlane
 from pynwb.file import Subject
 from pynwb.device import Device
 from datetime import datetime
 from mathutils import Vector
-
-
-#Load NWB extension for meshes
-# load_namespaces('MeshClasses.namespace.yaml')
-# MeshSurface = get_class('MeshAttributes', 'TanLab')
-# MeshPlaneSegmentation = get_class('MeshPlaneSegmentation', 'TanLab')
 
 #NeuronAnalysis creates a 3Dview panel and add rows for fields and buttons. 
 #Blender's documentation describes what the strings that start with "bl_" do: https://docs.blender.org/api/blender_python_api_2_70_5/bpy.types.Panel.html#bpy.types.Panel.bl_idname
@@ -44,9 +38,7 @@ class NeuronAnalysis(bpy.types.Panel):
     
     #Create a layout and add fields and buttons to it
     def draw(self, context):
-        layout = self.layout
-        
-
+        layout = self.layout      
         row = self.layout.column(align = True)
         #Add fields for the Subject class strings
         row.prop(context.scene, "subject_id")
@@ -79,7 +71,6 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "grid_spacing")
         row.prop(context.scene, "grid_spacing_unit")
 
-
         #Add button that separates dendrites        
         row = layout.row()
         row.operator('object.exploding_bits', text = 'Separate Dendrites')
@@ -89,7 +80,7 @@ class NeuronAnalysis(bpy.types.Panel):
         row.operator('object.write_nwb', text = "Write NWB File")
 
 #Add functionality to dropdowns
-
+#https://blender.stackexchange.com/questions/170219/python-panel-dropdownlist-and-integer-button
 # class PlaceholderProperties(PropertyGroup):
 #     dropdown_box: EnumProperty(
 #         items=(
@@ -101,7 +92,6 @@ class NeuronAnalysis(bpy.types.Panel):
 #         default="A",
 #         description="Tooltip for the Dropdownbox",
 #     )
-
 
 
 #ROW OPERATORS
@@ -136,9 +126,9 @@ class WriteNWB(bpy.types.Operator):
         species = bpy.context.scene.species
         #Extract NWBfile Strings
         identifier = bpy.context.scene.identifier
-        #session_start_time = datetime(bpy.context.scene.session_start_time.tolist())  #Will need to do int fields to get this working
+        #session_start_time = datetime(bpy.context.scene.session_start_time.tolist())  #Should read this from meta data.
         session_description = bpy.context.scene.session_description
-        #Experimenter????
+        #Experimenter???? shroos forgot this field
 
         #Extract Imaging Plane Strings
         plane_name = bpy.context.scene.plane_name
@@ -149,7 +139,6 @@ class WriteNWB(bpy.types.Operator):
         location = bpy.context.scene.location
         indicator = bpy.context.scene.indicator
         grid_spacing_unit = bpy.context.scene.grid_spacing_unit
-
         
         #Create filename 
         nwbfile_name = identifier + '.nwb'
@@ -179,17 +168,8 @@ class WriteNWB(bpy.types.Operator):
         emission_lambda = bpy.context.scene.emission_lambda
 
         #Add selected device        
-        # device_name = bpy.types.Scene.device[1].get('name') #I don't know why the [1] is needed.  Neither did the tutorial: https://ontheothersideofthefirewall.wordpress.com/blender-change-textfield-on-click-of-a-button-dictionaries-and-stringproperty/
         device = nwbfile.create_device(name = device)
-        
-        #Retrieve strings and floats stored in optical channel properties
-        # optical_channel_name = bpy.types.Scene.optical_channel_name[1].get('name')
-        # optical_channel_description = bpy.types.Scene.optical_channel_description[1].get('name')
-        #emission_lambda = float(bpy.types.Scene.emission_lambda[1].get('default'))
-
-        
-
-
+ 
         #Create optical channel
         optical_channel = OpticalChannel(
             optical_channel_name,
@@ -229,45 +209,10 @@ class WriteNWB(bpy.types.Operator):
         module.add(image_segmentation)   
         
         #This code extracts the coordinates from vertices in scene collection.  
-        #Vertices from single points/ROIs used to calculate length
-        vert_list = [] 
         #Faces from mesh
         faces = []
         #Vertices from mesh
         mesh_verts = []
-
-        #Vert loop
-        for i in bpy.context.scene.objects:
-            if i.type == 'MESH' and len(i.data.vertices) == 1:
-                print(i.name, i.type, 'entering vert loop', datetime.now())
-                # Get the active mesh
-                mesh = i.data
-
-                # Get a BMesh representation
-                #<to do> refactor: define this function outside the loop since I use it more than once
-                bm = bmesh.new()
-                #Fill Bmesh with the mesh data from the object  
-                bm.from_mesh(mesh)
-                for v in bm.verts:
-                    print("vert coordinates", v.co)
-                    vert_list.append(v.co)
-               
-
-        #Extract coordinates of the Verts
-        #The mesh loop breaks the Vert list, so it lives here 
-        point1 = vert_list[0]
-        x1 = point1[0]
-        y1 = point1[1]
-        z1 = point1[2]
-
-        point2 = vert_list[1]
-        x2 = point2[0]
-        y2 = point2[1]
-        z2 = point2[2]
-
-        length = (point1 - point2).length
-        print('length', length)
-
 
         #Mesh loop
         for i in bpy.context.scene.objects:
@@ -307,21 +252,11 @@ class WriteNWB(bpy.types.Operator):
                 
                 mesh_verts = np.array(mesh_verts)
                 print(mesh_verts)
-
-                # mesh_surface = MeshSurface(vertices=mesh_verts,
-                #     volume = volume,
-                #     faces = faces,
-                #     center_of_mass = center_of_mass,
-                #     surface_area = surface_area,
-                #     name = i.name)
-                
+             
                 #Create unique name
                 segmentation_name = i.name + ' mesh plane_segmentaton'
 
                 #Create plane segmentation from our NWB extension    
-                # plane_segmentation = PlaneSegmentation('output from segmenting a mesh in Blender',
-                #                        imaging_plane, mesh_surface, segmentation_name, raw_data)
-
                 plane_segmentation = image_segmentation.create_plane_segmentation(
                     name = segmentation_name,
                     description = 'output from segmenting a mesh in Blender',
@@ -347,112 +282,9 @@ class WriteNWB(bpy.types.Operator):
                 bm.free()      
 
 
-
-        # pix_mask1 = [(x1,y1,z1)] 
-
-        # mesh_plane_segmentation.add_roi(pixel_mask = pix_mask1, length = length)
-
-        # pix_mask2 = [(x2,y2,z2)] 
-        # mesh_plane_segmentation.add_roi(pixel_mask = pix_mask2, length = length)
-
-        #
         os.chdir('C:/Users/Pablo/Downloads') #<to do> How do I handle this for the final version?
         #Write the NWB file
         with NWBHDF5IO(nwbfile_name, 'w') as io:
             io.write(nwbfile)
 
         return {'FINISHED'}
-
-#Row operator for selecting widefield as the device used
-#Because of Blender reserves the 'return' function, the way to access strings outside of classes is to store them as String Properties attached to the Scene.  
-# class WideField(bpy.types.Operator):
-#     bl_idname = 'object.wide_field' #operators must follow the naming convention of object.lowercase_letters
-#     bl_label = 'Wide_field'
-#     def execute(self, context):
-#         bpy.types.Scene.device = bpy.types.Scene.wide_field
-#         return {'FINISHED'}
-    
-
-#Row operator for selecting 2P as the device used
-# class TwoPhoton(bpy.types.Operator):
-#     bl_idname = 'object.two_photon' #operators must follow the naming convention of object.lowercase_letters
-#     bl_label = 'TwoPhoton'
-#     def execute(self, context):
-#         bpy.types.Scene.device = bpy.types.Scene.two_photon
-#         return {'FINISHED'}
-
-
-# class RedOpticalChannel(bpy.types.Operator):
-#     bl_idname = 'object.red_optical_channel' #operators must follow the naming convention of object.lowercase_letters
-#     bl_label = 'RedOpticalChannel'
-
-#     def execute(self, context):
-#         wavelength = 300.1 #The emission wavelength for the red channel      
-
-#         bpy.types.Scene.optical_channel_name = bpy.props.StringProperty \
-#         (name = "Red Channel")
-#         bpy.types.Scene.optical_channel_description = bpy.props.StringProperty \
-#         (name = "Description of Red Channel")
-#         bpy.types.Scene.emission_lambda = bpy.props.FloatProperty \
-#         (default = wavelength)
-
-#         return {'FINISHED'}
-   
-# class GreenOpticalChannel(bpy.types.Operator):
-#     bl_idname = 'object.green_optical_channel' #operators must follow the naming convention of object.lowercase_letters
-#     bl_label = 'GreenOpticalChannel'
-
-#     def execute(self, context):
-#         wavelength = 500 #The emission wavelength for the green channel 
-        
-#         #Keeping the property group code here in case it's needed later.  Was not able to access my_item outside this class       
-#         #Use the add() functionality to update OpticalChannelGroup values
-#         # my_item = bpy.context.scene.my_settings.add()
-#         # my_item.optical_channel_name = "Green"
-#         # my_item.optical_channel_description = "The Green channel"
-#         # my_item.emission_lambda = wavelength
-
-#         # print(my_item.optical_channel_name)
-#         # print(my_item.optical_channel_description)
-#         # print(my_item.emission_lambda)
-#         bpy.types.Scene.optical_channel_name = bpy.props.StringProperty \
-#         (name = "Green Channel")
-#         bpy.types.Scene.optical_channel_description = bpy.props.StringProperty \
-#         (name = "Description of Green Channel")
-#         bpy.types.Scene.emission_lambda = bpy.props.FloatProperty \
-#         (default = wavelength)
-
-#         return {'FINISHED'}
-
-#MENUS
-# class DeviceMenu(bpy.types.Menu):
-#     bl_label = "Device Menu"
-#     bl_idname = "OBJECT_MT_device_menu"
-
-#     def draw(self, context):
-#         layout = self.layout
-
-#         layout.operator("object.two_photon")
-#         layout.operator("object.wide_field")
-
-# class OpticalChannelMenu(bpy.types.Menu):
-#     bl_label = "Optical Channel Menu"
-#     bl_idname = "OBJECT_MT_optical_channel_menu"
-
-#     def draw(self, context):
-#         layout = self.layout
-
-#         layout.operator("object.red_optical_channel")
-#         layout.operator("object.green_optical_channel")
-
-
-#Keeping this here just in case it's needed later
-# class OpticalChannelGroup(bpy.types.PropertyGroup):
-#     #Property groups use an annotation ':' instead of an '='
-#     optical_channel_name : bpy.props.StringProperty()
-#     optical_channel_description : bpy.props.StringProperty()
-#     emission_lambda : bpy.props.FloatProperty()
-
-# bpy.utils.register_class(OpticalChannelGroup)
-# #Associate the OpticalChannelGroup fields with the Scene in an object called 'my_settings"
-# bpy.types.Scene.my_settings = bpy.props.CollectionProperty(type = OpticalChannelGroup)

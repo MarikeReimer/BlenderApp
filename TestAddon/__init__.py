@@ -9,32 +9,11 @@ import bpy
 #     PointerProperty,
 # )
 
-#Import a function that checks for pynwb and installs it
-# from . LibraryChecker import library_checker
-# library_checker()
-
 #Import class definitions
 from . ClassDefinitions import NeuronAnalysis
 
 from . ClassDefinitions import ExplodingBits
 from . ClassDefinitions import WriteNWB
-# from . ClassDefinitions import WideField
-# from . ClassDefinitions import TwoPhoton
-# from . ClassDefinitions import RedOpticalChannel
-# from . ClassDefinitions import GreenOpticalChannel
-
-# from . ClassDefinitions import DeviceMenu
-# from . ClassDefinitions import OpticalChannelMenu
-# from . ClassDefinitions import PlaceholderProperties 
-
-
-
-# #Import NWB Extension
-
-
-# load_namespaces('MeshClasses.namespace.yaml')
-# MeshSurface = get_class('MeshAttributes', 'TanLab')
-# MeshPlaneSegmentation = get_class('MeshPlaneSegmentation', 'TanLab')
 
 #Information about the Addon created by the Blender Development VSCode Extension
 bl_info = {
@@ -49,37 +28,12 @@ bl_info = {
 
 #Register classes so that Blender can find them
 def register():
-    # #Protype for dropdowns
-    # bpy.utils.register_class(PlaceholderProperties)
-    # Scene.placeholder = PointerProperty(type=PlaceholderProperties)
-
     #main panel
     bpy.utils.register_class(NeuronAnalysis)
     #operators
     bpy.utils.register_class(ExplodingBits)
     bpy.utils.register_class(WriteNWB)
-    # bpy.utils.register_class(WideField)
-    # bpy.utils.register_class(TwoPhoton)
-    # bpy.utils.register_class(RedOpticalChannel)
-    # bpy.utils.register_class(GreenOpticalChannel)
-    #This is where registration *should* happen for OpticalChannelGroup, but it doesn't work, so this is currently done in ClassDefinitions
-    # bpy.utils.register_class(OpticalChannelGroup)
-    # #Associate the OpticalChannelGroup fields with the Scene in an object called 'my_settings"
-    # bpy.types.Scene.my_settings = bpy.props.CollectionProperty(type = OpticalChannelGroup)
-
-    
-    #menus
-    # bpy.utils.register_class(DeviceMenu)
-    # bpy.utils.register_class(OpticalChannelMenu)
-
-    #These strings are used to store values selected from the menus
-    # bpy.types.Scene.device = bpy.props.StringProperty \
-    #   (name = "Device")
-    # bpy.types.Scene.wide_field = bpy.props.StringProperty \
-    #   (name = "Wide Field")
-    # bpy.types.Scene.two_photon = bpy.props.StringProperty \
-    #   (name = "Two Photon")
-
+        
     #Subject Table fields
     bpy.types.Scene.subject_id = bpy.props.StringProperty \
       (name = "Subject ID", default = "Anm_")
@@ -133,26 +87,12 @@ def register():
 
 #Unregister classes so that they don't clash with other addons
 def unregister():
-    #Dropdown prototype
-    # bpy.utils.unregister_class(PlaceholderProperties)
-    # del Scene.placeholder
     #main panel
     bpy.utils.unregister_class(NeuronAnalysis)
 
     #operators
     bpy.utils.unregister_class(ExplodingBits)
     bpy.utils.unregister_class(WriteNWB)
-
-    # #menus
-    # bpy.utils.unregister_class(DeviceMenu)
-    # bpy.utils.unregister_class(OpticalChannelMenu)
-
-    # #Menu options placeholders
-    # bpy.types.Scene.device 
-    
-    # #Menu options
-    # bpy.types.Scene.wide_field
-    # bpy.types.Scene.two_photon 
 
     #Subject fields
     bpy.types.Scene.subject_id
