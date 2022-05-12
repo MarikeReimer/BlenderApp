@@ -1,14 +1,4 @@
 import bpy
-
-#Used for importing dropdown menu parts
-# from bpy.types import Panel, PropertyGroup, Scene, WindowManager
-# from bpy.props import (
-#     IntProperty,
-#     EnumProperty,
-#     StringProperty,
-#     PointerProperty,
-# )
-
 import bmesh
 import os
 import numpy as np #Delete - only used for testing
@@ -16,7 +6,9 @@ from datetime import datetime
 
 #The new way of adding python libraries
 import sys
-packages_path = "C:\\Users\\Pablo\\AppData\\Roaming\\Python\\Python39\\site-packages"
+#Replace this path
+#packages_path = "C:\\Users\\meowm\\AppData\\Roaming\\Python\\Python39\\site-packages"
+packages_path = "C:\\Users\\meowm\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages"
 sys.path.insert(0, packages_path )
 
 from pynwb import NWBFile, NWBHDF5IO, image
@@ -282,7 +274,7 @@ class WriteNWB(bpy.types.Operator):
                 bm.free()      
 
 
-        os.chdir('C:/Users/Pablo/Downloads') #<to do> How do I handle this for the final version?
+        os.chdir('C:/Users/meowm/Downloads') #<to do> How do I handle this for the final version?
         #Write the NWB file
         with NWBHDF5IO(nwbfile_name, 'w') as io:
             io.write(nwbfile)
