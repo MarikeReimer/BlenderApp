@@ -189,16 +189,7 @@ class WriteNWB(bpy.types.Operator):
             starting_frame = [1])
 
         nwbfile.add_acquisition(raw_data)
-
-        #Create processing module
-        module = nwbfile.create_processing_module('Blender Data', 'contains processed neuromorphology data from Blender')
-        
-        #Create image segmentation
-        image_segmentation = ImageSegmentation()
-
-        #Add the image segmentation to the module
-        module.add(image_segmentation)   
-        
+              
         #This code extracts the coordinates from vertices in scene collection.  
         #Faces from mesh
         faces = []
@@ -206,74 +197,83 @@ class WriteNWB(bpy.types.Operator):
         mesh_verts = []
 
         #Mesh loop
-        for i in bpy.context.scene.objects:
-            if i.type == 'MESH' and len(i.data.vertices) > 1:
-                print(i.name, i.type, 'entering volume loop')
-                
-                #CENTER OF MASS
-                center_of_mass = i.matrix_world.translation
-
-                #Extract XYZ coordinates 
-                center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
+        for collection in bpy.data.collections:
+            #Create processing module
+            module = nwbfile.create_processing_module(collection.name, 'contains processed neuromorphology data from Blender')
+            #Create image segmentation
+            image_segmentation = ImageSegmentation()
+            #Add the image segmentation to the module
+            module.add(image_segmentation)
             
-                #Get mesh data from the active object in the Scene Collection
-                mesh = i.data
+            for i in collection.all_objects:
+            #for i in bpy.context.scene.objects:
+                if i.type == 'MESH' and len(i.data.vertices) > 1:
+                    print(i.name, i.type, 'entering volume loop')
+                    
+                    #CENTER OF MASS
+                    center_of_mass = i.matrix_world.translation
 
-                #Create an empty BMesh
-                bm = bmesh.new()
-                #Fill Bmesh with the mesh data from the object  
-                bm.from_mesh(mesh)
-
-                volume = bm.calc_volume(signed=False)
-
-
-                #SURFACE AREA
-                surface_area = sum(i.calc_area() for i in bm.faces)
+                    #Extract XYZ coordinates 
+                    center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
                 
-                #Add variables to mesh_surface NWB extension
+                    #Get mesh data from the active object in the Scene Collection
+                    mesh = i.data
 
-                for v in bm.verts:
-                    mesh_verts.append(v.co)
-               
-                for face in mesh.polygons:
-                    vertices = face.vertices
-                    face_vert_list = [vertices[0], vertices[1], vertices[2]]
-                    faces.append(face_vert_list)
+                    #Create an empty BMesh
+                    bm = bmesh.new()
+                    #Fill Bmesh with the mesh data from the object  
+                    bm.from_mesh(mesh)
 
+                    volume = bm.calc_volume(signed=False)
+
+
+                    #SURFACE AREA
+                    surface_area = sum(i.calc_area() for i in bm.faces)
+                    
+                    #Add variables to mesh_surface NWB extension
+
+                    for v in bm.verts:
+                        mesh_verts.append(v.co)
                 
-                mesh_verts = np.array(mesh_verts)
-                print(mesh_verts)
-             
-                #Create unique name
-                segmentation_name = i.name + ' mesh plane_segmentaton'
+                    for face in mesh.polygons:
+                        vertices = face.vertices
+                        face_vert_list = [vertices[0], vertices[1], vertices[2]]
+                        faces.append(face_vert_list)
 
-                #Create plane segmentation from our NWB extension    
-                plane_segmentation = image_segmentation.create_plane_segmentation(
-                    name = segmentation_name,
-                    description = 'output from segmenting a mesh in Blender',
-                    imaging_plane = imaging_plane,     
-                    reference_images = raw_data
-                )                       
-
-
-                #Add column to mesh plane segmentation to store Length. <to do> This should live in the loop 
-                #plane_segmentation.add_column('length', 'difference between two Verts')
-                plane_segmentation.add_column('faces', 'faces of mesh', index=True)
-                plane_segmentation.add_column('vertices', 'vertices of mesh', index=True)
-                plane_segmentation.add_column('volume', 'volume')
-
-                plane_segmentation.add_roi(
-                    image_mask=np.ones((4,4)),
-                    faces=faces,
-                    vertices=vertices,
-                    volume=volume,
-                )
-
+                    
+                    mesh_verts = np.array(mesh_verts)
+                    print(mesh_verts)
                 
-                bm.free()
-                #Clear lists for next loop
-                faces = []
-                mesh_verts = []      
+                    #Create unique name
+                    segmentation_name = i.name + ' mesh plane_segmentaton'
+
+                    #Create plane segmentation from our NWB extension    
+                    plane_segmentation = image_segmentation.create_plane_segmentation(
+                        name = segmentation_name,
+                        description = 'output from segmenting a mesh in Blender',
+                        imaging_plane = imaging_plane,     
+                        reference_images = raw_data
+                    )                       
+
+
+                    #Add column to mesh plane segmentation to store Length. <to do> This should live in the loop 
+                    #plane_segmentation.add_column('length', 'difference between two Verts')
+                    plane_segmentation.add_column('faces', 'faces of mesh', index=True)
+                    plane_segmentation.add_column('vertices', 'vertices of mesh', index=True)
+                    plane_segmentation.add_column('volume', 'volume')
+
+                    plane_segmentation.add_roi(
+                        image_mask=np.ones((4,4)),
+                        faces=faces,
+                        vertices=vertices,
+                        volume=volume,
+                    )
+
+                    
+                    bm.free()
+                    #Clear lists for next loop
+                    faces = []
+                    mesh_verts = []      
 
 
         os.chdir('C:/Users/meowm/Downloads') #<to do> How do I handle this for the final version?
