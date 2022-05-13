@@ -205,7 +205,7 @@ class WriteNWB(bpy.types.Operator):
             #Add the image segmentation to the module
             module.add(image_segmentation)
             
-            for i in collection.all_objects:
+            for i in collection.objects:
             #for i in bpy.context.scene.objects:
                 if i.type == 'MESH' and len(i.data.vertices) > 1:
                     print(i.name, i.type, 'entering volume loop')
@@ -263,7 +263,7 @@ class WriteNWB(bpy.types.Operator):
                     plane_segmentation.add_column('volume', 'volume')
 
                     plane_segmentation.add_roi(
-                        image_mask=np.ones((4,4)),
+                        image_mask=np.ones((4,4)), #What's the point of this line?
                         faces=faces,
                         vertices=vertices,
                         volume=volume,
