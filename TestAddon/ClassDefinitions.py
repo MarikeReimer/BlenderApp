@@ -6,8 +6,7 @@ from datetime import datetime
 
 #The new way of adding python libraries
 import sys
-#Replace this path
-#packages_path = "C:\\Users\\meowm\\AppData\\Roaming\\Python\\Python39\\site-packages"
+#Replace this path when setting up 
 packages_path = "C:\\Users\\meowm\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages"
 sys.path.insert(0, packages_path )
 
@@ -271,7 +270,10 @@ class WriteNWB(bpy.types.Operator):
                 )
 
                 
-                bm.free()      
+                bm.free()
+                #Clear lists for next loop
+                faces = []
+                mesh_verts = []      
 
 
         os.chdir('C:/Users/meowm/Downloads') #<to do> How do I handle this for the final version?
