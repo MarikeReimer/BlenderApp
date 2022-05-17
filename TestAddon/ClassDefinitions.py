@@ -94,11 +94,10 @@ class ExplodingBits(bpy.types.Operator):
     
     def execute(self, context):
         #Select active object
-        object = bpy.context.active_object
+        #object = bpy.context.active_object
         #Split it into pieces
         bpy.ops.mesh.separate(type='LOOSE')
-        return {'FINISHED'} #Todo - explain why this is needed
-
+        return {'FINISHED'} 
 
 #Row operator for writing  data toNWB file
 class WriteNWB(bpy.types.Operator):
