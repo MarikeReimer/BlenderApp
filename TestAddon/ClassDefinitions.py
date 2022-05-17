@@ -105,10 +105,18 @@ class SpinesToCollections(bpy.types.Operator):
     bl_label = 'Spines to folders'
     
     def execute(self, context):
-        print('ping')
         #Select active objects
-        #Unlink them from their current collection
-        #Create a new collection
+        selected_objects = bpy.context.selected_objects
+        #Remove them from their current collection
+        bpy.ops.collection.objects_remove_all()
+        # Loop through all spines, put them in collections 
+        for spine in selected_objects:
+            #Name the collection after the spine
+            collection_name = spine.name
+            #Create Collection
+            collection = bpy.data.collections.new(collection_name)
+            #bpy.context.scene.collection.children.link(collection)
+            collection.objects.link(spine)
         #Link them to the collection
         return {'FINISHED'} 
 
