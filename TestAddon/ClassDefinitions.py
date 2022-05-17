@@ -62,10 +62,13 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "grid_spacing")
         row.prop(context.scene, "grid_spacing_unit")
 
-        #Add button that separates dendrites        
+        #Add button that separates spines        
         row = layout.row()
-        row.operator('object.exploding_bits', text = 'Separate Dendrites')
+        row.operator('object.exploding_bits', text = 'Separate Spines')
 
+        #Add button that moves selections to new collections
+        row = layout.row()
+        row.operator('object.spines_to_collections', text = 'Move to Collections')
         #Add button that writes data from panel and object values to an NWB file
         row = layout.row()
         row.operator('object.write_nwb', text = "Write NWB File")
@@ -93,10 +96,20 @@ class ExplodingBits(bpy.types.Operator):
     bl_label = 'Exploding Bits'
     
     def execute(self, context):
-        #Select active object
-        #object = bpy.context.active_object
-        #Split it into pieces
+        #Split selected object into pieces
         bpy.ops.mesh.separate(type='LOOSE')
+        return {'FINISHED'} 
+
+class SpinesToCollections(bpy.types.Operator):
+    bl_idname = 'object.spines_to_collections' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'Spines to folders'
+    
+    def execute(self, context):
+        print('ping')
+        #Select active objects
+        #Unlink them from their current collection
+        #Create a new collection
+        #Link them to the collection
         return {'FINISHED'} 
 
 #Row operator for writing  data toNWB file

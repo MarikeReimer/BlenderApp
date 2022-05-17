@@ -14,6 +14,7 @@ from . ClassDefinitions import NeuronAnalysis
 
 from . ClassDefinitions import ExplodingBits
 from . ClassDefinitions import WriteNWB
+from . ClassDefinitions import SpinesToCollections
 
 #Information about the Addon created by the Blender Development VSCode Extension
 bl_info = {
@@ -32,6 +33,7 @@ def register():
     bpy.utils.register_class(NeuronAnalysis)
     #operators
     bpy.utils.register_class(ExplodingBits)
+    bpy.utils.register_class(SpinesToCollections)
     bpy.utils.register_class(WriteNWB)
         
     #Subject Table fields
@@ -92,6 +94,7 @@ def unregister():
 
     #operators
     bpy.utils.unregister_class(ExplodingBits)
+    bpy.utils.unregister_class(SpinesToCollections)
     bpy.utils.unregister_class(WriteNWB)
 
     #Subject fields
