@@ -321,6 +321,7 @@ class WriteNWB(bpy.types.Operator):
                     plane_segmentation.add_column('faces', 'faces of mesh', index=True)
                     plane_segmentation.add_column('vertices', 'vertices of mesh', index=True)
                     plane_segmentation.add_column('volume', 'volume')
+                    plane_segmentation.add_column('surface_area', 'surface area')
                     plane_segmentation.add_column('dimension_1', 'dimension of mesh')
                     plane_segmentation.add_column('dimension_2', 'dimension of mesh')
                     plane_segmentation.add_column('dimension_3', 'dimension of mesh')
@@ -330,6 +331,7 @@ class WriteNWB(bpy.types.Operator):
                         faces=faces,
                         vertices=vertices,
                         volume=volume,
+                        surface_area = surface_area,
                         dimension_1 = dimension_1,
                         dimension_2 = dimension_2,
                         dimension_3 = dimension_3
