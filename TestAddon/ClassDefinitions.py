@@ -138,7 +138,8 @@ class BoundingBoxes(bpy.types.Operator):
             #create a cube for the bounding box
             bpy.ops.mesh.primitive_cube_add() 
             #our new cube is now the active object, so we can keep track of it in a variable:
-            bound_box = bpy.context.active_object 
+            bound_box = bpy.context.active_object
+            bpy.context.active_object.name = 'Bounding Box' 
 
             #copy transforms
             bound_box.dimensions = obj.dimensions
@@ -147,8 +148,6 @@ class BoundingBoxes(bpy.types.Operator):
 
             #Link to directory of the selected object and put the cube in it
             collection = obj.users_collection[0]
-            print('ping')
-            print(collection)
             #bpy.context.scene.collection.children.link(collection)
             collection.objects.link(bound_box)
             #Rename cube
