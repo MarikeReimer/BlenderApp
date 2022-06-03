@@ -261,7 +261,7 @@ class WriteNWB(bpy.types.Operator):
             
             for i in collection.objects:
             #for i in bpy.context.scene.objects:
-                if i.type == 'MESH' and len(i.data.vertices) > 1:
+                if i.type == 'MESH' and len(i.data.vertices) > 1 and  i.name.startswith('Bounding Box') == False:
                     print(i.name, i.type, 'entering volume loop')
                     
                     #CENTER OF MASS
@@ -297,7 +297,13 @@ class WriteNWB(bpy.types.Operator):
                     
                     mesh_verts = np.array(mesh_verts)
                     print(mesh_verts)
+
+                    #Dimensions                    
+                    dimension_1 = i.dimensions[0]
+                    dimension_2 = i.dimensions[1]
+                    dimension_3 = i.dimensions[2]
                 
+                    #Pass variables to NWB File
                     #Create unique name
                     segmentation_name = i.name + ' mesh plane_segmentaton'
 
@@ -315,19 +321,25 @@ class WriteNWB(bpy.types.Operator):
                     plane_segmentation.add_column('faces', 'faces of mesh', index=True)
                     plane_segmentation.add_column('vertices', 'vertices of mesh', index=True)
                     plane_segmentation.add_column('volume', 'volume')
+                    plane_segmentation.add_column('dimension_1', 'dimension of mesh')
+                    plane_segmentation.add_column('dimension_2', 'dimension of mesh')
+                    plane_segmentation.add_column('dimension_3', 'dimension of mesh')
 
                     plane_segmentation.add_roi(
                         image_mask=np.ones((4,4)), #What's the point of this line?
                         faces=faces,
                         vertices=vertices,
                         volume=volume,
+                        dimension_1 = dimension_1,
+                        dimension_2 = dimension_2,
+                        dimension_3 = dimension_3
                     )
-
-                    
+                                      
                     bm.free()
                     #Clear lists for next loop
                     faces = []
-                    mesh_verts = []      
+                    mesh_verts = []
+    
 
 
         os.chdir('C:/Users/meowm/Downloads') #<to do> How do I handle this for the final version?
