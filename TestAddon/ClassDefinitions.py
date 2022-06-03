@@ -69,6 +69,11 @@ class NeuronAnalysis(bpy.types.Panel):
         #Add button that moves selections to new collections
         row = layout.row()
         row.operator('object.spines_to_collections', text = 'Move to Collections')
+
+        #Add button that writes data from panel and object values to an NWB file
+        row = layout.row()
+        row.operator('object.bounding_boxes', text = "Create Bounding Boxes")
+
         #Add button that writes data from panel and object values to an NWB file
         row = layout.row()
         row.operator('object.write_nwb', text = "Write NWB File")
@@ -113,12 +118,42 @@ class SpinesToCollections(bpy.types.Operator):
         for spine in selected_objects:
             #Name the collection after the spine
             collection_name = spine.name
-            #Create Collection
+            #Create Collections and link spines to them
             collection = bpy.data.collections.new(collection_name)
-            #bpy.context.scene.collection.children.link(collection)
+            bpy.context.scene.collection.children.link(collection)
             collection.objects.link(spine)
-        #Link them to the collection
         return {'FINISHED'} 
+
+class BoundingBoxes(bpy.types.Operator):
+    bl_idname = 'object.bounding_boxes' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'Bounding Boxes'
+    
+    def execute(self, context):
+        #Select objects
+        selected = bpy.context.selected_objects
+
+        for obj in selected:
+            #ensure origin is centered on bounding box center
+            bpy.ops.object.origin_set(type='ORIGIN_GEOMETRY', center='BOUNDS')
+            #create a cube for the bounding box
+            bpy.ops.mesh.primitive_cube_add() 
+            #our new cube is now the active object, so we can keep track of it in a variable:
+            bound_box = bpy.context.active_object 
+
+            #copy transforms
+            bound_box.dimensions = obj.dimensions
+            bound_box.location = obj.location
+            bound_box.rotation_euler = obj.rotation_euler
+
+            #Link to directory of the selected object and put the cube in it
+            collection = obj.users_collection[0]
+            print('ping')
+            print(collection)
+            #bpy.context.scene.collection.children.link(collection)
+            collection.objects.link(bound_box)
+            #Rename cube
+
+        return {'FINISHED'}
 
 #Row operator for writing  data toNWB file
 class WriteNWB(bpy.types.Operator):
