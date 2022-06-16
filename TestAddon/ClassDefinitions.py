@@ -62,32 +62,25 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "grid_spacing")
         row.prop(context.scene, "grid_spacing_unit")
 
-        #Add button that separates dendrites        
+        #Add button that separates meshes        
         row = layout.row()
         row.operator('object.exploding_bits', text = 'Separate Meshes')
+
+        #Add button that moves spines to folders
+        row = layout.row()
+        row.operator('object.spines_to_collections', text = 'Add Bounding Box')
 
         #Add button that creates bounding boxes around meshes
         row = layout.row()
         row.operator('object.bounding_boxes', text = 'Add Bounding Box')
 
+        #Add button that adds a length vector to a mesh
+        row = layout.row()
+        row.operator('object.length_vector', text = 'Draw Length Vector')
+
         #Add button that writes data from panel and object values to an NWB file
         row = layout.row()
         row.operator('object.write_nwb', text = "Write NWB File")
-
-#Add functionality to dropdowns
-#https://blender.stackexchange.com/questions/170219/python-panel-dropdownlist-and-integer-button
-# class PlaceholderProperties(PropertyGroup):
-#     dropdown_box: EnumProperty(
-#         items=(
-#             ("A", "Ahh", "Tooltip for A"),
-#             ("B", "Be", "Tooltip for B"),
-#             ("C", "Ce", "Tooltip for C"),
-#         ),
-#         name="Description for the Elements",
-#         default="A",
-#         description="Tooltip for the Dropdownbox",
-#     )
-
 
 #ROW OPERATORS
 
@@ -105,7 +98,7 @@ class ExplodingBits(bpy.types.Operator):
 
 class SpinesToCollections(bpy.types.Operator):
     bl_idname = 'object.spines_to_collections' #operators must follow the naming convention of object.lowercase_letters
-    bl_label = 'Spines to folders'
+    bl_label = 'Spines To Collections'
     
     def execute(self, context):
         #Select active objects
@@ -172,14 +165,14 @@ class LengthVector(bpy.types.Operator):
             # If you just want the first one you can break directly here
             # break
 
-        bpy.ops.object.mode_set(mode=mode)
+        #bpy.ops.object.mode_set(mode=mode)
             # Go back to the previous mode
             #create a vector between the vertex and the selected mesh's center of mass
             #Raycast using the vector with the mesh's center of mass as its origin
             #Create second vector using the selected vertex and the "hit" from the Raycast
             #Delete the first vector
             #Else print "Please select a vertex"
-
+        return {'FINISHED'}
 
 
 
