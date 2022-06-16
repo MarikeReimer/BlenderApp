@@ -16,6 +16,7 @@ from . ClassDefinitions import ExplodingBits
 from . ClassDefinitions import WriteNWB
 from . ClassDefinitions import SpinesToCollections
 from . ClassDefinitions import BoundingBoxes
+from . ClassDefinitions import LengthVector
 
 #Information about the Addon created by the Blender Development VSCode Extension
 bl_info = {
@@ -36,6 +37,7 @@ def register():
     bpy.utils.register_class(ExplodingBits)
     bpy.utils.register_class(SpinesToCollections)
     bpy.utils.register_class(BoundingBoxes)
+    bpy.utils.register_class(LengthVector)
     bpy.utils.register_class(WriteNWB)
         
     #Subject Table fields
@@ -98,6 +100,7 @@ def unregister():
     bpy.utils.unregister_class(ExplodingBits)
     bpy.utils.unregister_class(SpinesToCollections)
     bpy.utils.unregister_class(BoundingBoxes)
+    bpy.utils.unregister_class(LengthVector)
     bpy.utils.unregister_class(WriteNWB)
 
     #Subject fields

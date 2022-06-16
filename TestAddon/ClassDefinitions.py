@@ -1,7 +1,7 @@
 import bpy
 import bmesh
 import os
-import numpy as np #Delete - only used for testing
+import numpy as np 
 from datetime import datetime
 
 #The new way of adding python libraries
@@ -62,17 +62,13 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "grid_spacing")
         row.prop(context.scene, "grid_spacing_unit")
 
-        #Add button that separates spines        
+        #Add button that separates dendrites        
         row = layout.row()
-        row.operator('object.exploding_bits', text = 'Separate Spines')
+        row.operator('object.exploding_bits', text = 'Separate Meshes')
 
-        #Add button that moves selections to new collections
+        #Add button that creates bounding boxes around meshes
         row = layout.row()
-        row.operator('object.spines_to_collections', text = 'Move to Collections')
-
-        #Add button that writes data from panel and object values to an NWB file
-        row = layout.row()
-        row.operator('object.bounding_boxes', text = "Create Bounding Boxes")
+        row.operator('object.bounding_boxes', text = 'Add Bounding Box')
 
         #Add button that writes data from panel and object values to an NWB file
         row = layout.row()
@@ -101,9 +97,11 @@ class ExplodingBits(bpy.types.Operator):
     bl_label = 'Exploding Bits'
     
     def execute(self, context):
-        #Split selected object into pieces
+        #Select active object
+        object = bpy.context.active_object
+        #Split it into pieces
         bpy.ops.mesh.separate(type='LOOSE')
-        return {'FINISHED'} 
+        return {'FINISHED'}
 
 class SpinesToCollections(bpy.types.Operator):
     bl_idname = 'object.spines_to_collections' #operators must follow the naming convention of object.lowercase_letters
@@ -138,21 +136,53 @@ class BoundingBoxes(bpy.types.Operator):
             #create a cube for the bounding box
             bpy.ops.mesh.primitive_cube_add() 
             #our new cube is now the active object, so we can keep track of it in a variable:
-            bound_box = bpy.context.active_object
-            bpy.context.active_object.name = 'Bounding Box' 
+            bound_box = bpy.context.active_object 
 
             #copy transforms
             bound_box.dimensions = obj.dimensions
             bound_box.location = obj.location
             bound_box.rotation_euler = obj.rotation_euler
 
-            #Link to directory of the selected object and put the cube in it
-            collection = obj.users_collection[0]
-            #bpy.context.scene.collection.children.link(collection)
-            collection.objects.link(bound_box)
-            #Rename cube
-
         return {'FINISHED'}
+
+class LengthVector(bpy.types.Operator):
+    bl_idname = 'object.length_vector' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'Length Vector'
+
+    def execute(self, context):
+        #Select objects
+        mode = bpy.context.active_object.mode
+        # Keep track of previous mode
+        bpy.ops.object.mode_set(mode='OBJECT')
+        # Go into object mode to update the selected vertices
+
+        obj = bpy.context.object
+        # Get the currently select object
+
+        sel = np.zeros(len(obj.data.vertices), dtype=np.bool)
+        # Create a numpy array with empty values for each vertex
+
+        obj.data.vertices.foreach_get('select', sel)
+        # Populate the array with True/False if the vertex is selected
+
+        for i in np.where(sel==True)[0]:
+            # Loop over each currently selected vertex
+            v = obj.data.vertices[i]
+            print('Vertex {} at position {} is selected'.format(v.index, v.co))
+            # If you just want the first one you can break directly here
+            # break
+
+        bpy.ops.object.mode_set(mode=mode)
+            # Go back to the previous mode
+            #create a vector between the vertex and the selected mesh's center of mass
+            #Raycast using the vector with the mesh's center of mass as its origin
+            #Create second vector using the selected vertex and the "hit" from the Raycast
+            #Delete the first vector
+            #Else print "Please select a vertex"
+
+
+
+
 
 #Row operator for writing  data toNWB file
 class WriteNWB(bpy.types.Operator):
@@ -250,7 +280,8 @@ class WriteNWB(bpy.types.Operator):
         #Vertices from mesh
         mesh_verts = []
 
-        #Mesh loop
+        #This loop iterates through all collections and extracts data about the meshes.
+        #Todo: It should only create an image segmentation if it is the highest level of collection
         for collection in bpy.data.collections:
             #Create processing module
             module = nwbfile.create_processing_module(collection.name, 'contains processed neuromorphology data from Blender')
@@ -261,7 +292,7 @@ class WriteNWB(bpy.types.Operator):
             
             for i in collection.objects:
             #for i in bpy.context.scene.objects:
-                if i.type == 'MESH' and len(i.data.vertices) > 1 and  i.name.startswith('Bounding Box') == False:
+                if i.type == 'MESH' and len(i.data.vertices) > 1:
                     print(i.name, i.type, 'entering volume loop')
                     
                     #CENTER OF MASS
@@ -297,13 +328,7 @@ class WriteNWB(bpy.types.Operator):
                     
                     mesh_verts = np.array(mesh_verts)
                     print(mesh_verts)
-
-                    #Dimensions                    
-                    dimension_1 = i.dimensions[0]
-                    dimension_2 = i.dimensions[1]
-                    dimension_3 = i.dimensions[2]
                 
-                    #Pass variables to NWB File
                     #Create unique name
                     segmentation_name = i.name + ' mesh plane_segmentaton'
 
@@ -321,27 +346,19 @@ class WriteNWB(bpy.types.Operator):
                     plane_segmentation.add_column('faces', 'faces of mesh', index=True)
                     plane_segmentation.add_column('vertices', 'vertices of mesh', index=True)
                     plane_segmentation.add_column('volume', 'volume')
-                    plane_segmentation.add_column('surface_area', 'surface area')
-                    plane_segmentation.add_column('dimension_1', 'dimension of mesh')
-                    plane_segmentation.add_column('dimension_2', 'dimension of mesh')
-                    plane_segmentation.add_column('dimension_3', 'dimension of mesh')
 
                     plane_segmentation.add_roi(
                         image_mask=np.ones((4,4)), #What's the point of this line?
                         faces=faces,
                         vertices=vertices,
                         volume=volume,
-                        surface_area = surface_area,
-                        dimension_1 = dimension_1,
-                        dimension_2 = dimension_2,
-                        dimension_3 = dimension_3
                     )
-                                      
+
+                    
                     bm.free()
                     #Clear lists for next loop
                     faces = []
-                    mesh_verts = []
-    
+                    mesh_verts = []      
 
 
         os.chdir('C:/Users/meowm/Downloads') #<to do> How do I handle this for the final version?
