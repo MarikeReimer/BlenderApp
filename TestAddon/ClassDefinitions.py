@@ -143,35 +143,49 @@ class LengthVector(bpy.types.Operator):
     bl_label = 'Length Vector'
 
     def execute(self, context):
-        #Select objects
+        # Keep track of current mode
         mode = bpy.context.active_object.mode
-        # Keep track of previous mode
+        #Set to object mode
         bpy.ops.object.mode_set(mode='OBJECT')
-        # Go into object mode to update the selected vertices
-
-        obj = bpy.context.object
+        
         # Get the currently select object
-
-        sel = np.zeros(len(obj.data.vertices), dtype=np.bool)
+        obj = bpy.context.object
+        
         # Create a numpy array with empty values for each vertex
-
-        obj.data.vertices.foreach_get('select', sel)
+        sel = np.zeros(len(obj.data.vertices), dtype=np.bool)
+        
         # Populate the array with True/False if the vertex is selected
-
+        obj.data.vertices.foreach_get('select', sel)
+        
+        # Get selected vertex
         for i in np.where(sel==True)[0]:
             # Loop over each currently selected vertex
             v = obj.data.vertices[i]
-            print('Vertex {} at position {} is selected'.format(v.index, v.co))
-            # If you just want the first one you can break directly here
-            # break
+            print(v)
+           
+            #For now we will just use the first vertex, but future iteratations could make raycasts from a selection of multiple
+            #This will break if multiple vertices are selected
 
-        #bpy.ops.object.mode_set(mode=mode)
-            # Go back to the previous mode
-            #create a vector between the vertex and the selected mesh's center of mass
+        selected_vertex = [v.co[0], v.co[1], v.co[2]]     
+        selected_vertex_vector_origin = Vector(selected_vertex)         
+        
+        #Get center of mass
+        center_of_mass = obj.matrix_world.translation
+
+        #Extract XYZ coordinates 
+        center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
+        center_of_mass_vector_destination = Vector(center_of_mass)
+
+        #Create a vector between the vertex and the selected mesh's center of mass
+        vector_to_center = Vector(center_of_mass_vector_destination - selected_vertex_vector_origin)  
+        print(vector_to_center)
             #Raycast using the vector with the mesh's center of mass as its origin
             #Create second vector using the selected vertex and the "hit" from the Raycast
-            #Delete the first vector
-            #Else print "Please select a vertex"
+
+        cast_result = obj.ray_cast(selected_vertex_vector_origin, vector_to_center)
+        print("cast_result:", cast_result)
+        # Go back to the previous mode
+        bpy.ops.object.mode_set(mode=mode)
         return {'FINISHED'}
 
 
