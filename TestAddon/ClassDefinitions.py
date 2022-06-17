@@ -183,9 +183,42 @@ class LengthVector(bpy.types.Operator):
             #Create second vector using the selected vertex and the "hit" from the Raycast
 
         cast_result = obj.ray_cast(selected_vertex_vector_origin, vector_to_center)
-        print("cast_result:", cast_result)
+                
+        #Create an empty mesh
+        #bm = bmesh.new()
+       
+        #Extract coordinates from cast_result
+        spine_tip = Vector(cast_result[1])
+
+        verts = [(1, 1, 1), (0, 0, 0)]  # 2 verts made with XYZ coords
+        mesh = bpy.data.meshes.new("myBeautifulMesh")  # add the new mesh
+        obj = bpy.data.objects.new(mesh.name, mesh)
+        col = bpy.data.collections.get("Collection")
+        col.objects.link(obj)
+        bpy.context.view_layer.objects.active = obj
+
+        edges = []
+        faces = []
+
+        mesh.from_pydata(verts, edges, faces)
+
+        # bpy.ops.object.mode_set(mode='EDIT')
+
+        # obj = bpy.context.object
+        # me = obj.data
+        # bm = bmesh.from_edit_mesh(me)
+
+
+        # #Add coordinates to mesh
+        # # bmesh.ops.create_vert(bm, co = spine_tip)
+
+        # bm.verts.new(spine_tip)
+        # bmesh.update_edit_mesh(me)
+        
         # Go back to the previous mode
         bpy.ops.object.mode_set(mode=mode)
+        #Clear bm
+        #bm.free()
         return {'FINISHED'}
 
 
