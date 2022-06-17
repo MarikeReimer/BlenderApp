@@ -190,7 +190,8 @@ class LengthVector(bpy.types.Operator):
         new_mesh = bpy.data.objects.new(mesh.name, mesh)
 
         #Get the collection for the currently selected object
-        collection = bpy.context.view_layer.active_layer_collection.collection
+        #collection = bpy.context.view_layer.active_layer_collection.collection
+        collection = obj.users_collection[0]
         print(collection)
 
         collection.objects.link(new_mesh)
@@ -209,8 +210,7 @@ class LengthVector(bpy.types.Operator):
 
         # Go back to the previous mode
         bpy.ops.object.mode_set(mode=mode)
-        #Clear bm
-        bm.free()
+
         return {'FINISHED'}
 
 
