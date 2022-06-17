@@ -150,7 +150,7 @@ class LengthVector(bpy.types.Operator):
         
         # Get the currently select object
         obj = bpy.context.object
-        
+      
         # Create a numpy array with empty values for each vertex
         sel = np.zeros(len(obj.data.vertices), dtype=np.bool)
         
@@ -161,10 +161,8 @@ class LengthVector(bpy.types.Operator):
         for i in np.where(sel==True)[0]:
             # Loop over each currently selected vertex
             v = obj.data.vertices[i]
-            print(v)
            
             #For now we will just use the first vertex, but future iteratations could make raycasts from a selection of multiple
-            #This will break if multiple vertices are selected
 
         selected_vertex = [v.co[0], v.co[1], v.co[2]]     
         selected_vertex_vector_origin = Vector(selected_vertex)         
@@ -184,41 +182,35 @@ class LengthVector(bpy.types.Operator):
 
         cast_result = obj.ray_cast(selected_vertex_vector_origin, vector_to_center)
                 
-        #Create an empty mesh
-        #bm = bmesh.new()
-       
         #Extract coordinates from cast_result
         spine_tip = Vector(cast_result[1])
 
-        verts = [(1, 1, 1), (0, 0, 0)]  # 2 verts made with XYZ coords
+        verts = [(1, 1, 1), (0, 0, 0)]  # 2 verts made with XYZ coords.  Replace with spine tip and the selected vertex
         mesh = bpy.data.meshes.new("myBeautifulMesh")  # add the new mesh
-        obj = bpy.data.objects.new(mesh.name, mesh)
-        col = bpy.data.collections.get("Collection")
-        col.objects.link(obj)
-        bpy.context.view_layer.objects.active = obj
+        new_mesh = bpy.data.objects.new(mesh.name, mesh)
+
+        #Get the collection for the currently selected object
+        collection = bpy.context.view_layer.active_layer_collection.collection
+        print(collection)
+
+        collection.objects.link(new_mesh)
+        bpy.context.view_layer.objects.active = new_mesh
+        # bpy.context.scene.collection.children.link(collection)
+        # collection.objects.link(mesh)
+        
+        #collection.objects.link(new_mesh)
+        #bpy.data.collections[collection].objects.link(new_mesh)
+        
 
         edges = []
         faces = []
 
         mesh.from_pydata(verts, edges, faces)
 
-        # bpy.ops.object.mode_set(mode='EDIT')
-
-        # obj = bpy.context.object
-        # me = obj.data
-        # bm = bmesh.from_edit_mesh(me)
-
-
-        # #Add coordinates to mesh
-        # # bmesh.ops.create_vert(bm, co = spine_tip)
-
-        # bm.verts.new(spine_tip)
-        # bmesh.update_edit_mesh(me)
-        
         # Go back to the previous mode
         bpy.ops.object.mode_set(mode=mode)
         #Clear bm
-        #bm.free()
+        bm.free()
         return {'FINISHED'}
 
 
