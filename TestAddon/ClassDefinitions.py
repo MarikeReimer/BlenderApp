@@ -185,24 +185,19 @@ class LengthVector(bpy.types.Operator):
         #Extract coordinates from cast_result
         spine_tip = Vector(cast_result[1])
 
-        verts = [(1, 1, 1), (0, 0, 0)]  # 2 verts made with XYZ coords.  Replace with spine tip and the selected vertex
-        mesh = bpy.data.meshes.new("myBeautifulMesh")  # add the new mesh
-        new_mesh = bpy.data.objects.new(mesh.name, mesh)
+        verts = [selected_vertex_vector_origin, spine_tip] 
 
-        #Get the collection for the currently selected object
-        #collection = bpy.context.view_layer.active_layer_collection.collection
+
+        #Get the collection for the origionally selected object     
         collection = obj.users_collection[0]
         print(collection)
 
+        mesh = bpy.data.meshes.new("lengthvector_" + collection.name)  # add the new mesh
+        new_mesh = bpy.data.objects.new(mesh.name, mesh)
+
         collection.objects.link(new_mesh)
         bpy.context.view_layer.objects.active = new_mesh
-        # bpy.context.scene.collection.children.link(collection)
-        # collection.objects.link(mesh)
         
-        #collection.objects.link(new_mesh)
-        #bpy.data.collections[collection].objects.link(new_mesh)
-        
-
         edges = []
         faces = []
 
