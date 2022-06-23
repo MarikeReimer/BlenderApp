@@ -68,7 +68,7 @@ class NeuronAnalysis(bpy.types.Panel):
 
         #Add button that moves spines to folders
         row = layout.row()
-        row.operator('object.spines_to_collections', text = 'Add Bounding Box')
+        row.operator('object.spines_to_collections', text = 'Move to Collections')
 
         #Add button that creates bounding boxes around meshes
         row = layout.row()
