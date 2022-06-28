@@ -17,6 +17,7 @@ from . ClassDefinitions import WriteNWB
 from . ClassDefinitions import SpinesToCollections
 from . ClassDefinitions import BoundingBoxes
 from . ClassDefinitions import LengthVector
+from . ClassDefinitions import AutoSegmenter
 
 #Information about the Addon created by the Blender Development VSCode Extension
 bl_info = {
@@ -38,7 +39,9 @@ def register():
     bpy.utils.register_class(SpinesToCollections)
     bpy.utils.register_class(BoundingBoxes)
     bpy.utils.register_class(LengthVector)
+    bpy.utils.register_class(AutoSegmenter)
     bpy.utils.register_class(WriteNWB)
+    
         
     #Subject Table fields
     bpy.types.Scene.subject_id = bpy.props.StringProperty \
@@ -101,6 +104,7 @@ def unregister():
     bpy.utils.unregister_class(SpinesToCollections)
     bpy.utils.unregister_class(BoundingBoxes)
     bpy.utils.unregister_class(LengthVector)
+    bpy.utils.unregister_class(AutoSegmenter)
     bpy.utils.unregister_class(WriteNWB)
 
     #Subject fields

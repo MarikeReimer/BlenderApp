@@ -14,8 +14,8 @@ from pynwb import NWBFile, NWBHDF5IO, image
 from pynwb.ophys import TwoPhotonSeries, OpticalChannel, ImageSegmentation, ImagingPlane
 from pynwb.file import Subject
 from pynwb.device import Device
-from datetime import datetime
 from mathutils import Vector
+from mathutils.bvhtree import BVHTree
 
 #NeuronAnalysis creates a 3Dview panel and add rows for fields and buttons. 
 #Blender's documentation describes what the strings that start with "bl_" do: https://docs.blender.org/api/blender_python_api_2_70_5/bpy.types.Panel.html#bpy.types.Panel.bl_idname
@@ -68,7 +68,7 @@ class NeuronAnalysis(bpy.types.Panel):
 
         #Add button that moves spines to folders
         row = layout.row()
-        row.operator('object.spines_to_collections', text = 'Move to Collections')
+        row.operator('object.spines_to_collections', text = 'Add Bounding Box')
 
         #Add button that creates bounding boxes around meshes
         row = layout.row()
@@ -77,6 +77,10 @@ class NeuronAnalysis(bpy.types.Panel):
         #Add button that adds a length vector to a mesh
         row = layout.row()
         row.operator('object.length_vector', text = 'Draw Length Vector')
+
+        #Add button that adds a length vector to a mesh
+        row = layout.row()
+        row.operator('object.autosegmenter', text = 'Auto-Segment')
 
         #Add button that writes data from panel and object values to an NWB file
         row = layout.row()
@@ -94,6 +98,75 @@ class ExplodingBits(bpy.types.Operator):
         object = bpy.context.active_object
         #Split it into pieces
         bpy.ops.mesh.separate(type='LOOSE')
+        return {'FINISHED'}
+
+class AutoSegmenter(bpy.types.Operator):
+    bl_idname = 'object.autosegmenter' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'AutoSegmenter'
+    def execute(self, context):
+        dendrite = bpy.context.active_object        
+        mesh_list = [ mesh for mesh in bpy.context.scene.objects if mesh.type == 'MESH']  #TODO: Find a way to remove the soma
+        mesh_list.remove(dendrite)
+
+        dendrite_mesh = bmesh.new()
+        dendrite_mesh.from_mesh(bpy.context.scene.objects[dendrite.name].data)
+        dendrite_mesh.transform(dendrite.matrix_world)
+        dendrite_BVHtree = BVHTree.FromBMesh(dendrite_mesh)
+
+        # dendrite_mesh.verts.ensure_lookup_table()
+        # print("dendrite verts?", [v.index for v in dendrite_mesh.verts])
+        
+        for mesh in mesh_list:            
+            BVH_spine_mesh = bmesh.new()
+            BVH_spine_mesh.from_mesh(bpy.context.scene.objects[mesh.name].data)
+            BVH_spine_mesh.transform(mesh.matrix_world)
+            BVHtree_mesh = BVHTree.FromBMesh(BVH_spine_mesh)
+            #overlap is list containing pairs of vertex indices, the first index is a vertex from the dendrite the second is from the spine mesh             
+            overlap = dendrite_BVHtree.overlap(BVHtree_mesh)
+            print(overlap)
+
+            face_centers = []
+
+            spine_mesh_polys = [pair[1] for pair in overlap]
+            for face in mesh.data.polygons:
+                if face.index in spine_mesh_polys:
+                    face_centers.append(face.center)
+
+            # BVH_spine_mesh.verts.ensure_lookup_table()             
+            # print("spine verts?", [v.index for v in BVH_spine_mesh.verts])
+
+
+            # for i in overlap:
+            #     #print(BVH_spine_mesh.verts[68])
+            #     print(BVHtree_mesh.verts[i[1]])
+            #     #spine_indices.append(BVH_spine_mesh.verts[i])
+            #     print('ping')
+
+            # first_pair = overlap[0][0]
+            # print(first_pair)
+             
+            # derp = BVH_spine_mesh.verts(first_pair)
+            
+            # print(derp)                      
+
+            #Get vertex coordinates from BVH_spine_mesh
+
+            intersection_mesh = bpy.data.meshes.new("myBeautifulMesh")  # add the new mesh
+            obj = bpy.data.objects.new(intersection_mesh.name, intersection_mesh)
+            col = bpy.data.collections.get("Collection")
+            col.objects.link(obj)
+            bpy.context.view_layer.objects.active = obj
+
+
+            edges = []
+            faces = []
+
+            intersection_mesh.from_pydata(face_centers, edges, faces)
+            coords = [(obj.matrix_world @ v.co) for v in obj.data.vertices]
+            print(coords)
+
+            #intersection_points.from_pydata(spine_vertices, edges, faces)
+        
         return {'FINISHED'}
 
 class SpinesToCollections(bpy.types.Operator):
@@ -188,16 +261,14 @@ class LengthVector(bpy.types.Operator):
         verts = [selected_vertex_vector_origin, spine_tip] 
 
 
-        #Get the collection for the origionally selected object     
+        #Get the collection for the originally selected object     
         collection = obj.users_collection[0]
-        print(collection)
-
         mesh = bpy.data.meshes.new("lengthvector_" + collection.name)  # add the new mesh
         new_mesh = bpy.data.objects.new(mesh.name, mesh)
 
         collection.objects.link(new_mesh)
         bpy.context.view_layer.objects.active = new_mesh
-        
+
         edges = []
         faces = []
 
