@@ -100,6 +100,18 @@ class ExplodingBits(bpy.types.Operator):
         bpy.ops.mesh.separate(type='LOOSE')
         return {'FINISHED'}
 
+#Autosgementer
+#Select dendrites
+#Get all other meshes and put them into a list
+#For each mesh in the list
+    #Turn it into a BVH Tree
+    #Find the indices of overlapping polygon faces
+    #Create a new mesh from the centers of the polygon
+    #Create a vector called "Spine Base" at the center of the new mesh
+    #TODO: Measure the distance between Spine Base and all other vertices in the mesh
+    #Create tip_vert at the maximum distance from center_vert
+    #Create a collection named after the mesh, move the original  mesh and the spine_ends into it
+
 class AutoSegmenter(bpy.types.Operator):
     bl_idname = 'object.autosegmenter' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'AutoSegmenter'
@@ -161,11 +173,15 @@ class AutoSegmenter(bpy.types.Operator):
             edges = []
             faces = []
 
-            intersection_mesh.from_pydata(face_centers, edges, faces)
-            coords = [(obj.matrix_world @ v.co) for v in obj.data.vertices]
-            print(coords)
+            intersection_mesh.from_pydata(face_centers, edges, faces)        
 
-            #intersection_points.from_pydata(spine_vertices, edges, faces)
+            x, y, z = [ sum( [v.co[i] for v in intersection_mesh.vertices] ) for i in range(3)]
+
+            count = float(len(intersection_mesh.vertices))
+
+            spine_base = Vector( (x, y, z ) ) / count
+
+            print(spine_base)
         
         return {'FINISHED'}
 
