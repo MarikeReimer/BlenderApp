@@ -139,7 +139,6 @@ class AutoSegmenter(bpy.types.Operator):
             BVH_spine_mesh.transform(spine_mesh.matrix_world)
             BVHtree_mesh = BVHTree.FromBMesh(BVH_spine_mesh)                        
             overlap = dendrite_BVHtree.overlap(BVHtree_mesh) #overlap is list containing pairs of vertex indices, the first index is a vertex from the dendrite the second is from the spine mesh 
-            print(overlap)
 
             face_centers = []
             edges = []
@@ -150,40 +149,45 @@ class AutoSegmenter(bpy.types.Operator):
                 if face.index in spine_mesh_polys:
                     face_centers.append(face.center)
 
-            #Add face centers as Mesh to Blender TODO This mesh should be temporary
+            #Add face centers as Mesh to Blender
             intersection_mesh = bpy.data.meshes.new("myBeautifulMesh")  # add the new mesh
             obj = bpy.data.objects.new(intersection_mesh.name, intersection_mesh)
-            # col = bpy.data.collections.get("Collection")
-            # col.objects.link(obj)
-            # bpy.context.view_layer.objects.active = obj
-
-            intersection_mesh.from_pydata(face_centers, edges, faces)
-            
+            intersection_mesh.from_pydata(face_centers, edges, faces)            
 
             #Find the center of the overlapping polygons and store it in "Spine Base"
             x, y, z = [ sum( [v.co[i] for v in intersection_mesh.vertices] ) for i in range(3)]
             count = float(len(intersection_mesh.vertices))
             spine_base = Vector( (x, y, z ) ) / count
-            print("local coords", spine_base)
-
+            
             #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"            
             for vert in spine_mesh.data.vertices:
                 vert_coords = vert.co
                 vert_index = vert.index
                 length = vert_coords-spine_base                
                 length = math.dist(vert_coords, length)
-                print("math length", length)
-
+                
                 spine_length_dict ={}
                 spine_length_dict[vert_index] = length
                 spine_tip = max(spine_length_dict, key=spine_length_dict.get)
-                print(spine_tip)
-                print(spine_mesh.data.vertices[spine_tip])
+                spine_tip = spine_mesh.data.vertices[spine_tip]
+                spine_tip = spine_tip.co
+                spine_length_dict = {}
 
+            #Create a mesh with spine_base and spine_tip
+            endpoint_mesh = bpy.data.meshes.new("myBeautifulDots")  # add the new mesh
+            obj = bpy.data.objects.new(endpoint_mesh.name, endpoint_mesh)
+            col = bpy.data.collections.get("Collection")
+            col.objects.link(obj)
+            bpy.context.view_layer.objects.active = obj
+            print("spine base", spine_base)
+            print("spine tip", spine_tip)
+                    
+            verts = [spine_base, spine_tip]
+            edges = []
+            faces = []
 
-
-
-
+            endpoint_mesh.from_pydata(verts, edges, faces)
+            
         return {'FINISHED'}
 
 class SpinesToCollections(bpy.types.Operator):
