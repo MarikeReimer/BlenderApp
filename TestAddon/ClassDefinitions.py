@@ -3,6 +3,7 @@ import bmesh
 import os
 import numpy as np 
 from datetime import datetime
+import math
 
 #The new way of adding python libraries
 import sys
@@ -109,80 +110,80 @@ class ExplodingBits(bpy.types.Operator):
     #Create a new mesh from the centers of the polygon
     #Create a vector called "Spine Base" at the center of the new mesh
     #TODO: Measure the distance between Spine Base and all other vertices in the mesh
-    #Create tip_vert at the maximum distance from center_vert
+    #Create Spine Tip at the maximum distance from Spine Base
     #Create a collection named after the mesh, move the original  mesh and the spine_ends into it
 
 class AutoSegmenter(bpy.types.Operator):
     bl_idname = 'object.autosegmenter' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'AutoSegmenter'
     def execute(self, context):
-        dendrite = bpy.context.active_object        
+        #Select Dendrite mesh
+        dendrite = bpy.context.active_object
+        #Create a list of all meshes except for the       
         mesh_list = [ mesh for mesh in bpy.context.scene.objects if mesh.type == 'MESH']  #TODO: Find a way to remove the soma
         mesh_list.remove(dendrite)
 
+        #Turn the dendrite into a BVH tree
         dendrite_mesh = bmesh.new()
         dendrite_mesh.from_mesh(bpy.context.scene.objects[dendrite.name].data)
         dendrite_mesh.transform(dendrite.matrix_world)
         dendrite_BVHtree = BVHTree.FromBMesh(dendrite_mesh)
 
-        # dendrite_mesh.verts.ensure_lookup_table()
-        # print("dendrite verts?", [v.index for v in dendrite_mesh.verts])
-        
-        for mesh in mesh_list:            
+        #Iterate through the dendrititic spines in the mesh list
+            #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
+            #Find the center of the overlapping polygons and store it in "Spine Base"
+        for spine_mesh in mesh_list:
+            #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"            
             BVH_spine_mesh = bmesh.new()
-            BVH_spine_mesh.from_mesh(bpy.context.scene.objects[mesh.name].data)
-            BVH_spine_mesh.transform(mesh.matrix_world)
-            BVHtree_mesh = BVHTree.FromBMesh(BVH_spine_mesh)
-            #overlap is list containing pairs of vertex indices, the first index is a vertex from the dendrite the second is from the spine mesh             
-            overlap = dendrite_BVHtree.overlap(BVHtree_mesh)
+            BVH_spine_mesh.from_mesh(bpy.context.scene.objects[spine_mesh.name].data)
+            BVH_spine_mesh.transform(spine_mesh.matrix_world)
+            BVHtree_mesh = BVHTree.FromBMesh(BVH_spine_mesh)                        
+            overlap = dendrite_BVHtree.overlap(BVHtree_mesh) #overlap is list containing pairs of vertex indices, the first index is a vertex from the dendrite the second is from the spine mesh 
             print(overlap)
 
             face_centers = []
+            edges = []
+            faces = []
 
             spine_mesh_polys = [pair[1] for pair in overlap]
-            for face in mesh.data.polygons:
+            for face in spine_mesh.data.polygons:
                 if face.index in spine_mesh_polys:
                     face_centers.append(face.center)
 
-            # BVH_spine_mesh.verts.ensure_lookup_table()             
-            # print("spine verts?", [v.index for v in BVH_spine_mesh.verts])
-
-
-            # for i in overlap:
-            #     #print(BVH_spine_mesh.verts[68])
-            #     print(BVHtree_mesh.verts[i[1]])
-            #     #spine_indices.append(BVH_spine_mesh.verts[i])
-            #     print('ping')
-
-            # first_pair = overlap[0][0]
-            # print(first_pair)
-             
-            # derp = BVH_spine_mesh.verts(first_pair)
-            
-            # print(derp)                      
-
-            #Get vertex coordinates from BVH_spine_mesh
-
+            #Add face centers as Mesh to Blender TODO This mesh should be temporary
             intersection_mesh = bpy.data.meshes.new("myBeautifulMesh")  # add the new mesh
             obj = bpy.data.objects.new(intersection_mesh.name, intersection_mesh)
             col = bpy.data.collections.get("Collection")
             col.objects.link(obj)
             bpy.context.view_layer.objects.active = obj
 
+            intersection_mesh.from_pydata(face_centers, edges, faces)
+            
 
-            edges = []
-            faces = []
-
-            intersection_mesh.from_pydata(face_centers, edges, faces)        
-
+            #Find the center of the overlapping polygons and store it in "Spine Base"
             x, y, z = [ sum( [v.co[i] for v in intersection_mesh.vertices] ) for i in range(3)]
-
             count = float(len(intersection_mesh.vertices))
-
             spine_base = Vector( (x, y, z ) ) / count
+            print("local coords", spine_base)
 
-            print(spine_base)
-        
+            #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"            
+            for vert in spine_mesh.data.vertices:
+                vert_coords = vert.co
+                vert_index = vert.index
+                length = vert_coords-spine_base                
+                length = math.dist(vert_coords, length)
+                print("math length", length)
+
+                spine_length_dict ={}
+                spine_length_dict[vert_index] = length
+                max_vert = max(spine_length_dict, key=spine_length_dict.get)
+                print(max_vert)
+                print(spine_mesh.data.vertices[max_vert])
+
+
+
+
+
         return {'FINISHED'}
 
 class SpinesToCollections(bpy.types.Operator):
