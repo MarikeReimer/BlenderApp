@@ -171,7 +171,8 @@ class AutoSegmenter(bpy.types.Operator):
                 spine_tip = max(spine_length_dict, key=spine_length_dict.get)
                 spine_tip = spine_mesh.data.vertices[spine_tip]
                 spine_tip = spine_tip.co
-                spine_length_dict = {}
+                
+            spine_length_dict = {}
 
             #Create a mesh with spine_base and spine_tip
             endpoint_mesh = bpy.data.meshes.new("myBeautifulDots")  # add the new mesh
