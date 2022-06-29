@@ -153,9 +153,9 @@ class AutoSegmenter(bpy.types.Operator):
             #Add face centers as Mesh to Blender TODO This mesh should be temporary
             intersection_mesh = bpy.data.meshes.new("myBeautifulMesh")  # add the new mesh
             obj = bpy.data.objects.new(intersection_mesh.name, intersection_mesh)
-            col = bpy.data.collections.get("Collection")
-            col.objects.link(obj)
-            bpy.context.view_layer.objects.active = obj
+            # col = bpy.data.collections.get("Collection")
+            # col.objects.link(obj)
+            # bpy.context.view_layer.objects.active = obj
 
             intersection_mesh.from_pydata(face_centers, edges, faces)
             
@@ -176,9 +176,9 @@ class AutoSegmenter(bpy.types.Operator):
 
                 spine_length_dict ={}
                 spine_length_dict[vert_index] = length
-                max_vert = max(spine_length_dict, key=spine_length_dict.get)
-                print(max_vert)
-                print(spine_mesh.data.vertices[max_vert])
+                spine_tip = max(spine_length_dict, key=spine_length_dict.get)
+                print(spine_tip)
+                print(spine_mesh.data.vertices[spine_tip])
 
 
 
