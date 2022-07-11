@@ -117,11 +117,6 @@ class AutoSegmenter(bpy.types.Operator):
     bl_idname = 'object.autosegmenter' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'AutoSegmenter'
     def execute(self, context):
-        # Keep track of current mode
-        mode = bpy.context.active_object.mode
-        #Set to object mode
-        bpy.ops.object.mode_set(mode='EDIT')
-
         #Select Dendrite mesh
         dendrite = bpy.context.active_object
         #Create a list of all meshes except for the       
@@ -144,10 +139,8 @@ class AutoSegmenter(bpy.types.Operator):
             BVH_spine_mesh.transform(spine_mesh.matrix_world)
             BVH_spine_mesh.faces.ensure_lookup_table() 
             BVHtree_mesh = BVHTree.FromBMesh(BVH_spine_mesh)                        
-            overlap = dendrite_BVHtree.overlap(BVHtree_mesh) #overlap is list containing pairs of vertex indices, the first index is a vertex from the dendrite the second is from the spine mesh 
-            testing_mesh =bmesh.new()
-
-
+            overlap = dendrite_BVHtree.overlap(BVHtree_mesh) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
+            
             face_centers = []
             edges = []
             faces = []
@@ -156,27 +149,25 @@ class AutoSegmenter(bpy.types.Operator):
             overlapping_spine_face_index_list = [pair[1] for pair in overlap]
 
             for face_index in overlapping_spine_face_index_list:
-                face_data = BVH_spine_mesh.faces[face_index]
-                #face_data.to_mesh(testing_mesh)
-                print(face_data)
-                BVH_spine_mesh.faces.active = face_data
-                #BVH_spine_mesh.faces[face_index].select = True
-                #BVH_spine_mesh.to_mesh(face_data)
-                #BVH_spine_mesh.update() #AttributeError: 'BMesh' object has no attribute 'update'. Perhaps I could get at its datablock
-                #bmesh.update_edit_mesh(mesh, loop_triangles=True, destructive=True)
-
+                face_data = BVH_spine_mesh.faces[face_index]                
                 face_centers.append(face_data.calc_center_median())
+           
 
-                # testing_mesh = bpy.data.meshes.new("intersecting face centers")
-                # testing_mesh.from_pydata(verts, edges, face_data)
-
-
-            # spine_mesh_polys = [pair[1] for pair in overlap]
-            # for face in spine_mesh.data.polygons:
-            #     if face.index in spine_mesh_polys:
-            #         face_centers.append(face.center)
+           #Non functioning code to select overlapping faces
+            # for face in BVH_spine_mesh.faces:        
+            #     if face.index in overlapping_spine_face_index_list:
+            #         BVH_spine_mesh.faces.active = face
+            #         BVH_spine_mesh.faces.active.select = True
 
             print("face centers", face_centers)
+
+            #Add face centers as vertices:
+            face_center_mesh = bpy.data.meshes.new("face centers")  # add the new mesh
+            obj = bpy.data.objects.new(face_center_mesh.name, face_center_mesh)
+            col = bpy.data.collections.get("Collection")
+            col.objects.link(obj)
+            bpy.context.view_layer.objects.active = obj
+            face_center_mesh.from_pydata(face_centers, edges, faces)
 
             #Add face centers as Mesh to Blender
             intersection_mesh = bpy.data.meshes.new("myBeautifulMesh")  # add the new mesh
@@ -219,7 +210,7 @@ class AutoSegmenter(bpy.types.Operator):
             endpoint_mesh.from_pydata(verts, edges, faces)
 
         # Go back to the previous mode
-        bpy.ops.object.mode_set(mode=mode)
+        #bpy.ops.object.mode_set(mode=mode)
             
         return {'FINISHED'}
 
