@@ -152,14 +152,7 @@ class AutoSegmenter(bpy.types.Operator):
                 face_data = BVH_spine_mesh.faces[face_index]                
                 face_centers.append(face_data.calc_center_median())
            
-
-           #Non functioning code to select overlapping faces
-            # for face in BVH_spine_mesh.faces:        
-            #     if face.index in overlapping_spine_face_index_list:
-            #         BVH_spine_mesh.faces.active = face
-            #         BVH_spine_mesh.faces.active.select = True
-
-            print("face centers", face_centers)
+            #print("face centers", face_centers)
 
             #Add face centers as vertices:
             face_center_mesh = bpy.data.meshes.new("face centers")  # add the new mesh
@@ -169,17 +162,25 @@ class AutoSegmenter(bpy.types.Operator):
             bpy.context.view_layer.objects.active = obj
             face_center_mesh.from_pydata(face_centers, edges, faces)
 
-            #Add face centers as Mesh to Blender
-            intersection_mesh = bpy.data.meshes.new("myBeautifulMesh")  # add the new mesh
-            obj = bpy.data.objects.new(intersection_mesh.name, intersection_mesh)
-            intersection_mesh.from_pydata(face_centers, edges, faces)            
-
+            #Add spine base as Mesh to Blender
+            spine_base_mesh = bpy.data.meshes.new("Spine Base")  # add the new mesh
+            obj = bpy.data.objects.new(spine_base_mesh.name, spine_base_mesh) 
+            col = bpy.data.collections.get("Collection")
+            col.objects.link(obj)
+            bpy.context.view_layer.objects.active = obj                  
             #Find the center of the overlapping polygons and store it in "Spine Base"
-            x, y, z = [ sum( [v.co[i] for v in intersection_mesh.vertices] ) for i in range(3)]
-            count = float(len(intersection_mesh.vertices))
+            x, y, z = [ sum( [v.co[i] for v in face_center_mesh.vertices] ) for i in range(3)]
+            count = float(len(face_center_mesh.vertices))
             spine_base = Vector( (x, y, z ) ) / count
+            print('spine_base', spine_base)
+            #spine_base_coords = [spine_base[0], spine_base[1], spine_base[2]]
+            # print(spine_base_coords)
+            # spine_base_mesh.from_pydata(spine_base_coords, edges, faces)
+            spine_base_coords = [spine_base]
+            spine_base_mesh.from_pydata(spine_base_coords, edges, faces)
             
-            #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"            
+            #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"  
+            # BMEsh calc_length() might be faster          
             for vert in spine_mesh.data.vertices:
                 vert_coords = vert.co
                 vert_index = vert.index
