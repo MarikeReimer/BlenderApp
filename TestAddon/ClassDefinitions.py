@@ -109,7 +109,7 @@ class ExplodingBits(bpy.types.Operator):
     #Find the indices of overlapping polygon faces
     #Create a new mesh from the centers of the polygon
     #Create a vector called "Spine Base" at the center of the new mesh
-    #TODO: Measure the distance between Spine Base and all other vertices in the mesh
+    # Measure the distance between Spine Base and all other vertices in the mesh
     #Create Spine Tip at the maximum distance from Spine Base
     #Create a collection named after the mesh, move the original  mesh and the spine_ends into it
 
@@ -179,27 +179,43 @@ class AutoSegmenter(bpy.types.Operator):
             # BMEsh calc_length() might be faster 
             spine_length_dict = {}
             spine_coordinates_dict = {}
-
+                                  
             for vert in spine_mesh.data.vertices:
-                vert_coords = vert.co
-                vert_index = vert.index
-                length = math.dist(vert_coords, spine_base)            
-                spine_length_dict[vert_index] = length
-                spine_coordinates_dict[vert_index] = vert_coords
+                length = math.dist(vert.co, spine_base)            
+                spine_length_dict[vert.index] = length
+                spine_coordinates_dict[vert.index] = vert.co                
 
             spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
+            print(spine_mesh)
             print("tip index from length dictionary", spine_tip_index)
 
             spine_tip = spine_coordinates_dict[spine_tip_index]
-            print("tip coordinates from coordinates dictionary", spine_tip)           
 
+            #Vectors are the same between dictionary and mesh vertices
+            print("Tip from spine mesh",spine_mesh.data.vertices[spine_tip_index].co)
+            print("Vertex #15", spine_mesh.data.vertices[15].co) #Only works for first isosphere
+            print("Tip from coordinates dict", spine_coordinates_dict[spine_tip_index])
             print(spine_length_dict)
-            print(spine_coordinates_dict)
 
+
+            #Unsuccessful attempt to adjust spine tip location
+            # print("spine tip before", spine_tip)
+            # mat = spine_mesh.matrix_world
+            # location = mat @ spine_tip
+            # spine_tip = location
+            # bpy.context.view_layer.update()
+            # print("spine tip after", spine_tip)
+
+            #Unsuccesful attempt to recreate the spine mesh - creates it at the origin.
+            # testing_mesh = bmesh.new()
+            # testing_mesh.from_mesh(bpy.context.scene.objects[spine_mesh.name].data)
+            # mesh_object = bpy.data.objects.new("testing", spine_mesh.data)
+            # context.collection.objects.link(mesh_object)
+
+                        
             #Clear dictionary between loops    
             spine_length_dict = {}
             spine_coordinates_dict = {}
-
 
             #Create a mesh with spine_base and spine_tip
             endpoint_mesh = bpy.data.meshes.new("Base and tip")  # add the new mesh
