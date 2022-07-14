@@ -180,8 +180,14 @@ class AutoSegmenter(bpy.types.Operator):
             spine_length_dict = {}
             spine_coordinates_dict = {}
                                   
-            for vert in spine_mesh.data.vertices:
-                length = math.dist(vert.co, spine_base)            
+            for vert in BVH_spine_mesh.verts:
+                length = math.dist(vert.co, spine_base)
+                #Alternative for length that crashes blender
+                # v1 = BVH_spine_mesh.verts.new(vert.co)
+                # v2 = BVH_spine_mesh.verts.new(spine_base)
+                # vert_pair = [v1, v2]
+                # edge = BVH_spine_mesh.edges.new(vert_pair)
+                # length = edge.calc_length()              
                 spine_length_dict[vert.index] = length
                 spine_coordinates_dict[vert.index] = vert.co                
 
