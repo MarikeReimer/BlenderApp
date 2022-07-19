@@ -181,13 +181,7 @@ class AutoSegmenter(bpy.types.Operator):
             spine_coordinates_dict = {}
                                   
             for vert in BVH_spine_mesh.verts:
-                length = math.dist(vert.co, spine_base)
-                #Alternative for length that crashes blender
-                # v1 = BVH_spine_mesh.verts.new(vert.co)
-                # v2 = BVH_spine_mesh.verts.new(spine_base)
-                # vert_pair = [v1, v2]
-                # edge = BVH_spine_mesh.edges.new(vert_pair)
-                # length = edge.calc_length()              
+                length = math.dist(vert.co, spine_base)         
                 spine_length_dict[vert.index] = length
                 spine_coordinates_dict[vert.index] = vert.co                
 
@@ -203,22 +197,6 @@ class AutoSegmenter(bpy.types.Operator):
             print("Tip from coordinates dict", spine_coordinates_dict[spine_tip_index])
             print(spine_length_dict)
 
-
-            #Unsuccessful attempt to adjust spine tip location
-            # print("spine tip before", spine_tip)
-            # mat = spine_mesh.matrix_world
-            # location = mat @ spine_tip
-            # spine_tip = location
-            # bpy.context.view_layer.update()
-            # print("spine tip after", spine_tip)
-
-            #Unsuccesful attempt to recreate the spine mesh - creates it at the origin.
-            # testing_mesh = bmesh.new()
-            # testing_mesh.from_mesh(bpy.context.scene.objects[spine_mesh.name].data)
-            # mesh_object = bpy.data.objects.new("testing", spine_mesh.data)
-            # context.collection.objects.link(mesh_object)
-
-                        
             #Clear dictionary between loops    
             spine_length_dict = {}
             spine_coordinates_dict = {}
@@ -237,9 +215,6 @@ class AutoSegmenter(bpy.types.Operator):
             endpoint_mesh.from_pydata(verts, edges, faces)
             print(endpoint_mesh)
 
-        # Go back to the previous mode
-        #bpy.ops.object.mode_set(mode=mode)
-            
         return {'FINISHED'}
 
 class SpinesToCollections(bpy.types.Operator):
