@@ -131,6 +131,7 @@ class AutoSegmenter(bpy.types.Operator):
         dendrite_BVHtree = BVHTree.FromBMesh(dendrite_mesh)
 
         intersecting_spines = []
+        face_centers_list =[]
 
         #Iterate through the dendrititic spines in the mesh list
             #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
@@ -156,9 +157,12 @@ class AutoSegmenter(bpy.types.Operator):
             for face_index in overlapping_spine_face_index_list:
                 face_data = BVH_spine_mesh.faces[face_index]                
                 face_centers.append(face_data.calc_center_median())
+            
+            face_centers_list.append(face_centers)
+            face_centers = []
         
         print(len(intersecting_spines))
-        return(face_centers, intersecting_spines)
+        return(face_centers_list, intersecting_spines)
         
     
     def execute(self, context):
@@ -201,7 +205,7 @@ class AutoSegmenter(bpy.types.Operator):
 
         
         Bob = self.find_intersections() 
-        face_centers = Bob[0]
+        face_centers_list = Bob[0]
         intersecting_spines = Bob[1]
 
         edges = []
@@ -215,6 +219,8 @@ class AutoSegmenter(bpy.types.Operator):
             col = bpy.data.collections.get("Collection")
             col.objects.link(obj)
             bpy.context.view_layer.objects.active = obj
+            face_centers = face_centers_list[0]
+            face_centers_list.remove(face_centers_list[0])
             face_center_mesh.from_pydata(face_centers, edges, faces)
 
             #Add spine base as Mesh to Blender
