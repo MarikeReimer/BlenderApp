@@ -145,9 +145,7 @@ class AutoSegmenter(bpy.types.Operator):
             BVHtree_mesh = BVHTree.FromBMesh(BVH_spine_mesh)                        
             overlap = dendrite_BVHtree.overlap(BVHtree_mesh) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
                         
-            #TODO: Face centers can't be wiped
-            face_centers = []
-                      
+            face_centers = []                      
 
             overlapping_spine_face_index_list = [pair[1] for pair in overlap]
 
@@ -161,55 +159,15 @@ class AutoSegmenter(bpy.types.Operator):
             face_centers_list.append(face_centers)
             face_centers = []
         
-        print(len(intersecting_spines))
-        return(face_centers_list, intersecting_spines)
-        
+        return(face_centers_list, intersecting_spines)     
     
-    def execute(self, context):
-        # #Select Dendrite mesh
-        # dendrite = bpy.context.active_object
-        # #Create a list of all meshes except for the       
-        # mesh_list = [ mesh for mesh in bpy.context.scene.objects if mesh.type == 'MESH']  
-        # mesh_list.remove(dendrite)
-
-        # #Turn the dendrite into a BVH tree
-        # dendrite_mesh = bmesh.new()
-        # dendrite_mesh.from_mesh(bpy.context.scene.objects[dendrite.name].data)
-        # dendrite_mesh.transform(dendrite.matrix_world)
-        # dendrite_BVHtree = BVHTree.FromBMesh(dendrite_mesh)
-
-        # #Iterate through the dendrititic spines in the mesh list
-        #     #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
-        #     #Find the center of the overlapping polygons and store it in "Spine Base"
-        #     #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
-        # for spine_mesh in mesh_list:                        
-        #     BVH_spine_mesh = bmesh.new()
-        #     BVH_spine_mesh.from_mesh(bpy.context.scene.objects[spine_mesh.name].data)
-        #     BVH_spine_mesh.transform(spine_mesh.matrix_world)
-        #     BVH_spine_mesh.faces.ensure_lookup_table() 
-        #     BVHtree_mesh = BVHTree.FromBMesh(BVH_spine_mesh)                        
-        #     overlap = dendrite_BVHtree.overlap(BVHtree_mesh) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
-            
-        #     face_centers = []
-        #     edges = []
-        #     faces = []
-        #     verts = []
-
-        #     overlapping_spine_face_index_list = [pair[1] for pair in overlap]
-
-        # for face_index in overlapping_spine_face_index_list:
-        #     face_data = BVH_spine_mesh.faces[face_index]                
-        #     face_centers.append(face_data.calc_center_median())
-        
-        #print("face centers", face_centers)
-
-        
+    def find_midpoints(self):        
         Bob = self.find_intersections() 
         face_centers_list = Bob[0]
         intersecting_spines = Bob[1]
-
         edges = []
         faces = []
+        spine_base_list = []
 
         for spine_mesh in intersecting_spines:
             print(spine_mesh)
@@ -235,14 +193,29 @@ class AutoSegmenter(bpy.types.Operator):
             spine_base = Vector( (x, y, z ) ) / count           
             spine_base_coords = [spine_base]
             spine_base_mesh.from_pydata(spine_base_coords, edges, faces)
-            
+            spine_base_list.append(spine_base_mesh)
+        return(spine_base_list)
+    
+    def execute(self, context):
+        Bob = self.find_intersections() 
+        intersecting_spines = Bob[1]
+        spine_base_list = self.find_midpoints()
+        edges = []
+        faces = []
+      
+        for spine_mesh in intersecting_spines:
+            spine_base = spine_base_list[0]
+            #print(spine_base.data.vertices)
+            #print(spine_base.verts)
+            print("spine base coordinates", spine_base.vertices[0].co)
+            spine_base_list.remove(spine_base_list[0])
             #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"   
             spine_length_dict = {}
             spine_coordinates_dict = {}
                                     
             for vert in spine_mesh.verts:
             #for vert in spine_mesh.verts:
-                length = math.dist(vert.co, spine_base)         
+                length = math.dist(vert.co, spine_base.vertices[0].co)         
                 spine_length_dict[vert.index] = length
                 spine_coordinates_dict[vert.index] = vert.co                
 
