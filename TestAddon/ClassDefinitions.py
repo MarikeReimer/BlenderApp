@@ -130,31 +130,35 @@ class AutoSegmenter(bpy.types.Operator):
         dendrite_mesh.transform(dendrite.matrix_world)
         dendrite_BVHtree = BVHTree.FromBMesh(dendrite_mesh)
 
+        intersecting_spines = []
+
         #Iterate through the dendrititic spines in the mesh list
             #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
             #Find the center of the overlapping polygons and store it in "Spine Base"
             #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
-        for spine_mesh in mesh_list:
-            print(spine_mesh.name)                        
+        for spine_mesh in mesh_list:                                   
             BVH_spine_mesh = bmesh.new()
             BVH_spine_mesh.from_mesh(bpy.context.scene.objects[spine_mesh.name].data)
             BVH_spine_mesh.transform(spine_mesh.matrix_world)
             BVH_spine_mesh.faces.ensure_lookup_table() 
             BVHtree_mesh = BVHTree.FromBMesh(BVH_spine_mesh)                        
             overlap = dendrite_BVHtree.overlap(BVHtree_mesh) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
-            print(overlap)
-            
+                        
+            #TODO: Face centers can't be wiped
             face_centers = []
+                      
 
             overlapping_spine_face_index_list = [pair[1] for pair in overlap]
-            if overlapping_spine_face_index_list is None:
-                mesh_list.remove(spine_mesh)
-            else:
-                for face_index in overlapping_spine_face_index_list:
-                    face_data = BVH_spine_mesh.faces[face_index]                
-                    face_centers.append(face_data.calc_center_median())
+
+            if overlapping_spine_face_index_list is not None:
+                intersecting_spines.append(BVH_spine_mesh)
+
+            for face_index in overlapping_spine_face_index_list:
+                face_data = BVH_spine_mesh.faces[face_index]                
+                face_centers.append(face_data.calc_center_median())
         
-        return(spine_mesh, face_centers, BVH_spine_mesh)
+        print(len(intersecting_spines))
+        return(face_centers, intersecting_spines)
         
     
     def execute(self, context):
@@ -196,72 +200,69 @@ class AutoSegmenter(bpy.types.Operator):
         #print("face centers", face_centers)
 
         
-        Bob = self.find_intersections()
-        spine_mesh = Bob[0] 
-        face_centers = Bob[1]
-        BVH_spine_mesh = Bob[2]
+        Bob = self.find_intersections() 
+        face_centers = Bob[0]
+        intersecting_spines = Bob[1]
 
         edges = []
         faces = []
 
-        #Add face centers as vertices:
-        face_center_mesh = bpy.data.meshes.new("face centers")  # add the new mesh
-        obj = bpy.data.objects.new(face_center_mesh.name, face_center_mesh)
-        col = bpy.data.collections.get("Collection")
-        col.objects.link(obj)
-        bpy.context.view_layer.objects.active = obj
-        face_center_mesh.from_pydata(face_centers, edges, faces)
+        for spine_mesh in intersecting_spines:
+            print(spine_mesh)
+            #Add face centers as vertices:
+            face_center_mesh = bpy.data.meshes.new("face centers")  # add the new mesh
+            obj = bpy.data.objects.new(face_center_mesh.name, face_center_mesh)
+            col = bpy.data.collections.get("Collection")
+            col.objects.link(obj)
+            bpy.context.view_layer.objects.active = obj
+            face_center_mesh.from_pydata(face_centers, edges, faces)
 
-        #Add spine base as Mesh to Blender
-        spine_base_mesh = bpy.data.meshes.new("Spine Base")  # add the new mesh
-        obj = bpy.data.objects.new(spine_base_mesh.name, spine_base_mesh) 
-        col = bpy.data.collections.get("Collection")
-        col.objects.link(obj)
-        bpy.context.view_layer.objects.active = obj                  
-        #Find the center of the overlapping polygons and store it in "Spine Base"
-        x, y, z = [ sum( [v.co[i] for v in face_center_mesh.vertices] ) for i in range(3)]
-        count = float(len(face_center_mesh.vertices))
-        spine_base = Vector( (x, y, z ) ) / count           
-        spine_base_coords = [spine_base]
-        spine_base_mesh.from_pydata(spine_base_coords, edges, faces)
-        
-        #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"  
-        # BMEsh calc_length() might be faster 
-        spine_length_dict = {}
-        spine_coordinates_dict = {}
-                                
-        for vert in BVH_spine_mesh.verts:
-            length = math.dist(vert.co, spine_base)         
-            spine_length_dict[vert.index] = length
-            spine_coordinates_dict[vert.index] = vert.co                
+            #Add spine base as Mesh to Blender
+            spine_base_mesh = bpy.data.meshes.new("Spine Base")  # add the new mesh
+            obj = bpy.data.objects.new(spine_base_mesh.name, spine_base_mesh) 
+            col = bpy.data.collections.get("Collection")
+            col.objects.link(obj)
+            bpy.context.view_layer.objects.active = obj                  
+            #Find the center of the overlapping polygons and store it in "Spine Base"
+            x, y, z = [ sum( [v.co[i] for v in face_center_mesh.vertices] ) for i in range(3)]
+            count = float(len(face_center_mesh.vertices))
+            spine_base = Vector( (x, y, z ) ) / count           
+            spine_base_coords = [spine_base]
+            spine_base_mesh.from_pydata(spine_base_coords, edges, faces)
+            
+            #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"   
+            spine_length_dict = {}
+            spine_coordinates_dict = {}
+                                    
+            for vert in spine_mesh.verts:
+            #for vert in spine_mesh.verts:
+                length = math.dist(vert.co, spine_base)         
+                spine_length_dict[vert.index] = length
+                spine_coordinates_dict[vert.index] = vert.co                
 
-        spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
-        print(spine_mesh)
-        print("tip index from length dictionary", spine_tip_index)
+            spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
+            spine_tip = spine_coordinates_dict[spine_tip_index]
 
-        spine_tip = spine_coordinates_dict[spine_tip_index]
+            #Vectors are the same between dictionary and mesh vertices
+            # print("Tip from spine mesh",spine_mesh.data.vertices[spine_tip_index].co)            
+            # print("Tip from coordinates dict", spine_coordinates_dict[spine_tip_index])
+            # print(spine_length_dict)
 
-        #Vectors are the same between dictionary and mesh vertices
-        print("Tip from spine mesh",spine_mesh.data.vertices[spine_tip_index].co)
-        print("Vertex #15", spine_mesh.data.vertices[15].co) #Only works for first isosphere
-        print("Tip from coordinates dict", spine_coordinates_dict[spine_tip_index])
-        print(spine_length_dict)
+            #Clear dictionary between loops    
+            spine_length_dict = {}
+            spine_coordinates_dict = {}
 
-        #Clear dictionary between loops    
-        spine_length_dict = {}
-        spine_coordinates_dict = {}
-
-        #Create a mesh with spine_base and spine_tip
-        endpoint_mesh = bpy.data.meshes.new("Base and tip")  # add the new mesh
-        obj = bpy.data.objects.new(endpoint_mesh.name, endpoint_mesh)
-        col = bpy.data.collections.get("Collection")
-        col.objects.link(obj)
-        bpy.context.view_layer.objects.active = obj
-                
-        verts = [spine_base, spine_tip]
- 
-        endpoint_mesh.from_pydata(verts, edges, faces)
-        print(endpoint_mesh)
+            #Create a mesh with spine_base and spine_tip
+            endpoint_mesh = bpy.data.meshes.new("Base and tip")  # add the new mesh
+            obj = bpy.data.objects.new(endpoint_mesh.name, endpoint_mesh)
+            col = bpy.data.collections.get("Collection")
+            col.objects.link(obj)
+            bpy.context.view_layer.objects.active = obj
+                    
+            verts = [spine_base, spine_tip]
+    
+            endpoint_mesh.from_pydata(verts, edges, faces)
+            print(endpoint_mesh)
 
         return {'FINISHED'}
 
