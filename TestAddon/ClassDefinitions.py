@@ -205,9 +205,11 @@ class AutoSegmenter(bpy.types.Operator):
       
         for spine_mesh in intersecting_spines:
             spine_base = spine_base_list[0]
+            spine_base = spine_base.vertices[0].co
             #print(spine_base.data.vertices)
             #print(spine_base.verts)
-            print("spine base coordinates", spine_base.vertices[0].co)
+            #print("spine base coordinates", spine_base.vertices[0].co)
+            print(spine_base)
             spine_base_list.remove(spine_base_list[0])
             #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"   
             spine_length_dict = {}
@@ -215,7 +217,7 @@ class AutoSegmenter(bpy.types.Operator):
                                     
             for vert in spine_mesh.verts:
             #for vert in spine_mesh.verts:
-                length = math.dist(vert.co, spine_base.vertices[0].co)         
+                length = math.dist(vert.co, spine_base)         
                 spine_length_dict[vert.index] = length
                 spine_coordinates_dict[vert.index] = vert.co                
 
