@@ -117,14 +117,10 @@ class AutoSegmenter(bpy.types.Operator):
     bl_idname = 'object.autosegmenter' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'AutoSegmenter'
     
-    def find_intersections(self):
-        global intersecting_spines
-        global face_centers_list
-        global spine_names
-        intersecting_spines = []
-        face_centers_list = []
-        spine_names = []
-        print("finding intersections")
+    def dendrite_BVH_tree(self):
+        global dendrite_BVHtree
+        global mesh_list
+        print("Growing BVHtree")
         #Select Dendrite mesh
         dendrite = bpy.context.active_object
         #Create a list of all meshes except for the       
@@ -148,7 +144,15 @@ class AutoSegmenter(bpy.types.Operator):
         dendrite_BVHtree = BVHTree.FromBMesh(dendrite_mesh)
 
         dendrite_mesh.free()
-
+    
+    def find_intersections(self):
+        global intersecting_spines
+        global face_centers_list
+        global spine_names
+        intersecting_spines = []
+        face_centers_list = []
+        spine_names = []
+        print("finding intersections")
         #Iterate through the dendrititic spines in the mesh list
             #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
             #Find the center of the overlapping polygons and store it in "Spine Base"
@@ -165,9 +169,7 @@ class AutoSegmenter(bpy.types.Operator):
             face_centers = []                 
 
             overlapping_spine_face_index_list = [pair[1] for pair in overlap]
-            print(spine_mesh.name, overlapping_spine_face_index_list)
-
-
+            
             #Check to see if the spines overlap the dendrite before passing them to the BVH spine mesh list.  If not, restart the loop.  This filters out disconnected spines
 
             if overlapping_spine_face_index_list:
@@ -306,6 +308,7 @@ class AutoSegmenter(bpy.types.Operator):
     
     def execute(self, context):
         print("entering execute")
+        self.dendrite_BVH_tree()
         self.find_intersections()
         self.find_spine_base()
         self.find_spine_tip()
