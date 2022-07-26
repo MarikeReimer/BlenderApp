@@ -118,6 +118,12 @@ class AutoSegmenter(bpy.types.Operator):
     bl_label = 'AutoSegmenter'
     
     def find_intersections(self):
+        global intersecting_spines
+        global face_centers_list
+        global spine_names
+        intersecting_spines = []
+        face_centers_list = []
+        spine_names = []
         print("finding intersections")
         #Select Dendrite mesh
         dendrite = bpy.context.active_object
@@ -131,20 +137,13 @@ class AutoSegmenter(bpy.types.Operator):
         dendrite_mesh.transform(dendrite.matrix_world)
         dendrite_BVHtree = BVHTree.FromBMesh(dendrite_mesh)
 
-        global intersecting_spines
-        global face_centers_list
-        global spine_names
-
-        intersecting_spines = []
-        face_centers_list = []
-        spine_names = []
-
         #Iterate through the dendrititic spines in the mesh list
             #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
             #Find the center of the overlapping polygons and store it in "Spine Base"
             #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
 
         for spine_mesh in mesh_list:
+            print("spine mesh", spine_mesh)
             spine_names.append(spine_mesh.name)                                   
             BVH_spine_mesh = bmesh.new()
             BVH_spine_mesh.from_mesh(bpy.context.scene.objects[spine_mesh.name].data)
@@ -166,12 +165,56 @@ class AutoSegmenter(bpy.types.Operator):
             
             face_centers_list.append(face_centers)
             face_centers = []
+
+            #Move spines to collections            
+            #obj = bpy.data.objects.new(spine_mesh.name, spine_mesh.data)
+            #Find collection name
+            # current_collection = obj.users_collection
+            # print("current collection", current_collection)
+            # current_collection.objects.unlink(obj)
+            #bpy.ops.collection.objects_remove_all()
+            #obj.select_set(True)
+            #obj.select_set(True, view_layer = bpy.context.scene.view_layers[0])            
+            #unlinkobj = collection_name.objects.get(obj.name)            
+            #collection_name.objects.unlink(unlinkobj)
+
+            old_collection_name = spine_mesh.users_collection
+            old_collection_name = old_collection_name[0]
+            print("old_collection_name", old_collection_name)
+            old_collection_name.objects.unlink(spine_mesh)
+
+            new_collection_name = spine_mesh.name
+            new_collection = bpy.data.collections.new(new_collection_name)
+            bpy.context.scene.collection.children.link(new_collection)
+            new_collection.objects.link(spine_mesh)
+
+            # mesh_holder = []
+            # obj = bpy.data.objects.new(spine_mesh.name, spine_mesh.data)
+            
+            # mesh_holder.append(obj)
+
+            # # mesh_holder = set()
+            # # mesh_holder.add(spine_mesh.data)
+
+
+            # bpy.data.objects.remove(spine_mesh)
+
+            # collection.objects.link(mesh_holder[0])
+            # bpy.context.scene.collection.children.link(collection)
+            # #bpy.data.meshes.remove(spine_mesh)
+            # #bpy.data.objects.remove(spine_mesh)
+            # mesh_holder = []
+            
+
+
             
         print("Intersecting spines exiting find intersections", len(intersecting_spines))
         print("spine names", spine_names)
         return(face_centers_list, intersecting_spines)     
     
     def find_spine_base(self):
+        global spine_base_list
+        spine_base_list = []
         print("finding base")      
         # Bob = self.find_intersections() 
         # face_centers_list = Bob[0]
@@ -179,8 +222,6 @@ class AutoSegmenter(bpy.types.Operator):
         print("intersecting spines from find spine base", len(intersecting_spines))
         edges = []
         faces = []
-        global spine_base_list
-        spine_base_list = []
         counter = 0
         
         for spine_mesh in intersecting_spines:
@@ -224,12 +265,12 @@ class AutoSegmenter(bpy.types.Operator):
         return(spine_base_list, intersecting_spines)
     
     def find_spine_tip(self):
-        print("finding tip")
-        # Bob = self.find_spine_base()
-        # spine_base_list = Bob[0] 
-        # intersecting_spines = Bob[1]
-        print("Find spine tip incoming intersecting spines", len(intersecting_spines))  #TODO: this should have 2 spines, not 6
-        print("Find spine tip incoming spine bases", len(spine_base_list))
+        # print("finding tip")
+        # # Bob = self.find_spine_base()
+        # # spine_base_list = Bob[0] 
+        # # intersecting_spines = Bob[1]
+        # print("Find spine tip incoming intersecting spines", len(intersecting_spines))  #TODO: this should have 2 spines, not 6
+        # print("Find spine tip incoming spine bases", len(spine_base_list))
         global spine_tip_list
         spine_tip_list = []
 
