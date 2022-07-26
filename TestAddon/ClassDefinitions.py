@@ -133,16 +133,19 @@ class AutoSegmenter(bpy.types.Operator):
 
         global intersecting_spines
         global face_centers_list
+        global spine_names
 
         intersecting_spines = []
         face_centers_list = []
+        spine_names = []
 
         #Iterate through the dendrititic spines in the mesh list
             #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
             #Find the center of the overlapping polygons and store it in "Spine Base"
             #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
 
-        for spine_mesh in mesh_list:                                   
+        for spine_mesh in mesh_list:
+            spine_names.append(spine_mesh.name)                                   
             BVH_spine_mesh = bmesh.new()
             BVH_spine_mesh.from_mesh(bpy.context.scene.objects[spine_mesh.name].data)
             BVH_spine_mesh.transform(spine_mesh.matrix_world)
@@ -165,6 +168,7 @@ class AutoSegmenter(bpy.types.Operator):
             face_centers = []
             
         print("Intersecting spines exiting find intersections", len(intersecting_spines))
+        print("spine names", spine_names)
         return(face_centers_list, intersecting_spines)     
     
     def find_spine_base(self):
@@ -261,9 +265,12 @@ class AutoSegmenter(bpy.types.Operator):
         faces = []
         counter = 0
         for spine_mesh in intersecting_spines:
+            #remove mesh from collection
+            bpy.ops.collection.objects_remove_all()
             
             spine_base = spine_base_list[counter]            
             spine_tip = spine_tip_list[counter]
+            spine_name = spine_names[counter]
             counter += 1
             # print("spine base list", spine_base_list[counter])
             # print("spine tip", spine_tip_list[counter])
@@ -296,28 +303,20 @@ class AutoSegmenter(bpy.types.Operator):
             spine_coordinates_dict = {}
 
             #Create a mesh with spine_base and spine_tip
-            endpoint_mesh = bpy.data.meshes.new("Base and tip")  # add the new mesh
-            obj = bpy.data.objects.new(endpoint_mesh.name, endpoint_mesh)
-            col = bpy.data.collections.get("Collection")
-            col.objects.link(obj)
-            bpy.context.view_layer.objects.active = obj
-                    
+           
+            endpoint_mesh = bpy.data.meshes.new(spine_name)  # add the new mesh
+            obj = bpy.data.objects.new("Base and Tip", endpoint_mesh)
+            collection_name = endpoint_mesh.name
+            collection = bpy.data.collections.new(collection_name)
+            collection.objects.link(obj)
+            bpy.context.scene.collection.children.link(collection)
+                                
             verts = [spine_base, spine_tip]
     
-            endpoint_mesh.from_pydata(verts, edges, faces)    
-    
-    # def to_collections(self):
-    #     # Loop through all spines, put them in collections 
-    #     for base_tip in selected_objects:
-    #         bpy.ops.collection.objects_remove_all()
-    #         #Name the collection after the spine
-    #         collection_name = spine.name
-    #         #Create Collections and link spines to them
-    #         collection = bpy.data.collections.new(collection_name)
-    #         bpy.context.scene.collection.children.link(collection)
-    #         collection.objects.link(spine)
-    #     return {'FINISHED'} 
-    
+            endpoint_mesh.from_pydata(verts, edges, faces)
+
+            
+                
     
     def execute(self, context):
         print("entering execute")
