@@ -274,7 +274,6 @@ class AutoSegmenter(bpy.types.Operator):
         counter = 0
         
         for spine_mesh in intersecting_spines:
-            print("counter", counter)
             #remove mesh from collection
             spine_base = spine_base_list[counter]            
             spine_tip = spine_tip_list[counter]
@@ -309,20 +308,17 @@ class AutoSegmenter(bpy.types.Operator):
             #Create a mesh with spine_base and spine_tip
            
             endpoint_mesh = bpy.data.meshes.new(spine_name)  # add the new mesh
-            obj = bpy.data.objects.new("Base and Tip", endpoint_mesh)
+            endpoint_mesh_name = "endpoints_" + str(spine_name)
+            obj = bpy.data.objects.new(endpoint_mesh_name, endpoint_mesh)
 
             #Put the endpoint mesh into the same folder as its spine
             collection = bpy.context.scene.collection.children.get(spine_name)
-            print("collection", collection)
-
             collection.objects.link(obj)
-            #bpy.context.scene.collection.children.link(collection)
                                 
             verts = [spine_base, spine_tip]
     
             endpoint_mesh.from_pydata(verts, edges, faces)
             counter += 1
-            print("counter increments?", counter)
 
         return {'FINISHED'}          
     
