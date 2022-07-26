@@ -147,16 +147,15 @@ class AutoSegmenter(bpy.types.Operator):
     
     def find_intersections(self):
         global intersecting_spines
-        global face_centers_list
         global spine_names
+        global overlapping_spine_face_index_list
+        overlapping_spine_face_index_list = []
         intersecting_spines = []
-        face_centers_list = []
         spine_names = []
         print("finding intersections")
-        #Iterate through the dendrititic spines in the mesh list
+        #Iterate through the spines in the mesh list
             #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
-            #Find the center of the overlapping polygons and store it in "Spine Base"
-            #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
+            #Check to see if the spine overlaps 
 
         for spine_mesh in mesh_list:                                   
             BVH_spine_mesh = bmesh.new()
@@ -165,29 +164,23 @@ class AutoSegmenter(bpy.types.Operator):
             BVH_spine_mesh.faces.ensure_lookup_table() 
             BVHtree_mesh = BVHTree.FromBMesh(BVH_spine_mesh)                        
             overlap = dendrite_BVHtree.overlap(BVHtree_mesh) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
-                        
-            face_centers = []                 
-
-            overlapping_spine_face_index_list = [pair[1] for pair in overlap]
+            overlapping_spine_face_index_list_local = [pair[1] for pair in overlap]
             
             #Check to see if the spines overlap the dendrite before passing them to the BVH spine mesh list.  If not, restart the loop.  This filters out disconnected spines
 
-            if overlapping_spine_face_index_list:
+            if overlapping_spine_face_index_list_local:
+                overlapping_spine_face_index_list.append(overlapping_spine_face_index_list_local)
                 intersecting_spines.append(BVH_spine_mesh)
                 spine_names.append(spine_mesh.name)
             else:
                 break
+        
+        return {'FINISHED'}
 
-            #Make a collection of points in the faces of intersecting faces    
-            for face_index in overlapping_spine_face_index_list:
-                face_data = BVH_spine_mesh.faces[face_index]                
-                face_centers.append(face_data.calc_center_median())
-            
-            face_centers_list.append(face_centers)
-            face_centers = []
-
-            #Add spines to their own folders
-
+    def spines_to_collections(self):
+        print("moving spines to folders")
+        #Add spines to their own folders
+        for spine_mesh in mesh_list:
             old_collection_name = spine_mesh.users_collection
             old_collection_name = old_collection_name[0]
             old_collection_name.objects.unlink(spine_mesh)
@@ -196,7 +189,29 @@ class AutoSegmenter(bpy.types.Operator):
             new_collection = bpy.data.collections.new(new_collection_name)
             bpy.context.scene.collection.children.link(new_collection)
             new_collection.objects.link(spine_mesh)
-        BVH_spine_mesh.free()
+        return {'FINISHED'}
+
+    def find_intersecting_face_centers(self):
+        print("finding intersections")
+        global face_centers_list
+        face_centers_list = []
+        counter = 0
+
+        for BVH_spine_mesh in intersecting_spines:
+            print("BVH_spine_mesh", BVH_spine_mesh)
+            face_centers = []
+            
+            #Make a collection of points in the faces of intersecting faces  
+            print("overlapping_spine_face_index_list", overlapping_spine_face_index_list)  
+            for face_index in overlapping_spine_face_index_list[counter]:
+                face_data = BVH_spine_mesh.faces[face_index]                
+                face_centers.append(face_data.calc_center_median())
+            
+            counter += 1
+            face_centers_list.append(face_centers)
+            face_centers = []
+
+        print("face_centers_list", face_centers_list)
         return(face_centers_list, intersecting_spines)     
     
     def find_spine_base(self):
@@ -207,7 +222,10 @@ class AutoSegmenter(bpy.types.Operator):
         faces = []
         counter = 0
 
-        for spine_mesh in intersecting_spines:        
+        for spine_mesh in intersecting_spines:
+            print("spine mesh", spine_mesh)
+            print("face centers", face_centers_list[counter])
+
             #Add face centers as vertices:
             face_center_mesh = bpy.data.meshes.new("face centers")  # add the new mesh
             obj = bpy.data.objects.new(face_center_mesh.name, face_center_mesh)
@@ -226,7 +244,7 @@ class AutoSegmenter(bpy.types.Operator):
             obj = bpy.data.objects.new(spine_base_mesh.name, spine_base_mesh) 
 
             #Find the center of the overlapping polygons and store it in "Spine Base"
-            x, y, z = [ sum( [v.co[i] for v in face_center_mesh.vertices] ) for i in range(3)]
+            x, y, z = [ sum( [v.co[i] for v in face_center_mesh.vertices] ) for i in range(3)] #TODO: Should be 2?
             count = float(len(face_center_mesh.vertices))
             spine_base = Vector( (x, y, z ) ) / count        
             spine_base_coords = [spine_base]
@@ -310,6 +328,8 @@ class AutoSegmenter(bpy.types.Operator):
         print("entering execute")
         self.dendrite_BVH_tree()
         self.find_intersections()
+        self.spines_to_collections()
+        self.find_intersecting_face_centers()
         self.find_spine_base()
         self.find_spine_tip()
         self.create_base_and_tip()
