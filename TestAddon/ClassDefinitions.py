@@ -137,6 +137,8 @@ class AutoSegmenter(bpy.types.Operator):
         dendrite_mesh.transform(dendrite.matrix_world)
         dendrite_BVHtree = BVHTree.FromBMesh(dendrite_mesh)
 
+        dendrite_mesh.free()
+
         #Iterate through the dendrititic spines in the mesh list
             #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
             #Find the center of the overlapping polygons and store it in "Spine Base"
@@ -165,6 +167,8 @@ class AutoSegmenter(bpy.types.Operator):
             
             face_centers_list.append(face_centers)
             face_centers = []
+
+            #Add spines to their own folders
 
             old_collection_name = spine_mesh.users_collection
             old_collection_name = old_collection_name[0]
@@ -314,7 +318,7 @@ class AutoSegmenter(bpy.types.Operator):
         self.find_spine_base()
         self.find_spine_tip()
         self.create_base_and_tip()
-        
+        BVH_spine_mesh.free()
         return {'FINISHED'}
 
 class SpinesToCollections(bpy.types.Operator):
