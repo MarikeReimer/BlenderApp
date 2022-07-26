@@ -131,6 +131,17 @@ class AutoSegmenter(bpy.types.Operator):
         mesh_list = [ mesh for mesh in bpy.context.scene.objects if mesh.type == 'MESH']  
         mesh_list.remove(dendrite)
 
+        #Add dendrite to its own folder
+        old_collection_name = dendrite.users_collection
+        old_collection_name = old_collection_name[0]
+        old_collection_name.objects.unlink(dendrite)
+        
+        new_collection_name = dendrite.name
+        new_collection = bpy.data.collections.new(new_collection_name)
+        bpy.context.scene.collection.children.link(new_collection)
+        new_collection.objects.link(dendrite)
+        print(new_collection.objects[0])
+    
         #Turn the dendrite into a BVH tree
         dendrite_mesh = bmesh.new()
         dendrite_mesh.from_mesh(bpy.context.scene.objects[dendrite.name].data)
@@ -172,13 +183,16 @@ class AutoSegmenter(bpy.types.Operator):
 
             old_collection_name = spine_mesh.users_collection
             old_collection_name = old_collection_name[0]
-            print("old_collection_name", old_collection_name)
             old_collection_name.objects.unlink(spine_mesh)
 
             new_collection_name = spine_mesh.name
             new_collection = bpy.data.collections.new(new_collection_name)
             bpy.context.scene.collection.children.link(new_collection)
             new_collection.objects.link(spine_mesh)
+
+
+
+
            
         # print("Intersecting spines exiting find intersections", len(intersecting_spines))
         # print("spine names", spine_names)
@@ -266,7 +280,8 @@ class AutoSegmenter(bpy.types.Operator):
         counter = 0
         for spine_mesh in intersecting_spines:
             #remove mesh from collection
-            bpy.ops.collection.objects_remove_all()
+            
+            #bpy.ops.collection.objects_remove_all() #TODO: this removes everything, including the cube/dendrite
             
             spine_base = spine_base_list[counter]            
             spine_tip = spine_tip_list[counter]
@@ -318,7 +333,6 @@ class AutoSegmenter(bpy.types.Operator):
         self.find_spine_base()
         self.find_spine_tip()
         self.create_base_and_tip()
-        BVH_spine_mesh.free()
         return {'FINISHED'}
 
 class SpinesToCollections(bpy.types.Operator):
