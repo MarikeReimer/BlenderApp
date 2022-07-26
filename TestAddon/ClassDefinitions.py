@@ -194,6 +194,7 @@ class AutoSegmenter(bpy.types.Operator):
             new_collection = bpy.data.collections.new(new_collection_name)
             bpy.context.scene.collection.children.link(new_collection)
             new_collection.objects.link(spine_mesh)
+        BVH_spine_mesh.free()
         return(face_centers_list, intersecting_spines)     
     
     def find_spine_base(self):
@@ -253,8 +254,7 @@ class AutoSegmenter(bpy.types.Operator):
             spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
             spine_tip = spine_coordinates_dict[spine_tip_index]
             spine_tip_list.append(spine_tip)
-        # print("intersecting spines after", len(intersecting_spines))
-        # print("spine tip list", len(spine_tip_list))
+
         return(spine_tip_list)
 
     def create_base_and_tip(self):
