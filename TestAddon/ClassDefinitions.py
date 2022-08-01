@@ -126,20 +126,8 @@ class AutoSegmenter(bpy.types.Operator):
         #Load the dendrite data into a mesh
         dendrite_mesh = bmesh.new()
         dendrite_mesh.from_mesh(bpy.context.scene.objects[dendrite.name].data)
-        print("dendrite_mesh", dendrite_mesh)
-
-        #Squish?
-        temp_mesh = bpy.data.meshes.new("tempmesh")
-        dendrite_mesh.to_mesh(temp_mesh)
-        
-
-        #Reload the hopefully squished mesh
-        dendrite_mesh.from_mesh(temp_mesh)
-
         dendrite_mesh.transform(dendrite.matrix_world)
         dendrite_BVHtree = BVHTree.FromBMesh(dendrite_mesh)
-
-        print("dendrite mesh reloaded", dendrite_mesh)
 
         dendrite_mesh.free()
         return {'FINISHED'}
@@ -168,8 +156,7 @@ class AutoSegmenter(bpy.types.Operator):
             #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
             #Check to see if the spine overlaps 
 
-        for spine_mesh in mesh_list:
-            print("Spine name", spine_mesh.name)                                   
+        for spine_mesh in mesh_list:                                 
             BVH_spine_mesh = bmesh.new()
             BVH_spine_mesh.from_mesh(bpy.context.scene.objects[spine_mesh.name].data)
             BVH_spine_mesh.transform(spine_mesh.matrix_world)
@@ -185,16 +172,14 @@ class AutoSegmenter(bpy.types.Operator):
                 intersecting_spines.append(BVH_spine_mesh)
                 spine_names.append(spine_mesh.name)
             else:
-                break
+                pass
         
-        print("intersecting_spines", intersecting_spines)
         return {'FINISHED'}
 
     def spines_to_collections(self):
         print("moving spines to folders")
         #Add spines to their own folders
         for spine_mesh in mesh_list:
-            print("Spine mesh entering spines to collections", spine_mesh.name)
             old_collection_name = spine_mesh.users_collection
             old_collection_name = old_collection_name[0]
             old_collection_name.objects.unlink(spine_mesh)
