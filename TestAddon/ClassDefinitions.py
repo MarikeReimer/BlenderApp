@@ -119,23 +119,9 @@ class AutoSegmenter(bpy.types.Operator):
     
     def dendrite_BVH_tree(self):
         global dendrite_BVHtree
-        global mesh_list
         print("Growing BVHtree")
-        #Select Dendrite mesh
-        dendrite = bpy.context.active_object
-        #Create a list of all meshes except for the       
-        mesh_list = [ mesh for mesh in bpy.context.scene.objects if mesh.type == 'MESH']  
-        mesh_list.remove(dendrite)
-
-        #Add dendrite to its own folder
-        old_collection_name = dendrite.users_collection
-        old_collection_name = old_collection_name[0]
-        old_collection_name.objects.unlink(dendrite)
-        
-        new_collection_name = dendrite.name
-        new_collection = bpy.data.collections.new(new_collection_name)
-        bpy.context.scene.collection.children.link(new_collection)
-        new_collection.objects.link(dendrite)
+        #Select Dendrite mesh        
+        dendrite = bpy.context.active_object     
     
         #Turn the dendrite into a BVH tree
         dendrite_mesh = bmesh.new()
@@ -144,6 +130,16 @@ class AutoSegmenter(bpy.types.Operator):
         dendrite_BVHtree = BVHTree.FromBMesh(dendrite_mesh)
 
         dendrite_mesh.free()
+        return {'FINISHED'}
+        
+
+    def list_meshes(self):
+        global mesh_list
+        print("finding meshes")
+        mesh_list = [ mesh for mesh in bpy.context.scene.objects if mesh.type == 'MESH'] 
+        print("found meshes", mesh_list) 
+        return {'FINISHED'}
+        
     
     def find_intersections(self):
         global intersecting_spines
@@ -323,6 +319,7 @@ class AutoSegmenter(bpy.types.Operator):
     def execute(self, context):
         print("entering execute")
         self.dendrite_BVH_tree()
+        self.list_meshes()
         self.find_intersections()
         self.spines_to_collections()
         self.find_intersecting_face_centers()
