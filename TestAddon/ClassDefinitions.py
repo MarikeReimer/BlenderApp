@@ -181,6 +181,7 @@ class AutoSegmenter(bpy.types.Operator):
         print("moving spines to folders")
         #Add spines to their own folders
         for spine_mesh in mesh_list:
+            print("Spine mesh entering spines to collections", spine_mesh.name)
             old_collection_name = spine_mesh.users_collection
             old_collection_name = old_collection_name[0]
             old_collection_name.objects.unlink(spine_mesh)
@@ -198,11 +199,9 @@ class AutoSegmenter(bpy.types.Operator):
         counter = 0
 
         for BVH_spine_mesh in intersecting_spines:
-            print("BVH_spine_mesh", BVH_spine_mesh)
             face_centers = []
             
-            #Make a collection of points in the faces of intersecting faces  
-            print("overlapping_spine_face_index_list", overlapping_spine_face_index_list)  
+            #Make a collection of points in the faces of intersecting faces    
             for face_index in overlapping_spine_face_index_list[counter]:
                 face_data = BVH_spine_mesh.faces[face_index]                
                 face_centers.append(face_data.calc_center_median())
@@ -211,7 +210,7 @@ class AutoSegmenter(bpy.types.Operator):
             face_centers_list.append(face_centers)
             face_centers = []
 
-        print("face_centers_list", face_centers_list)
+        
         return(face_centers_list, intersecting_spines)     
     
     def find_spine_base(self):
@@ -223,9 +222,6 @@ class AutoSegmenter(bpy.types.Operator):
         counter = 0
 
         for spine_mesh in intersecting_spines:
-            print("spine mesh", spine_mesh)
-            print("face centers", face_centers_list[counter])
-
             #Add face centers as vertices:
             face_center_mesh = bpy.data.meshes.new("face centers")  # add the new mesh
             obj = bpy.data.objects.new(face_center_mesh.name, face_center_mesh)
@@ -415,7 +411,6 @@ class LengthVector(bpy.types.Operator):
 
         #Create a vector between the vertex and the selected mesh's center of mass
         vector_to_center = Vector(center_of_mass_vector_destination - selected_vertex_vector_origin)  
-        print(vector_to_center)
             #Raycast using the vector with the mesh's center of mass as its origin
             #Create second vector using the selected vertex and the "hit" from the Raycast
 
@@ -557,7 +552,7 @@ class WriteNWB(bpy.types.Operator):
             for i in collection.objects:
             #for i in bpy.context.scene.objects:
                 if i.type == 'MESH' and len(i.data.vertices) > 1:
-                    print(i.name, i.type, 'entering volume loop')
+
                     
                     #CENTER OF MASS
                     center_of_mass = i.matrix_world.translation
@@ -591,7 +586,6 @@ class WriteNWB(bpy.types.Operator):
 
                     
                     mesh_verts = np.array(mesh_verts)
-                    print(mesh_verts)
                 
                     #Create unique name
                     segmentation_name = i.name + ' mesh plane_segmentaton'
