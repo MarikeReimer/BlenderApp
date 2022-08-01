@@ -136,8 +136,11 @@ class AutoSegmenter(bpy.types.Operator):
     def list_meshes(self):
         global mesh_list
         print("finding meshes")
-        mesh_list = [ mesh for mesh in bpy.context.scene.objects if mesh.type == 'MESH'] 
-        print("found meshes", mesh_list) 
+        mesh_list = [ mesh for mesh in bpy.data.objects if mesh.type == 'MESH']
+        print(len(mesh_list), "# meshes before")
+        dendrite = bpy.context.active_object  
+        mesh_list.remove(dendrite)
+        print(len(mesh_list), "# meshes after")
         return {'FINISHED'}
         
     
