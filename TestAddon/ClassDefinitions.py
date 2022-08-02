@@ -391,18 +391,20 @@ class ManualLength(bpy.types.Operator):
 
     def CreateEndpointMesh(self, spine_base, spine_tip):
         #Use the spine base and spine tip coordinates to create points in active object's collection
+        #Get active object
+        obj = bpy.context.object
+        
         #Make a mesh
         edges = []
         faces = []
         verts = [spine_base, spine_tip]    
-        endpoint_mesh = bpy.data.meshes.new("endpoints_")  
+        endpoint_mesh = bpy.data.meshes.new("endpoints_" + str(obj.name))  
         endpoint_mesh.from_pydata(verts, edges, faces)
 
         #Use the selected object's coordinates for reference frame
-        endpoint_mesh.transform(bpy.context.active_object.matrix_world)
+        endpoint_mesh.transform(obj.matrix_world)
 
         #Link to active object's collection
-        obj = bpy.context.object
         collection = obj.users_collection[0]        
             
         endpoints = bpy.data.objects.new(endpoint_mesh.name, endpoint_mesh)
@@ -412,9 +414,6 @@ class ManualLength(bpy.types.Operator):
     
     def execute(self, context):
         print("Executing")
-        #self.FindSelectedVerts()
-        #self.FindSpineBase(vert_list = self.FindSelectedVerts())
-        #self.FindSpineTip(spine_base = self.FindSpineBase(vert_list = self.FindSelectedVerts()))
         vert_list = self.FindSelectedVerts()
         spine_base = self.FindSpineBase(vert_list)
         spine_tip = self.FindSpineTip(spine_base)
