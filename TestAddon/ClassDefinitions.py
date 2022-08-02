@@ -653,47 +653,61 @@ class WriteNWB(bpy.types.Operator):
 
             for i in collection.objects:
 
-                if i.type == 'MESH' and len(i.data.vertices) > 2:                    
-                    #CENTER OF MASS
-                    center_of_mass = i.matrix_world.translation
-
-                    #Extract XYZ coordinates 
-                    center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
-                
-                    #Get mesh data from the active object in the Scene Collection
-                    mesh = i.data
-
-                    #Create an empty BMesh
-                    bm = bmesh.new()
-                    #Fill Bmesh with the mesh data from the object  
-                    bm.from_mesh(mesh)
-
-                    volume = bm.calc_volume(signed=False)
-                    bm.free()
-
-
-                    #SURFACE AREA
-                    #surface_area = sum(i.calc_area() for i in bm.faces)
+                if i.type == 'MESH' and len(i.data.vertices) == 2:
+                    point1 = i.data.vertices[0].co
+                    point2 = i.data.vertices[1].co
+                    length = math.dist(point1, point2)
                     
-                    #Add variables to mesh_surface NWB extension
-
-                    # for v in bm.verts:
-                    #     mesh_verts.append(v.co)
-                
-                    # for face in mesh.polygons:
-                    #     vertices = face.vertices
-                    #     face_vert_list = [vertices[0], vertices[1], vertices[2]]
-                    #     faces.append(face_vert_list)
-
-                    plane_segmentation.add_column('volume', 'volume')
-                    # mesh_verts = np.array(mesh_verts)  
+                    plane_segmentation.add_column('length', 'length')
                     plane_segmentation.add_roi(
                         image_mask=np.ones((4,4)), #This line holds dummy data and won't work without it.
                         # faces=faces,
                         # vertices=vertices,
-                        volume=volume,
-                    #length=length,
-                    )
+                        #volume=volume,
+                        length=length,
+                        )
+
+                # if i.type == 'MESH' and len(i.data.vertices) > 2:                    
+                #     #CENTER OF MASS
+                #     center_of_mass = i.matrix_world.translation
+
+                #     #Extract XYZ coordinates 
+                #     center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
+                
+                #     #Get mesh data from the active object in the Scene Collection
+                #     mesh = i.data
+
+                #     #Create an empty BMesh
+                #     bm = bmesh.new()
+                #     #Fill Bmesh with the mesh data from the object  
+                #     bm.from_mesh(mesh)
+
+                #     volume = bm.calc_volume(signed=False)
+                #     bm.free()
+
+
+                #     #SURFACE AREA
+                #     #surface_area = sum(i.calc_area() for i in bm.faces)
+                    
+                #     #Add variables to mesh_surface NWB extension
+
+                #     # for v in bm.verts:
+                #     #     mesh_verts.append(v.co)
+                
+                #     # for face in mesh.polygons:
+                #     #     vertices = face.vertices
+                #     #     face_vert_list = [vertices[0], vertices[1], vertices[2]]
+                #     #     faces.append(face_vert_list)
+
+                #     plane_segmentation.add_column('volume', 'volume')
+                #     # mesh_verts = np.array(mesh_verts)  
+                #     plane_segmentation.add_roi(
+                #         image_mask=np.ones((4,4)), #This line holds dummy data and won't work without it.
+                #         # faces=faces,
+                #         # vertices=vertices,
+                #         volume=volume,
+                #     #length=length,
+                #     )
       
 
                 # elif i.type == 'MESH' and len(i.data.vertices) == 2:
