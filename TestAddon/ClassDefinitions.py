@@ -363,6 +363,7 @@ class ManualLength(bpy.types.Operator):
     
     def FindSpineBase(self,vert_list):
         print("Finding spine base")
+        #For when there is more than one selected vertex, find the center
 
         x, y, z = [ sum( [v.co[i] for v in vert_list] ) for i in range(3)] #TODO: Should be 2?
         count = float(len(vert_list))
@@ -372,6 +373,7 @@ class ManualLength(bpy.types.Operator):
         return(spine_base)
 
     def FindSpineTip(self, spine_base):
+        #Compare the distance between the spine base and all other verices to find the farthest point
         print("Finding spine tip")
         spine_length_dict = {}
         spine_coordinates_dict = {}
@@ -388,13 +390,18 @@ class ManualLength(bpy.types.Operator):
         return(spine_tip)
 
     def CreateEndpointMesh(self, spine_base, spine_tip):
+        #Use the spine base and spine tip coordinates to create points in active object's collection
+        #Make a mesh
         edges = []
         faces = []
         verts = [spine_base, spine_tip]    
         endpoint_mesh = bpy.data.meshes.new("endpoints_")  
         endpoint_mesh.from_pydata(verts, edges, faces)
+
+        #Use the selected object's coordinates for reference frame
         endpoint_mesh.transform(bpy.context.active_object.matrix_world)
 
+        #Link to active object's collection
         obj = bpy.context.object
         collection = obj.users_collection[0]        
             
