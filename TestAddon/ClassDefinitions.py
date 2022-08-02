@@ -69,7 +69,7 @@ class NeuronAnalysis(bpy.types.Panel):
 
         #Add button that moves spines to folders
         row = layout.row()
-        row.operator('object.spines_to_collections', text = 'Spines to Collections')
+        row.operator('object.spines_to_collections', text = 'Move to Collections')
 
         #Add button that creates bounding boxes around meshes
         row = layout.row()
@@ -79,13 +79,19 @@ class NeuronAnalysis(bpy.types.Panel):
         row = layout.row()
         row.operator('object.length_vector', text = 'Draw Length Vector')
 
-        #Add button that adds a length vector to a mesh
+        #Add button that moves spines to folders and adds a spine base and tip 
         row = layout.row()
         row.operator('object.autosegmenter', text = 'Auto-Segment')
+
+        #Add button that adds a spine tip if you select its base
+        row = layout.row()
+        row.operator('object.individual_length_finder', text = 'Manual Length')    
 
         #Add button that writes data from panel and object values to an NWB file
         row = layout.row()
         row.operator('object.write_nwb', text = "Write NWB File")
+
+
 
 #ROW OPERATORS
 
@@ -328,6 +334,63 @@ class AutoSegmenter(bpy.types.Operator):
         self.find_spine_base()
         self.find_spine_tip()
         self.create_base_and_tip()
+        return {'FINISHED'}
+
+
+#Get selected vertex and turn it into a vector called "Spine Base"
+#Compare vertex with other vertices in mesh
+#Create Spine Tip at the maximum distance from Spine Base
+
+class ManualLength(bpy.types.Operator):
+    bl_idname = 'object.individual_length_finder' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'Manual Length'
+
+    def FindSelectedVerts(self):
+        #Get selected verticies
+        mode = bpy.context.active_object.mode
+        bpy.ops.object.mode_set(mode='OBJECT')
+        vert_list = []
+        for v in bpy.context.active_object.data.vertices:
+            if v.select:
+                vert_list.append(v)
+            else:
+                pass
+        
+        print(vert_list)
+        bpy.ops.object.mode_set(mode=mode)
+        return(vert_list)
+    
+    def FindSpineBase(self,vert_list):
+        edges = []
+        faces = []      
+
+        x, y, z = [ sum( [v.co[i] for v in vert_list] ) for i in range(3)] #TODO: Should be 2?
+        count = float(len(vert_list))
+        spine_base = Vector( (x, y, z ) ) / count        
+        spine_base_coords = [spine_base]
+
+        spine_base_mesh = bpy.data.meshes.new("Spine Base")
+        spine_base_mesh.from_pydata(spine_base_coords, edges, faces)
+        return {spine_base_mesh}
+
+    def FindSpineTip(self, spine_base_mesh)
+        spine_length_dict = {}
+        spine_coordinates_dict = {}
+                                    
+        for vert in bpy.context.active_object.data.vertices:
+            length = math.dist(vert.co, spine_base_mesh)         
+            spine_length_dict[vert.index] = length
+            spine_coordinates_dict[vert.index] = vert.co                
+
+            spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
+            spine_tip = spine_coordinates_dict[spine_tip_index]
+            print("spine_tip", spine_tip)
+        return {'FINISHED'}
+    
+    def execute(self, context):
+        #self.FindSelectedVerts()
+        self.FindSpineBase(vert_list = self.FindSelectedVerts())
+        self.FindSpineTip(spine_base_mesh = self.FindSpineBase())
         return {'FINISHED'}
 
 class SpinesToCollections(bpy.types.Operator):
