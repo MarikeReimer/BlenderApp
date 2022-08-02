@@ -363,17 +363,11 @@ class ManualLength(bpy.types.Operator):
     
     def FindSpineBase(self,vert_list):
         print("Finding spine base")
-        # edges = []
-        # faces = []      
 
         x, y, z = [ sum( [v.co[i] for v in vert_list] ) for i in range(3)] #TODO: Should be 2?
         count = float(len(vert_list))
         spine_base = Vector( (x, y, z ) ) / count        
-        #spine_base_coords = [spine_base]
 
-        # spine_base_mesh = bpy.data.meshes.new("Endpoints")
-        # spine_base_mesh.from_pydata(spine_base_coords, edges, faces)
-        # return {spine_base_mesh}
         print("spine_base_coords", spine_base)
         return(spine_base)
 
@@ -383,23 +377,36 @@ class ManualLength(bpy.types.Operator):
         spine_coordinates_dict = {}
                                     
         for vert in bpy.context.active_object.data.vertices:
-            #length = math.dist(vert.co, bpy.data.meshes["Endpoints"].vertices[0].co)
             length = math.dist(vert.co, spine_base)         
             spine_length_dict[vert.index] = length
             spine_coordinates_dict[vert.index] = vert.co                
 
         spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
         spine_tip = spine_coordinates_dict[spine_tip_index]
-            
-        #spine_tip.freeze()
+
         print("spine_tip", spine_tip)
         return(spine_tip)
+
+    def CreateEndpointMesh(self, spine_base, spine_tip):
+        edges = []
+        faces = []
+        verts = [spine_base, spine_tip]    
+        endpoint_mesh = bpy.data.meshes.new("endpoints_")  
+        endpoint_mesh.from_pydata(verts, edges, faces)
+
+        obj = bpy.context.object
+        collection = obj.users_collection[0]        
+            
+        obj = bpy.data.objects.new(endpoint_mesh.name, endpoint_mesh)
+        collection.objects.link(obj)
+        return {'FINISHED'}
     
     def execute(self, context):
         print("Executing")
         #self.FindSelectedVerts()
         #self.FindSpineBase(vert_list = self.FindSelectedVerts())
-        self.FindSpineTip(spine_base = self.FindSpineBase(vert_list = self.FindSelectedVerts()))
+        #self.FindSpineTip(spine_base = self.FindSpineBase(vert_list = self.FindSelectedVerts()))
+        self.CreateEndpointMesh(spine_base = self.FindSpineBase(vert_list = self.FindSelectedVerts()), spine_tip = self.FindSpineTip(spine_base = self.FindSpineBase(vert_list = self.FindSelectedVerts())))
         return {'FINISHED'}
 
 class SpinesToCollections(bpy.types.Operator):
