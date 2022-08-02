@@ -357,7 +357,7 @@ class ManualLength(bpy.types.Operator):
             else:
                 pass
         
-        print(vert_list)
+        print("Original vertex coords", vert_list[0])
         bpy.ops.object.mode_set(mode=mode)
         return(vert_list)
     
@@ -393,12 +393,14 @@ class ManualLength(bpy.types.Operator):
         verts = [spine_base, spine_tip]    
         endpoint_mesh = bpy.data.meshes.new("endpoints_")  
         endpoint_mesh.from_pydata(verts, edges, faces)
+        endpoint_mesh.transform(bpy.context.active_object.matrix_world)
 
         obj = bpy.context.object
         collection = obj.users_collection[0]        
             
-        obj = bpy.data.objects.new(endpoint_mesh.name, endpoint_mesh)
-        collection.objects.link(obj)
+        endpoints = bpy.data.objects.new(endpoint_mesh.name, endpoint_mesh)
+        
+        collection.objects.link(endpoints)
         return {'FINISHED'}
     
     def execute(self, context):
