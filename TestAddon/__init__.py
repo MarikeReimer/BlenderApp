@@ -15,7 +15,7 @@ from . ClassDefinitions import NeuronAnalysis
 from . ClassDefinitions import ExplodingBits
 from . ClassDefinitions import SpinesToCollections
 from . ClassDefinitions import BoundingBoxes
-from . ClassDefinitions import LengthVector
+#from . ClassDefinitions import LengthVector
 from . ClassDefinitions import AutoSegmenter
 from . ClassDefinitions import ManualLength
 from . ClassDefinitions import WriteNWB
@@ -39,7 +39,7 @@ def register():
     bpy.utils.register_class(ExplodingBits)
     bpy.utils.register_class(SpinesToCollections)
     bpy.utils.register_class(BoundingBoxes)
-    bpy.utils.register_class(LengthVector)
+    #bpy.utils.register_class(LengthVector)
     bpy.utils.register_class(AutoSegmenter)
     bpy.utils.register_class(ManualLength)
     bpy.utils.register_class(WriteNWB)
@@ -105,7 +105,7 @@ def unregister():
     bpy.utils.unregister_class(ExplodingBits)
     bpy.utils.unregister_class(SpinesToCollections)
     bpy.utils.unregister_class(BoundingBoxes)
-    bpy.utils.unregister_class(LengthVector)
+    #bpy.utils.unregister_class(LengthVector)
     bpy.utils.unregister_class(AutoSegmenter)
     bpy.utils.unregister_class(ManualLength)
     bpy.utils.unregister_class(WriteNWB)

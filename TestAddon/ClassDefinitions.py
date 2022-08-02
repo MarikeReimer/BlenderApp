@@ -76,8 +76,8 @@ class NeuronAnalysis(bpy.types.Panel):
         row.operator('object.bounding_boxes', text = 'Add Bounding Box')
 
         #Add button that adds a length vector to a mesh
-        row = layout.row()
-        row.operator('object.length_vector', text = 'Draw Length Vector')
+        # row = layout.row()
+        # row.operator('object.length_vector', text = 'Draw Length Vector')
 
         #Add button that moves spines to folders and adds a spine base and tip 
         row = layout.row()
@@ -244,7 +244,7 @@ class AutoSegmenter(bpy.types.Operator):
             obj = bpy.data.objects.new(spine_base_mesh.name, spine_base_mesh) 
 
             #Find the center of the overlapping polygons and store it in "Spine Base"
-            x, y, z = [ sum( [v.co[i] for v in face_center_mesh.vertices] ) for i in range(3)] #TODO: Should be 2?
+            x, y, z = [ sum( [v.co[i] for v in face_center_mesh.vertices] ) for i in range(3)] #Tested: This does need to be 3
             count = float(len(face_center_mesh.vertices))
             spine_base = Vector( (x, y, z ) ) / count        
             spine_base_coords = [spine_base]
@@ -366,7 +366,7 @@ class ManualLength(bpy.types.Operator):
         print("Finding spine base")
         #For when there is more than one selected vertex, find the center
 
-        x, y, z = [ sum( [v.co[i] for v in vert_list] ) for i in range(3)] #TODO: Should be 2?
+        x, y, z = [ sum( [v.co[i] for v in vert_list] ) for i in range(3)] #Tested this - it does need to be 3
         count = float(len(vert_list))
         spine_base = Vector( (x, y, z ) ) / count        
 
@@ -462,72 +462,72 @@ class BoundingBoxes(bpy.types.Operator):
 
         return {'FINISHED'}
 
-class LengthVector(bpy.types.Operator):
-    bl_idname = 'object.length_vector' #operators must follow the naming convention of object.lowercase_letters
-    bl_label = 'Length Vector'
+# class LengthVector(bpy.types.Operator):
+#     bl_idname = 'object.length_vector' #operators must follow the naming convention of object.lowercase_letters
+#     bl_label = 'Length Vector'
 
-    def execute(self, context):
-        # Keep track of current mode
-        mode = bpy.context.active_object.mode
-        #Set to object mode
-        bpy.ops.object.mode_set(mode='OBJECT')
+#     def execute(self, context):
+#         # Keep track of current mode
+#         mode = bpy.context.active_object.mode
+#         #Set to object mode
+#         bpy.ops.object.mode_set(mode='OBJECT')
         
-        # Get the currently select object
-        obj = bpy.context.object
+#         # Get the currently select object
+#         obj = bpy.context.object
       
-        # Create a numpy array with empty values for each vertex
-        sel = np.zeros(len(obj.data.vertices), dtype=np.bool)
+#         # Create a numpy array with empty values for each vertex
+#         sel = np.zeros(len(obj.data.vertices), dtype=np.bool)
         
-        # Populate the array with True/False if the vertex is selected
-        obj.data.vertices.foreach_get('select', sel)
+#         # Populate the array with True/False if the vertex is selected
+#         obj.data.vertices.foreach_get('select', sel)
         
-        # Get selected vertex
-        for i in np.where(sel==True)[0]:
-            # Loop over each currently selected vertex
-            v = obj.data.vertices[i]
+#         # Get selected vertex
+#         for i in np.where(sel==True)[0]:
+#             # Loop over each currently selected vertex
+#             v = obj.data.vertices[i]
            
-            #For now we will just use the first vertex, but future iteratations could make raycasts from a selection of multiple
+#             #For now we will just use the first vertex, but future iteratations could make raycasts from a selection of multiple
 
-        selected_vertex = [v.co[0], v.co[1], v.co[2]]     
-        selected_vertex_vector_origin = Vector(selected_vertex)         
+#         selected_vertex = [v.co[0], v.co[1], v.co[2]]     
+#         selected_vertex_vector_origin = Vector(selected_vertex)         
         
-        #Get center of mass
-        center_of_mass = obj.matrix_world.translation
+#         #Get center of mass
+#         center_of_mass = obj.matrix_world.translation
 
-        #Extract XYZ coordinates 
-        center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
-        center_of_mass_vector_destination = Vector(center_of_mass)
+#         #Extract XYZ coordinates 
+#         center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
+#         center_of_mass_vector_destination = Vector(center_of_mass)
 
-        #Create a vector between the vertex and the selected mesh's center of mass
-        vector_to_center = Vector(center_of_mass_vector_destination - selected_vertex_vector_origin)  
-            #Raycast using the vector with the mesh's center of mass as its origin
-            #Create second vector using the selected vertex and the "hit" from the Raycast
+#         #Create a vector between the vertex and the selected mesh's center of mass
+#         vector_to_center = Vector(center_of_mass_vector_destination - selected_vertex_vector_origin)  
+#             #Raycast using the vector with the mesh's center of mass as its origin
+#             #Create second vector using the selected vertex and the "hit" from the Raycast
 
-        cast_result = obj.ray_cast(selected_vertex_vector_origin, vector_to_center)
+#         cast_result = obj.ray_cast(selected_vertex_vector_origin, vector_to_center)
                 
-        #Extract coordinates from cast_result
-        spine_tip = Vector(cast_result[1])
+#         #Extract coordinates from cast_result
+#         spine_tip = Vector(cast_result[1])
 
-        verts = [selected_vertex_vector_origin, spine_tip] 
+#         verts = [selected_vertex_vector_origin, spine_tip] 
 
 
-        #Get the collection for the originally selected object     
-        collection = obj.users_collection[0]
-        mesh = bpy.data.meshes.new("lengthvector_" + collection.name)  # add the new mesh
-        new_mesh = bpy.data.objects.new(mesh.name, mesh)
+#         #Get the collection for the originally selected object     
+#         collection = obj.users_collection[0]
+#         mesh = bpy.data.meshes.new("lengthvector_" + collection.name)  # add the new mesh
+#         new_mesh = bpy.data.objects.new(mesh.name, mesh)
 
-        collection.objects.link(new_mesh)
-        bpy.context.view_layer.objects.active = new_mesh
+#         collection.objects.link(new_mesh)
+#         bpy.context.view_layer.objects.active = new_mesh
 
-        edges = []
-        faces = []
+#         edges = []
+#         faces = []
 
-        mesh.from_pydata(verts, edges, faces)
+#         mesh.from_pydata(verts, edges, faces)
 
-        # Go back to the previous mode
-        bpy.ops.object.mode_set(mode=mode)
+#         # Go back to the previous mode
+#         bpy.ops.object.mode_set(mode=mode)
 
-        return {'FINISHED'}
+#         return {'FINISHED'}
 
 
 
