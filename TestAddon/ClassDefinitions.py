@@ -337,9 +337,10 @@ class AutoSegmenter(bpy.types.Operator):
         return {'FINISHED'}
 
 
-#Get selected vertex and turn it into a vector called "Spine Base"
-#Compare vertex with other vertices in mesh
-#Create Spine Tip at the maximum distance from Spine Base
+#Get selected vertex/verticies and turn them into a vector called "Spine Base"
+#Compare Spine base with other vertices in mesh
+#Find Spine Tip at the maximum distance from Spine Base
+#Create Spine base and Tip in the collection of the original spine 
 
 class ManualLength(bpy.types.Operator):
     bl_idname = 'object.individual_length_finder' #operators must follow the naming convention of object.lowercase_letters
@@ -369,7 +370,6 @@ class ManualLength(bpy.types.Operator):
         count = float(len(vert_list))
         spine_base = Vector( (x, y, z ) ) / count        
 
-        print("spine_base_coords", spine_base)
         return(spine_base)
 
     def FindSpineTip(self, spine_base):
@@ -415,7 +415,10 @@ class ManualLength(bpy.types.Operator):
         #self.FindSelectedVerts()
         #self.FindSpineBase(vert_list = self.FindSelectedVerts())
         #self.FindSpineTip(spine_base = self.FindSpineBase(vert_list = self.FindSelectedVerts()))
-        self.CreateEndpointMesh(spine_base = self.FindSpineBase(vert_list = self.FindSelectedVerts()), spine_tip = self.FindSpineTip(spine_base = self.FindSpineBase(vert_list = self.FindSelectedVerts())))
+        vert_list = self.FindSelectedVerts()
+        spine_base = self.FindSpineBase(vert_list)
+        spine_tip = self.FindSpineTip(spine_base)
+        self.CreateEndpointMesh(spine_base, spine_tip)
         return {'FINISHED'}
 
 class SpinesToCollections(bpy.types.Operator):
