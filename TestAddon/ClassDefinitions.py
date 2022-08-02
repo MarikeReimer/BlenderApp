@@ -650,9 +650,6 @@ class WriteNWB(bpy.types.Operator):
                 imaging_plane = imaging_plane,     
                 reference_images = raw_data
                     )               
-            
-            plane_segmentation.add_column('volume', 'volume')
-            #plane_segmentation.add_column('length', 'length')
 
             for i in collection.objects:
 
@@ -672,10 +669,11 @@ class WriteNWB(bpy.types.Operator):
                     bm.from_mesh(mesh)
 
                     volume = bm.calc_volume(signed=False)
+                    bm.free()
 
 
                     #SURFACE AREA
-                    surface_area = sum(i.calc_area() for i in bm.faces)
+                    #surface_area = sum(i.calc_area() for i in bm.faces)
                     
                     #Add variables to mesh_surface NWB extension
 
@@ -687,14 +685,8 @@ class WriteNWB(bpy.types.Operator):
                     #     face_vert_list = [vertices[0], vertices[1], vertices[2]]
                     #     faces.append(face_vert_list)
 
-                    
-                    # mesh_verts = np.array(mesh_verts)        
-
-                    # elif i.type == 'MESH' and len(i.data.vertices) == 2:
-                    #     print("verts?", i.verticies)
-                    #     length = 1
-                    
-
+                    plane_segmentation.add_column('volume', 'volume')
+                    # mesh_verts = np.array(mesh_verts)  
                     plane_segmentation.add_roi(
                         image_mask=np.ones((4,4)), #This line holds dummy data and won't work without it.
                         # faces=faces,
@@ -702,9 +694,23 @@ class WriteNWB(bpy.types.Operator):
                         volume=volume,
                     #length=length,
                     )
+      
 
+                # elif i.type == 'MESH' and len(i.data.vertices) == 2:
+                #     point1 = i.data.vertices[0].co
+                #     point2 = i.data.vertices[1].co
+                #     length = math.dist(point1, point2)
                     
-                    bm.free()
+                #     plane_segmentation.add_column('length', 'length')
+                #     plane_segmentation.add_roi(
+                #         image_mask=np.ones((4,4)), #This line holds dummy data and won't work without it.
+                #         # faces=faces,
+                #         # vertices=vertices,
+                #         #volume=volume,
+                #         length=length,
+                #         )
+
+                
                     #Clear lists for next loop
                     # faces = []
                     # mesh_verts = []
