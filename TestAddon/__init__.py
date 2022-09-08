@@ -11,11 +11,9 @@ import bpy
 
 #Import class definitions
 from . ClassDefinitions import NeuronAnalysis
-
 from . ClassDefinitions import ExplodingBits
 from . ClassDefinitions import SpinesToCollections
 from . ClassDefinitions import BoundingBoxes
-#from . ClassDefinitions import LengthVector
 from . ClassDefinitions import AutoSegmenter
 from . ClassDefinitions import ManualLength
 from . ClassDefinitions import WriteNWB
@@ -39,7 +37,6 @@ def register():
     bpy.utils.register_class(ExplodingBits)
     bpy.utils.register_class(SpinesToCollections)
     bpy.utils.register_class(BoundingBoxes)
-    #bpy.utils.register_class(LengthVector)
     bpy.utils.register_class(AutoSegmenter)
     bpy.utils.register_class(ManualLength)
     bpy.utils.register_class(WriteNWB)
@@ -72,6 +69,8 @@ def register():
       (name = "Plane Description", default = "plane description")
     bpy.types.Scene.excitation_lambda = bpy.props.FloatProperty \
       (name = "Excitation Lambda")
+    bpy.types.Scene.experimenter = bpy.props.StringProperty \
+      (name = "Experimenter")
     bpy.types.Scene.imaging_rate = bpy.props.FloatProperty \
       (name = "Imaging Rate")
     bpy.types.Scene.indicator = bpy.props.StringProperty \
@@ -91,10 +90,6 @@ def register():
       (name = "Optical Channel Description", default = "Channel for YFP")
     bpy.types.Scene.emission_lambda = bpy.props.FloatProperty \
       (name = "emission_lambda")
-    # bpy.types.Scene.wavelength = bpy.props.FloatProperty \
-    #   (name = "wavelength")
-    
-  
 
 #Unregister classes so that they don't clash with other addons
 def unregister():
@@ -105,7 +100,6 @@ def unregister():
     bpy.utils.unregister_class(ExplodingBits)
     bpy.utils.unregister_class(SpinesToCollections)
     bpy.utils.unregister_class(BoundingBoxes)
-    #bpy.utils.unregister_class(LengthVector)
     bpy.utils.unregister_class(AutoSegmenter)
     bpy.utils.unregister_class(ManualLength)
     bpy.utils.unregister_class(WriteNWB)
@@ -116,10 +110,12 @@ def unregister():
     bpy.types.Scene.subject_description
     bpy.types.Scene.sex
     bpy.types.Scene.species
+    
     #NWBFile fields
     bpy.types.Scene.identifier
     bpy.types.Scene.session_start_time
     bpy.types.Scene.session_description
+    bpy.types.Scene.experimenter
 
     #Imaging plane fields
     bpy.types.Scene.plane_name
@@ -133,7 +129,7 @@ def unregister():
     bpy.types.Scene.optical_channel_name
     bpy.types.Scene.optical_channel_description
     bpy.types.Scene.emission_lambda
-    # bpy.types.Scene.wavelength
+
 
 
 

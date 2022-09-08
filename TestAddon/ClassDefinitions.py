@@ -39,6 +39,7 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "sex")
         row.prop(context.scene, "species")
         #Add fields for NWBFile strings
+        row.prop(context.scene, "experimenter")
         row.prop(context.scene, "identifier")
         row.prop(context.scene, "session_start_time")
         row.prop(context.scene, "session_description")
@@ -470,7 +471,7 @@ class WriteNWB(bpy.types.Operator):
         identifier = bpy.context.scene.identifier
         #session_start_time = datetime(bpy.context.scene.session_start_time.tolist())  #Should read this from meta data.
         session_description = bpy.context.scene.session_description
-        #Experimenter???? shroos forgot this field
+        experimenter = bpy.context.scene.experimenter
 
         #Extract Imaging Plane Strings
         plane_name = bpy.context.scene.plane_name
@@ -487,6 +488,7 @@ class WriteNWB(bpy.types.Operator):
 
         #Create pynwb subject
         subject = Subject(
+            age = age,
             description = subject_description,
             genotype = genotype,
             sex = sex,
@@ -495,9 +497,11 @@ class WriteNWB(bpy.types.Operator):
             )
 
         #Create pywnb File
-        nwbfile = NWBFile(session_description = session_description,
+        nwbfile = NWBFile(
+            experimenter = experimenter,
+            session_description = session_description,
             identifier = identifier, 
-            session_start_time = datetime.now(),  #Fix this
+            session_start_time = datetime.now(),  #TODO: Fix this
             file_create_date = datetime.now(),
             subject = subject
             )  
