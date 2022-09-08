@@ -619,21 +619,50 @@ class WriteNWB(bpy.types.Operator):
         nwbfile.add_acquisition(raw_data)
         return(nwbfile, imaging_plane, raw_data, nwbfile_name)
     
-    #Find the distance between the endpoints of spines
+    #Find the distance between the endpoints of spines when looping through collections
     def find_length(self, i):
         point1 = i.data.vertices[0].co
         point2 = i.data.vertices[1].co
         length = math.dist(point1, point2)
         return length
+
+    #Extract attributes from spine meshes when looping through collections
+    def find_mesh_attributes(self, i):                  
+        #CENTER OF MASS
+        center_of_mass = i.matrix_world.translation
+
+        #Extract XYZ coordinates 
+        center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
     
-    #Extract data from panel and object
+        #Get mesh data from the active object in the Scene Collection
+        mesh = i.data
+
+        #Create an empty BMesh
+        bm = bmesh.new()
+        #Fill Bmesh with the mesh data from the object  
+        bm.from_mesh(mesh)
+
+        volume = bm.calc_volume(signed=False)
+
+        #SURFACE AREA
+        surface_area = sum(i.calc_area() for i in bm.faces)
+        bm.free()
+        return center_of_mass, volume, surface_area
+    
+    #Extract data and pass to file
     def execute(self, context):
+        #Extract Panel Data
         holder = self.AddPanelData()
         nwbfile = holder[0]
         imaging_plane = holder[1]
         raw_data = holder[2]
         nwbfile_name = holder[3]
         
+        #Empty variables which are collected during the loop
+        length = ''
+        center_of_mass = ''
+        volume = ''
+        surface_area = ''
 
         #This loop iterates through all collections and extracts data about the meshes.
        
@@ -660,41 +689,29 @@ class WriteNWB(bpy.types.Operator):
 
                 if i.type == 'MESH' and len(i.data.vertices) == 2:
                     length = self.find_length(i)
-                    print(length)
 
                 elif i.type == 'MESH' and len(i.data.vertices) > 2:
-                    print('ping')
+                    mesh_attributes = self.find_mesh_attributes(i)
+                    center_of_mass = mesh_attributes[0]
+                    volume = mesh_attributes[1]
+                    surface_area = mesh_attributes[2]
 
+            plane_segmentation.add_column('center_of_mass', 'center_of_mass')
+            plane_segmentation.add_column('volume', 'volume')
+            plane_segmentation.add_column('surface_area', 'surface_area')         
             plane_segmentation.add_column('length', 'length')
+
             plane_segmentation.add_roi(
                 image_mask=np.ones((4,4)), #This line holds dummy data and won't work without it.
                 # faces=faces,
                 # vertices=vertices,
-                #volume=volume,
+                center_of_mass = center_of_mass,
+                volume=volume,
+                surface_area = surface_area,
                 length = length,
                 )
 
-                # if i.type == 'MESH' and len(i.data.vertices) > 2:                    
-                #     #CENTER OF MASS
-                #     center_of_mass = i.matrix_world.translation
 
-                #     #Extract XYZ coordinates 
-                #     center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
-                
-                #     #Get mesh data from the active object in the Scene Collection
-                #     mesh = i.data
-
-                #     #Create an empty BMesh
-                #     bm = bmesh.new()
-                #     #Fill Bmesh with the mesh data from the object  
-                #     bm.from_mesh(mesh)
-
-                #     volume = bm.calc_volume(signed=False)
-                #     bm.free()
-
-
-                #     #SURFACE AREA
-                #     #surface_area = sum(i.calc_area() for i in bm.faces)
                     
                 #     #Add variables to mesh_surface NWB extension
 
@@ -706,46 +723,12 @@ class WriteNWB(bpy.types.Operator):
                 #     #     face_vert_list = [vertices[0], vertices[1], vertices[2]]
                 #     #     faces.append(face_vert_list)
 
-                #     plane_segmentation.add_column('volume', 'volume')
-                #     # mesh_verts = np.array(mesh_verts)  
-                #     plane_segmentation.add_roi(
-                #         image_mask=np.ones((4,4)), #This line holds dummy data and won't work without it.
-                #         # faces=faces,
-                #         # vertices=vertices,
-                #         volume=volume,
-                #     #length=length,
-                #     )
-      
-
-                # elif i.type == 'MESH' and len(i.data.vertices) == 2:
-                #     point1 = i.data.vertices[0].co
-                #     point2 = i.data.vertices[1].co
-                #     length = math.dist(point1, point2)
-                    
-                #     plane_segmentation.add_column('length', 'length')
-                #     plane_segmentation.add_roi(
-                #         image_mask=np.ones((4,4)), #This line holds dummy data and won't work without it.
-                #         # faces=faces,
-                #         # vertices=vertices,
-                #         #volume=volume,
-                #         length=length,
-                #         )
-
                 
                     #Clear lists for next loop
                     # faces = []
                     # mesh_verts = []
 
-                # elif i.type == 'MESH' and len(i.data.vertices) == 2:
-                #     print("endpoint mesh", i)
-
-                #     length = 1
-
-                #     #plane_segmentation.add_column('length', 'length')
-
-                #     plane_segmentation.add_roi(
-                #         length=length,
-                #     )                      
+                   
 
 
         os.chdir('C:/Users/meowm/Downloads') #<to do> How do I handle this for the final version?
