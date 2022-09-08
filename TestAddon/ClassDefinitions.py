@@ -628,10 +628,11 @@ class WriteNWB(bpy.types.Operator):
 
     #Extract attributes from spine meshes when looping through collections
     def find_mesh_attributes(self, i):                  
-        #CENTER OF MASS
-        center_of_mass = i.matrix_world.translation
+        #center_of_mass = i.matrix_world.to_translation()
+        i.select_set(True)
+        bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
+        center_of_mass = i.location
 
-        #Extract XYZ coordinates 
         center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
     
         #Get mesh data from the active object in the Scene Collection
