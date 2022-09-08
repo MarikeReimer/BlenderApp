@@ -469,7 +469,8 @@ class WriteNWB(bpy.types.Operator):
         species = bpy.context.scene.species
         #Extract NWBfile Strings
         identifier = bpy.context.scene.identifier
-        #session_start_time = datetime(bpy.context.scene.session_start_time.tolist())  #Should read this from meta data.
+        session_start_time = bpy.context.scene.session_start_time
+        session_start_time = datetime.strptime(session_start_time, '%m/%d/%Y %I:%M:%S')      
         session_description = bpy.context.scene.session_description
         experimenter = bpy.context.scene.experimenter
 
@@ -501,7 +502,7 @@ class WriteNWB(bpy.types.Operator):
             experimenter = experimenter,
             session_description = session_description,
             identifier = identifier, 
-            session_start_time = datetime.now(),  #TODO: Fix this
+            session_start_time = session_start_time, 
             file_create_date = datetime.now(),
             subject = subject
             )  

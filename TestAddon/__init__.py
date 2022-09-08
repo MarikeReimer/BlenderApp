@@ -1,13 +1,5 @@
 import bpy
-
-#Used for importing dropdown menu pieces
-# from bpy.types import Panel, PropertyGroup, Scene, WindowManager
-# from bpy.props import (
-#     IntProperty,
-#     EnumProperty,
-#     StringProperty,
-#     PointerProperty,
-# )
+from datetime import datetime
 
 #Import class definitions
 from . ClassDefinitions import NeuronAnalysis
@@ -46,7 +38,7 @@ def register():
     bpy.types.Scene.subject_id = bpy.props.StringProperty \
       (name = "Subject ID", default = "Anm_")
     bpy.types.Scene.age = bpy.props.StringProperty \
-      (name = "Age", default = "PD#")
+      (name = "Age", default = "P#D")
     bpy.types.Scene.subject_description = bpy.props.StringProperty \
       (name = "Description", default = 'fuzzy')
     bpy.types.Scene.genotype = bpy.props.StringProperty \
@@ -59,7 +51,7 @@ def register():
     bpy.types.Scene.identifier = bpy.props.StringProperty \
       (name = "Identifier", default = 'findme')
     bpy.types.Scene.session_start_time = bpy.props.StringProperty \
-      (name = "Session Start Time", default = "hard coded")
+      (name = "Session Start Time") 
     bpy.types.Scene.session_description = bpy.props.StringProperty \
       (name = "Session Description", default = "We imaged neurons")
     #Imaging Plane Fields
@@ -78,7 +70,7 @@ def register():
     bpy.types.Scene.location = bpy.props.StringProperty \
       (name = "Location", default = "spinal cord")
     bpy.types.Scene.grid_spacing = bpy.props.StringProperty \
-      (name = "Grid Spacing", default = "hard coded")
+      (name = "Grid Spacing", default = "hard coded") #TODO: Fix this
     bpy.types.Scene.grid_spacing_unit = bpy.props.StringProperty \
       (name = "Grid Spacing Units", default = 'um')
     #Fields that would do better in a dropdown
@@ -132,4 +124,12 @@ def unregister():
 
 
 
+#Used for importing dropdown menu pieces in a pretty way
+# from bpy.types import Panel, PropertyGroup, Scene, WindowManager
+# from bpy.props import (
+#     IntProperty,
+#     EnumProperty,
+#     StringProperty,
+#     PointerProperty,
+# )
 
