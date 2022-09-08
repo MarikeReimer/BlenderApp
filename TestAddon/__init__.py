@@ -51,7 +51,7 @@ def register():
     bpy.types.Scene.identifier = bpy.props.StringProperty \
       (name = "Identifier", default = 'findme')
     bpy.types.Scene.session_start_time = bpy.props.StringProperty \
-      (name = "Session Start Time") 
+      (name = "Session Start Time", default = "08/30/2021  01:00:07") 
     bpy.types.Scene.session_description = bpy.props.StringProperty \
       (name = "Session Description", default = "We imaged neurons")
     #Imaging Plane Fields
