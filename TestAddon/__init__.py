@@ -70,9 +70,9 @@ def register():
       (name = "Plane Name", default = "my plane")
     bpy.types.Scene.plane_description = bpy.props.StringProperty \
       (name = "Plane Description", default = "plane description")
-    bpy.types.Scene.excitation_lambda = bpy.props.StringProperty \
+    bpy.types.Scene.excitation_lambda = bpy.props.FloatProperty \
       (name = "Excitation Lambda")
-    bpy.types.Scene.imaging_rate = bpy.props.StringProperty \
+    bpy.types.Scene.imaging_rate = bpy.props.FloatProperty \
       (name = "Imaging Rate")
     bpy.types.Scene.indicator = bpy.props.StringProperty \
       (name = "Indicator", default = "YFP")
