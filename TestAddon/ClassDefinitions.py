@@ -619,7 +619,12 @@ class WriteNWB(bpy.types.Operator):
         nwbfile.add_acquisition(raw_data)
         return(nwbfile, imaging_plane, raw_data, nwbfile_name)
     
-    
+    #Find the distance between the endpoints of spines
+    def find_length(self, i):
+        point1 = i.data.vertices[0].co
+        point2 = i.data.vertices[1].co
+        length = math.dist(point1, point2)
+        return length
     
     #Extract data from panel and object
     def execute(self, context):
@@ -631,7 +636,7 @@ class WriteNWB(bpy.types.Operator):
         
 
         #This loop iterates through all collections and extracts data about the meshes.
-        #Todo: It should only create an image segmentation if it is the highest level of collection
+       
         for collection in bpy.data.collections:
             #Create processing module
             module = nwbfile.create_processing_module(collection.name, 'contains processed neuromorphology data from Blender')
@@ -654,18 +659,20 @@ class WriteNWB(bpy.types.Operator):
             for i in collection.objects:
 
                 if i.type == 'MESH' and len(i.data.vertices) == 2:
-                    point1 = i.data.vertices[0].co
-                    point2 = i.data.vertices[1].co
-                    length = math.dist(point1, point2)
-                    
-                    plane_segmentation.add_column('length', 'length')
-                    plane_segmentation.add_roi(
-                        image_mask=np.ones((4,4)), #This line holds dummy data and won't work without it.
-                        # faces=faces,
-                        # vertices=vertices,
-                        #volume=volume,
-                        length=length,
-                        )
+                    length = self.find_length(i)
+                    print(length)
+
+                elif i.type == 'MESH' and len(i.data.vertices) > 2:
+                    print('ping')
+
+            plane_segmentation.add_column('length', 'length')
+            plane_segmentation.add_roi(
+                image_mask=np.ones((4,4)), #This line holds dummy data and won't work without it.
+                # faces=faces,
+                # vertices=vertices,
+                #volume=volume,
+                length = length,
+                )
 
                 # if i.type == 'MESH' and len(i.data.vertices) > 2:                    
                 #     #CENTER OF MASS
