@@ -7,7 +7,7 @@ import math
 
 #The new way of adding python libraries
 import sys
-#Replace this path when setting up 
+#TODO: Replace this path when setting up 
 packages_path = "C:\\Users\\meowm\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages"
 sys.path.insert(0, packages_path )
 
@@ -18,8 +18,7 @@ from pynwb.device import Device
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
-#NeuronAnalysis creates a 3Dview panel and add rows for fields and buttons. 
-#Blender's documentation describes what the strings that start with "bl_" do: https://docs.blender.org/api/blender_python_api_2_70_5/bpy.types.Panel.html#bpy.types.Panel.bl_idname
+#NeuronAnalysis creates a 3Dview panel and add rows for text entry fields and buttons linked to operators.
 
 class NeuronAnalysis(bpy.types.Panel):
     bl_label = "Neuron Analysis" #The name of our panel
@@ -75,10 +74,6 @@ class NeuronAnalysis(bpy.types.Panel):
         row = layout.row()
         row.operator('object.bounding_boxes', text = 'Add Bounding Box')
 
-        #Add button that adds a length vector to a mesh
-        # row = layout.row()
-        # row.operator('object.length_vector', text = 'Draw Length Vector')
-
         #Add button that moves spines to folders and adds a spine base and tip 
         row = layout.row()
         row.operator('object.autosegmenter', text = 'Auto-Segment')
@@ -91,11 +86,9 @@ class NeuronAnalysis(bpy.types.Panel):
         row = layout.row()
         row.operator('object.write_nwb', text = "Write NWB File")
 
-
-
 #ROW OPERATORS
 
-#Row operator for that applies "separate by loose parts" to mesh    
+#Row operator that applies "separate by loose parts" to mesh    
 class ExplodingBits(bpy.types.Operator):
     bl_idname = 'object.exploding_bits' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'Exploding Bits'
@@ -113,16 +106,17 @@ class ExplodingBits(bpy.types.Operator):
 #For each mesh in the list
     #Turn it into a BVH Tree
     #Find the indices of overlapping polygon faces
-    #Create a new mesh from the centers of the polygon
+    #Create a new mesh from the center of the polygons
     #Create a vector called "Spine Base" at the center of the new mesh
-    # Measure the distance between Spine Base and all other vertices in the mesh
+    #Measure the distance between Spine Base and all other vertices in the mesh
     #Create Spine Tip at the maximum distance from Spine Base
-    #Create a collection named after the mesh, move the original  mesh and the spine_ends into it
+    #Create a collection named after the mesh, move the original mesh and the spine endpoints into it
 
 class AutoSegmenter(bpy.types.Operator):
     bl_idname = 'object.autosegmenter' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'AutoSegmenter'
     
+    #Generate a BVH tree from the dendrite to check for intersecting spines
     def dendrite_BVH_tree(self):
         global dendrite_BVHtree
         print("Growing BVHtree")
@@ -149,7 +143,9 @@ class AutoSegmenter(bpy.types.Operator):
 
         return {'FINISHED'}
         
-    
+    #Iterate through the spines in the mesh list
+    #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
+    #Check to see if the spine overlaps 
     def find_intersections(self):
         global intersecting_spines
         global spine_names
@@ -158,9 +154,6 @@ class AutoSegmenter(bpy.types.Operator):
         intersecting_spines = []
         spine_names = []
         print("finding intersections")
-        #Iterate through the spines in the mesh list
-            #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
-            #Check to see if the spine overlaps 
 
         for spine_mesh in mesh_list:                                 
             BVH_spine_mesh = bmesh.new()
@@ -336,18 +329,18 @@ class AutoSegmenter(bpy.types.Operator):
         self.create_base_and_tip()
         return {'FINISHED'}
 
-
-#Get selected vertex/verticies and turn them into a vector called "Spine Base"
-#Compare Spine base with other vertices to find Spine Tip at the maximum distance from Spine Base
-#Create Spine base and Tip in the collection of the original spine 
+#This class is used to make endpoints for spines that weren't automatically segmented
+    #Get selected vertex/verticies, find their center and turn them into a vector called "Spine Base"
+    #Compare Spine base with other vertices to find Spine Tip at the maximum distance from Spine Base
+    #Create Spine base and Tip in the collection of the original spine mesh
 
 class ManualLength(bpy.types.Operator):
     bl_idname = 'object.individual_length_finder' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'Manual Length'
 
+    #Get selected verticies
     def FindSelectedVerts(self):
         print("Finding selected vertices")
-        #Get selected verticies
         mode = bpy.context.active_object.mode
         bpy.ops.object.mode_set(mode='OBJECT')
         vert_list = []
@@ -361,18 +354,17 @@ class ManualLength(bpy.types.Operator):
         bpy.ops.object.mode_set(mode=mode)
         return(vert_list)
     
+    #Given several selected verticies find the center
     def FindSpineBase(self,vert_list):
         print("Finding spine base")
-        #For when there is more than one selected vertex, find the center
-
         x, y, z = [ sum( [v.co[i] for v in vert_list] ) for i in range(3)] #Tested this - it does need to be 3
         count = float(len(vert_list))
         spine_base = Vector( (x, y, z ) ) / count        
 
         return(spine_base)
 
+    #Compare the distance between the spine base and all other verices to find the farthest point
     def FindSpineTip(self, spine_base):
-        #Compare the distance between the spine base and all other verices to find the farthest point
         print("Finding spine tip")
         spine_length_dict = {}
         spine_coordinates_dict = {}
@@ -461,81 +453,12 @@ class BoundingBoxes(bpy.types.Operator):
 
         return {'FINISHED'}
 
-# class LengthVector(bpy.types.Operator):
-#     bl_idname = 'object.length_vector' #operators must follow the naming convention of object.lowercase_letters
-#     bl_label = 'Length Vector'
-
-#     def execute(self, context):
-#         # Keep track of current mode
-#         mode = bpy.context.active_object.mode
-#         #Set to object mode
-#         bpy.ops.object.mode_set(mode='OBJECT')
-        
-#         # Get the currently select object
-#         obj = bpy.context.object
-      
-#         # Create a numpy array with empty values for each vertex
-#         sel = np.zeros(len(obj.data.vertices), dtype=np.bool)
-        
-#         # Populate the array with True/False if the vertex is selected
-#         obj.data.vertices.foreach_get('select', sel)
-        
-#         # Get selected vertex
-#         for i in np.where(sel==True)[0]:
-#             # Loop over each currently selected vertex
-#             v = obj.data.vertices[i]
-           
-#             #For now we will just use the first vertex, but future iteratations could make raycasts from a selection of multiple
-
-#         selected_vertex = [v.co[0], v.co[1], v.co[2]]     
-#         selected_vertex_vector_origin = Vector(selected_vertex)         
-        
-#         #Get center of mass
-#         center_of_mass = obj.matrix_world.translation
-
-#         #Extract XYZ coordinates 
-#         center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
-#         center_of_mass_vector_destination = Vector(center_of_mass)
-
-#         #Create a vector between the vertex and the selected mesh's center of mass
-#         vector_to_center = Vector(center_of_mass_vector_destination - selected_vertex_vector_origin)  
-#             #Raycast using the vector with the mesh's center of mass as its origin
-#             #Create second vector using the selected vertex and the "hit" from the Raycast
-
-#         cast_result = obj.ray_cast(selected_vertex_vector_origin, vector_to_center)
-                
-#         #Extract coordinates from cast_result
-#         spine_tip = Vector(cast_result[1])
-
-#         verts = [selected_vertex_vector_origin, spine_tip] 
-
-
-#         #Get the collection for the originally selected object     
-#         collection = obj.users_collection[0]
-#         mesh = bpy.data.meshes.new("lengthvector_" + collection.name)  # add the new mesh
-#         new_mesh = bpy.data.objects.new(mesh.name, mesh)
-
-#         collection.objects.link(new_mesh)
-#         bpy.context.view_layer.objects.active = new_mesh
-
-#         edges = []
-#         faces = []
-
-#         mesh.from_pydata(verts, edges, faces)
-
-#         # Go back to the previous mode
-#         bpy.ops.object.mode_set(mode=mode)
-
-#         return {'FINISHED'}
-
-
-
-
-#Row operator for writing  data toNWB file
+#This class contains methods which extract data from the text-entry panel, meshes, and endpoints and the writes them to an NWB File
 class WriteNWB(bpy.types.Operator):
     bl_idname = 'object.write_nwb' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'Write NWB File'
 
+    #Extract strings and floats from text entry panel
     def AddPanelData(self):
         subject_id = bpy.context.scene.subject_id 
         age = bpy.context.scene.age
@@ -619,34 +542,34 @@ class WriteNWB(bpy.types.Operator):
         nwbfile.add_acquisition(raw_data)
         return(nwbfile, imaging_plane, raw_data, nwbfile_name)
     
-    #Find the distance between the endpoints of spines when looping through collections
+    #Find the distance between the endpoints of spines when running the execute loop
     def find_length(self, i):
         point1 = i.data.vertices[0].co
         point2 = i.data.vertices[1].co
         length = math.dist(point1, point2)
         return length
 
-    #Extract attributes from spine meshes when looping through collections
+    #Extract attributes from spine meshes when running the execute loop
     def find_mesh_attributes(self, i):                  
-        #center_of_mass = i.matrix_world.to_translation()
-        i.select_set(True)
+        #Create and find center of mass
+        i.select_set(True) #The origin_set operator only works on selected object
         bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
         center_of_mass = i.location
-
         center_of_mass = [center_of_mass[0], center_of_mass[1], center_of_mass[2]]
     
         #Get mesh data from the active object in the Scene Collection
         mesh = i.data
-
         #Create an empty BMesh
         bm = bmesh.new()
         #Fill Bmesh with the mesh data from the object  
         bm.from_mesh(mesh)
 
+        #Find Volume
         volume = bm.calc_volume(signed=False)
 
-        #SURFACE AREA
+        #Find Surface Area
         surface_area = sum(i.calc_area() for i in bm.faces)
+        
         bm.free()
         return center_of_mass, volume, surface_area
     
@@ -686,6 +609,7 @@ class WriteNWB(bpy.types.Operator):
                 reference_images = raw_data
                     )               
 
+            #Iterate through collections and extract variables
             for i in collection.objects:
 
                 if i.type == 'MESH' and len(i.data.vertices) == 2:
@@ -697,6 +621,7 @@ class WriteNWB(bpy.types.Operator):
                     volume = mesh_attributes[1]
                     surface_area = mesh_attributes[2]
 
+            #Add columns to ROI to hold extracted variables
             plane_segmentation.add_column('center_of_mass', 'center_of_mass')
             plane_segmentation.add_column('volume', 'volume')
             plane_segmentation.add_column('surface_area', 'surface_area')         
@@ -711,10 +636,9 @@ class WriteNWB(bpy.types.Operator):
                 surface_area = surface_area,
                 length = length,
                 )
-
-
-                    
-                #     #Add variables to mesh_surface NWB extension
+                   
+                #This code can be used to extract the verticies and faces if we want to keep them in the NWBFile
+                #NOTE: edges should be included if we decide to do that
 
                 #     # for v in bm.verts:
                 #     #     mesh_verts.append(v.co)
@@ -724,15 +648,7 @@ class WriteNWB(bpy.types.Operator):
                 #     #     face_vert_list = [vertices[0], vertices[1], vertices[2]]
                 #     #     faces.append(face_vert_list)
 
-                
-                    #Clear lists for next loop
-                    # faces = []
-                    # mesh_verts = []
-
-                   
-
-
-        os.chdir('C:/Users/meowm/Downloads') #<to do> How do I handle this for the final version?
+        os.chdir('C:/Users/meowm/Downloads') #TODO: How do I handle this for the final version?
         #Write the NWB file
         with NWBHDF5IO(nwbfile_name, 'w') as io:
             io.write(nwbfile)
