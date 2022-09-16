@@ -44,6 +44,8 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "experiment_description")
         row.prop(context.scene, "identifier")
         row.prop(context.scene, "institution")
+        row.prop(context.scene, "lab")
+        row.prop(context.scene, "notes")
         row.prop(context.scene, "pharmacology")
         row.prop(context.scene, "protocol")
         row.prop(context.scene, "session_start_time")
@@ -121,7 +123,7 @@ class ExplodingBits(bpy.types.Operator):
     #Create Spine Tip at the maximum distance from Spine Base
     #Create a collection named after the mesh, move the original mesh and the spine endpoints into it
 
-class AutoSegmenter(bpy.types.Operator):
+class AutoSegmenter(bpy.types.Operator): #TODO Remove globals from this class
     bl_idname = 'object.autosegmenter' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'AutoSegmenter'
     
@@ -481,6 +483,8 @@ class WriteNWB(bpy.types.Operator):
         experiment_description = bpy.context.scene.experiment_description
         identifier = bpy.context.scene.identifier
         institution = bpy.context.scene.institution
+        lab = bpy.context.scene.lab
+        notes = bpy.context.scene.notes
         pharmacology = bpy.context.scene.pharmacology
         protocol =  bpy.context.scene.protocol
         session_start_time = bpy.context.scene.session_start_time
@@ -520,7 +524,9 @@ class WriteNWB(bpy.types.Operator):
             experiment_description = experiment_description,
             file_create_date = datetime.now(),
             identifier = identifier,
-            institution = institution, 
+            institution = institution,
+            lab = lab,
+            notes = notes, 
             pharmacology = pharmacology,
             protocol = protocol,
             session_description = session_description,

@@ -59,6 +59,10 @@ def register():
       (name = "Identifier", default = 'Neuron#_Dendrite#')
     bpy.types.Scene.institution = bpy.props.StringProperty \
       (name = "Institution", default = 'Yale University')  
+    bpy.types.Scene.lab = bpy.props.StringProperty \
+      (name = "Lab", default = 'Tan Lab')  
+    bpy.types.Scene.notes = bpy.props.StringProperty \
+      (name = "Notes", default = "Intrathecal")  
     bpy.types.Scene.pharmacology = bpy.props.StringProperty \
       (name = "Pharmacology", default = "Rhomidepsin")
     bpy.types.Scene.protocol = bpy.props.StringProperty \
@@ -127,6 +131,8 @@ def unregister():
     bpy.types.Scene.experimenter
     bpy.types.Scene.identifier
     bpy.types.Scene.institution
+    bpy.types.Scene.lab
+    bpy.types.Scene.notes
     bpy.types.Scene.pharmacology
     bpy.types.Scene.protocol
     bpy.types.Scene.session_start_time
