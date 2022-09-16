@@ -54,6 +54,8 @@ def register():
       (name = "Session Start Time", default = "08/30/2021  01:00:07") 
     bpy.types.Scene.session_description = bpy.props.StringProperty \
       (name = "Session Description", default = "We imaged neurons")
+    bpy.types.Scene.pharmacology = bpy.props.StringProperty \
+      (name = "Pharmacology", default = "Rhomidepsin")
     #Imaging Plane Fields
     bpy.types.Scene.plane_name = bpy.props.StringProperty \
       (name = "Plane Name", default = "my plane")
@@ -107,6 +109,7 @@ def unregister():
     bpy.types.Scene.identifier
     bpy.types.Scene.session_start_time
     bpy.types.Scene.session_description
+    bpy.types.Scene.pharmacology
     bpy.types.Scene.experimenter
 
     #Imaging plane fields
