@@ -494,6 +494,7 @@ class WriteNWB(bpy.types.Operator):
         plane_description = bpy.context.scene.plane_description
         excitation_lambda = float(bpy.context.scene.excitation_lambda)
         external_file = [bpy.context.scene.external_file]
+        grid_spacing = bpy.context.scene.grid_spacing
         imaging_rate = float(bpy.context.scene.imaging_rate)
         indicator = bpy.context.scene.indicator
         location = bpy.context.scene.location
@@ -555,7 +556,7 @@ class WriteNWB(bpy.types.Operator):
             indicator, 
             location, 
             imaging_rate, 
-            grid_spacing= [1,1,1], #shouldn't be hardcoded
+            grid_spacing = [grid_spacing, grid_spacing, grid_spacing], 
             grid_spacing_unit = grid_spacing_unit)
 
         #Create image series and add a link to the raw image stack to the file

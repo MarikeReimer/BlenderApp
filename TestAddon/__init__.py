@@ -87,8 +87,8 @@ def register():
       (name = "Indicator", default = "YFP")
     bpy.types.Scene.location = bpy.props.StringProperty \
       (name = "Location", default = "spinal cord")
-    bpy.types.Scene.grid_spacing = bpy.props.StringProperty \
-      (name = "Grid Spacing", default = "hard coded") #TODO: Fix this
+    bpy.types.Scene.grid_spacing = bpy.props.FloatProperty \
+      (name = "Grid Spacing") 
     bpy.types.Scene.grid_spacing_unit = bpy.props.StringProperty \
       (name = "Grid Spacing Units", default = 'um')
     #Fields that would do better in a dropdown
