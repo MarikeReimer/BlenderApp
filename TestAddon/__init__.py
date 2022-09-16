@@ -1,3 +1,4 @@
+from email.policy import default
 import bpy
 from datetime import datetime
 
@@ -39,23 +40,38 @@ def register():
       (name = "Subject ID", default = "Anm_")
     bpy.types.Scene.age = bpy.props.StringProperty \
       (name = "Age", default = "P#D")
-    bpy.types.Scene.subject_description = bpy.props.StringProperty \
-      (name = "Description", default = 'fuzzy')
+    #bpy.types.Scene.subject_description = bpy.props.StringProperty \
+    #  (name = "Description", default = 'fuzzy')
     bpy.types.Scene.genotype = bpy.props.StringProperty \
       (name = "Genotype", default = 'B6')
     bpy.types.Scene.sex = bpy.props.StringProperty \
       (name = "Sex", default = "F")
     bpy.types.Scene.species = bpy.props.StringProperty \
       (name = "Species", default = "Mus musculus")
+    bpy.types.Scene.strain = bpy.props.StringProperty \
+      (name = "Strain", default = "C57BL/6")
     #NWBfile fields
+    bpy.types.Scene.experiment_description = bpy.props.StringProperty \
+      (name = "Experiment Description", default = 'We studied spasticity and dendritic spines')    
+    bpy.types.Scene.experimenter = bpy.props.StringProperty \
+      (name = "Experimenter", default = "Sierra Kauer")
     bpy.types.Scene.identifier = bpy.props.StringProperty \
-      (name = "Identifier", default = 'findme')
+      (name = "Identifier", default = 'Neuron#_Dendrite#')
+    bpy.types.Scene.institution = bpy.props.StringProperty \
+      (name = "Institution", default = 'Yale University')  
+    bpy.types.Scene.pharmacology = bpy.props.StringProperty \
+      (name = "Pharmacology", default = "Rhomidepsin")
+    bpy.types.Scene.protocol = bpy.props.StringProperty \
+      (name = "Protocol", default = "AT0003")
     bpy.types.Scene.session_start_time = bpy.props.StringProperty \
       (name = "Session Start Time", default = "08/30/2021  01:00:07") 
     bpy.types.Scene.session_description = bpy.props.StringProperty \
       (name = "Session Description", default = "We imaged neurons")
-    bpy.types.Scene.pharmacology = bpy.props.StringProperty \
-      (name = "Pharmacology", default = "Rhomidepsin")
+    bpy.types.Scene.slices = bpy.props.StringProperty \
+      (name = "Slices", default = "Coronal")
+    bpy.types.Scene.surgery = bpy.props.StringProperty \
+      (name = "Surgery", default = "Contusion")
+
     #Imaging Plane Fields
     bpy.types.Scene.plane_name = bpy.props.StringProperty \
       (name = "Plane Name", default = "my plane")
@@ -63,8 +79,8 @@ def register():
       (name = "Plane Description", default = "plane description")
     bpy.types.Scene.excitation_lambda = bpy.props.FloatProperty \
       (name = "Excitation Lambda")
-    bpy.types.Scene.experimenter = bpy.props.StringProperty \
-      (name = "Experimenter")
+    bpy.types.Scene.external_file = bpy.props.StringProperty \
+      (name = "External File Link", default = "our link")
     bpy.types.Scene.imaging_rate = bpy.props.FloatProperty \
       (name = "Imaging Rate")
     bpy.types.Scene.indicator = bpy.props.StringProperty \
@@ -101,21 +117,28 @@ def unregister():
     #Subject fields
     bpy.types.Scene.subject_id
     bpy.types.Scene.age
-    bpy.types.Scene.subject_description
+    #bpy.types.Scene.subject_description
     bpy.types.Scene.sex
     bpy.types.Scene.species
+    bpy.types.Scene.strain
     
     #NWBFile fields
+    bpy.types.Scene.experiment_description
+    bpy.types.Scene.experimenter
     bpy.types.Scene.identifier
+    bpy.types.Scene.institution
+    bpy.types.Scene.pharmacology
+    bpy.types.Scene.protocol
     bpy.types.Scene.session_start_time
     bpy.types.Scene.session_description
-    bpy.types.Scene.pharmacology
-    bpy.types.Scene.experimenter
+    bpy.types.Scene.slices
+    bpy.types.Scene.surgery
 
     #Imaging plane fields
     bpy.types.Scene.plane_name
     bpy.types.Scene.plane_description
     bpy.types.Scene.excitation_lambda
+    bpy.types.Scene.external_file
     bpy.types.Scene.imaging_rate
     bpy.types.Scene.indicator
     bpy.types.Scene.location

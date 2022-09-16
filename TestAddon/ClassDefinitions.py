@@ -34,15 +34,22 @@ class NeuronAnalysis(bpy.types.Panel):
         #Add fields for the Subject class strings
         row.prop(context.scene, "subject_id")
         row.prop(context.scene, "age")
-        row.prop(context.scene, "subject_description")
+        #row.prop(context.scene, "subject_description")
         row.prop(context.scene, "genotype")
         row.prop(context.scene, "sex")
         row.prop(context.scene, "species")
+        row.prop(context.scene, "strain")
         #Add fields for NWBFile strings
         row.prop(context.scene, "experimenter")
+        row.prop(context.scene, "experiment_description")
         row.prop(context.scene, "identifier")
+        row.prop(context.scene, "institution")
+        row.prop(context.scene, "pharmacology")
+        row.prop(context.scene, "protocol")
         row.prop(context.scene, "session_start_time")
         row.prop(context.scene, "session_description")
+        row.prop(context.scene, "slices")
+        row.prop(context.scene, "surgery")
 
         #Add Device menu (someday):
         row.prop(context.scene, "device")
@@ -57,6 +64,7 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "plane_name")
         row.prop(context.scene, "plane_description")
         row.prop(context.scene, "excitation_lambda")
+        row.prop(context.scene, "external_file")
         row.prop(context.scene, "imaging_rate")
         row.prop(context.scene, "indicator")
         row.prop(context.scene, "location")
@@ -463,25 +471,32 @@ class WriteNWB(bpy.types.Operator):
     def AddPanelData(self):
         subject_id = bpy.context.scene.subject_id 
         age = bpy.context.scene.age
-        subject_description = bpy.context.scene.subject_description
+        #subject_description = bpy.context.scene.subject_description
         genotype = bpy.context.scene.genotype
         sex = bpy.context.scene.sex
         species = bpy.context.scene.species
+        strain = bpy.context.scene.strain
         #Extract NWBfile Strings
+        experimenter = bpy.context.scene.experimenter
+        experiment_description = bpy.context.scene.experiment_description
         identifier = bpy.context.scene.identifier
+        institution = bpy.context.scene.institution
+        pharmacology = bpy.context.scene.pharmacology
+        protocol =  bpy.context.scene.protocol
         session_start_time = bpy.context.scene.session_start_time
         session_start_time = datetime.strptime(session_start_time, '%m/%d/%Y %I:%M:%S')      
         session_description = bpy.context.scene.session_description
-        experimenter = bpy.context.scene.experimenter
+        slices = bpy.context.scene.slices
+        surgery = bpy.context.scene.surgery
 
         #Extract Imaging Plane Strings
         plane_name = bpy.context.scene.plane_name
         plane_description = bpy.context.scene.plane_description
         excitation_lambda = float(bpy.context.scene.excitation_lambda)
+        external_file = [bpy.context.scene.external_file]
         imaging_rate = float(bpy.context.scene.imaging_rate)
         indicator = bpy.context.scene.indicator
         location = bpy.context.scene.location
-        indicator = bpy.context.scene.indicator
         grid_spacing_unit = bpy.context.scene.grid_spacing_unit
         
         #Create filename 
@@ -490,20 +505,27 @@ class WriteNWB(bpy.types.Operator):
         #Create pynwb subject
         subject = Subject(
             age = age,
-            description = subject_description,
+            #description = subject_description,
             genotype = genotype,
             sex = sex,
             species = species,
+            strain = strain,
             subject_id = subject_id
             )
 
         #Create pywnb File
         nwbfile = NWBFile(
             experimenter = experimenter,
-            session_description = session_description,
-            identifier = identifier, 
-            session_start_time = session_start_time, 
+            experiment_description = experiment_description,
             file_create_date = datetime.now(),
+            identifier = identifier,
+            institution = institution, 
+            pharmacology = pharmacology,
+            protocol = protocol,
+            session_description = session_description,
+            session_start_time = session_start_time,
+            slices = slices,
+            surgery = surgery, 
             subject = subject
             )  
 
@@ -529,7 +551,7 @@ class WriteNWB(bpy.types.Operator):
             optical_channel, 
             plane_description, 
             device, 
-            excitation_lambda, 
+            excitation_lambda,
             indicator, 
             location, 
             imaging_rate, 
@@ -541,7 +563,7 @@ class WriteNWB(bpy.types.Operator):
             'Raw Data',
             format = 'external',
             rate = imaging_rate, #Unit is Hz
-            external_file = ['raw_data_link'], #<to do> Remove hard coding
+            external_file = external_file, 
             starting_frame = [1])
 
         nwbfile.add_acquisition(raw_data)
