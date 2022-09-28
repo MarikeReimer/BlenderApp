@@ -622,15 +622,19 @@ class WriteNWB(bpy.types.Operator):
         volume = ''
         surface_area = ''
 
+        module = nwbfile.create_processing_module("SpineData", 'Contains processed neuromorphology data from Blender.')
+        image_segmentation = ImageSegmentation()
+        module.add(image_segmentation)
+
         #This loop iterates through all collections and extracts data about the meshes.
        
         for collection in bpy.data.collections:
             #Create processing module
-            module = nwbfile.create_processing_module(collection.name, 'contains processed neuromorphology data from Blender')
+            #module = nwbfile.create_processing_module(collection.name, 'contains processed neuromorphology data from Blender')
             #Create image segmentation
-            image_segmentation = ImageSegmentation()
+            #image_segmentation = ImageSegmentation()
             #Add the image segmentation to the module
-            module.add(image_segmentation)
+            #module.add(image_segmentation)
             #Create unique name
             segmentation_name = collection.name + ' mesh plane_segmentaton'
             print("segmentation_name", segmentation_name)
