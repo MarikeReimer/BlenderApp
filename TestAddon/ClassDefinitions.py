@@ -505,7 +505,7 @@ class WriteNWB(bpy.types.Operator):
         grid_spacing_unit = bpy.context.scene.grid_spacing_unit
         
         #Create filename 
-        nwbfile_name = identifier + '.nwb'
+        nwbfile_name = subject_id + identifier + '.nwb'
 
         #Create pynwb subject
         subject = Subject(
