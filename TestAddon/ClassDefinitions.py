@@ -426,10 +426,17 @@ class ManualLength(bpy.types.Operator):
         self.CreateEndpointMesh(spine_base, spine_tip)
         return {'FINISHED'}
 
+#This class was created to deal with spines composed of multiple meshes, by turning them yellow, so that they can be manually joined
+#Get selected spines and store them in spine_list
+#Make BVH trees of the spines and store them spine_BVHtree_list
+#Iterate over spine_BVHtree_list to find the indices of overlapping spines
+#Use spine indices to color the overlapping spines in spine list
+
 class ManualMerge(bpy.types.Operator):
     bl_idname = 'object.manual_merge' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'Show fractured spines'
 
+    #Get selected spines and store them in spine_list
     def get_spines(self):
         #Get selected spines
         selected_objects = bpy.context.selected_objects
@@ -438,10 +445,9 @@ class ManualMerge(bpy.types.Operator):
         for spine in selected_objects:            
             spine_list.append(spine)    
         #return(spine_list, spine_BVHtree_list)
-        return(spine_list)
+        return(spine_list)    
     
-    
-    
+    #Make BVH trees of the spines and store them spine_BVHtree_list
     def spine_bvh_trees(self, spine_list):
         spine_BVHtree_list = []
 
@@ -454,8 +460,7 @@ class ManualMerge(bpy.types.Operator):
 
         return(spine_BVHtree_list)
         
-        #return {'FINISHED'}
-
+    #Iterate over spine_BVHtree_list to find the indices of overlapping spines
     def find_overlapping_spines(self, spine_BVHtree_list):
         overlapping_spine_index_list = []
         print("spine_BVHtree_list in find overlapping", spine_BVHtree_list)
@@ -470,7 +475,8 @@ class ManualMerge(bpy.types.Operator):
             counter += 1
         print("overlapping_spine_index_list", overlapping_spine_index_list)
         return(overlapping_spine_index_list)
-    
+
+    #Use spine indices to color the overlapping spines in spine list
     def color_overlapping_spines(self, overlapping_spine_index_list, spine_list):
         spines_to_color = []
 
