@@ -430,24 +430,78 @@ class ManualMerge(bpy.types.Operator):
     bl_idname = 'object.manual_merge' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'Show fractured spines'
 
-    def execute(self):
-        print('ping')
+    def get_spines(self):
         #Get selected spines
-        # selected_objects = bpy.context.selected_objects
-        # spine_list = []
-        # spine_BVHtree_list = []
+        selected_objects = bpy.context.selected_objects
+        spine_list = []
+        
+        for spine in selected_objects:            
+            spine_list.append(spine)    
+        #return(spine_list, spine_BVHtree_list)
+        return(spine_list)
+    
+    
+    
+    def spine_bvh_trees(self, spine_list):
+        spine_BVHtree_list = []
 
-        # for spine in selected_objects:
-            
-        #     spine_mesh = bmesh.new()
-        #     spine_list.append(spine)
-        #     spine_mesh.from_mesh(bpy.context.scene.objects[spine.name].data)
-        #     spine_mesh.transform(spine.matrix_world)
-        #     spine_BVHtree = BVHTree.FromBMesh(spine_mesh)
-        #     spine_BVHtree_list.append(spine_BVHtree)
-        # print(spine_list)
-        # return spine_list, spine_BVHtree
+        for spine in spine_list:            
+            spine_mesh = bmesh.new()
+            spine_mesh.from_mesh(bpy.context.scene.objects[spine.name].data)
+            spine_mesh.transform(spine.matrix_world)
+            spine_BVHtree = BVHTree.FromBMesh(spine_mesh)
+            spine_BVHtree_list.append(spine_BVHtree)
+
+        return(spine_BVHtree_list)
+        
+        #return {'FINISHED'}
+
+    def find_overlapping_spines(self, spine_BVHtree_list):
+        overlapping_spine_index_list = []
+        print("spine_BVHtree_list in find overlapping", spine_BVHtree_list)
+        counter = 0
+
+        for bvh_tree in spine_BVHtree_list:            
+            current_spine_tree = spine_BVHtree_list[counter]
+            if counter == spine_BVHtree_list.index(bvh_tree): #Spines will always overlap themselves...
+                continue
+            elif current_spine_tree.overlap(bvh_tree):
+                overlapping_spine_index_list.append(spine_BVHtree_list.index(bvh_tree))
+            counter += 1
+        print("overlapping_spine_index_list", overlapping_spine_index_list)
+        return(overlapping_spine_index_list)
+    
+    def color_overlapping_spines(self, overlapping_spine_index_list, spine_list):
+        spines_to_color = []
+
+        for i in overlapping_spine_index_list:
+            spines_to_color.append(spine_list[i])
+
+        for spine in spines_to_color:
+            spine.select_set(True)
+            spine.color = (1,1,0,1)        
+            mat = bpy.data.materials.new("Blue")
+
+            # Activate its nodes
+            mat.use_nodes = True
+
+            # Get the principled BSDF (created by default)
+            principled = mat.node_tree.nodes['Principled BSDF']
+
+            # Assign the color
+            principled.inputs['Base Color'].default_value = (1,1,0,1)
+            # Assign the material to the object
+            spine.data.materials.append(mat)
         return {'FINISHED'}
+
+    def execute(self, context):
+        spine_list = self.get_spines()
+        spine_BVHtree_list = self.spine_bvh_trees(spine_list)
+        overlapping_spine_index_list = self.find_overlapping_spines(spine_BVHtree_list)
+        self.color_overlapping_spines(overlapping_spine_index_list, spine_list)
+    
+        return {'FINISHED'}
+
 
 
 class SpinesToCollections(bpy.types.Operator):
