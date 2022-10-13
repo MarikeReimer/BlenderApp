@@ -484,6 +484,7 @@ class ManualMerge(bpy.types.Operator):
             spines_to_color.append(spine_list[i])
 
         for spine in spines_to_color:
+            spine.data.materials.clear()
             spine.select_set(True)
             spine.color = (1,1,0,1)        
             mat = bpy.data.materials.new("Blue")
