@@ -78,12 +78,12 @@ class NeuronAnalysis(bpy.types.Panel):
         row.operator('object.exploding_bits', text = 'Separate Meshes')
 
         #Add button that moves spines to folders
-        row = layout.row()
-        row.operator('object.spines_to_collections', text = 'Move to Collections')
+        # row = layout.row()
+        # row.operator('object.spines_to_collections', text = 'Move to Collections')
 
         #Add button that creates bounding boxes around meshes
-        row = layout.row()
-        row.operator('object.bounding_boxes', text = 'Add Bounding Box')
+        # row = layout.row()
+        # row.operator('object.bounding_boxes', text = 'Add Bounding Box')
 
         #Add button that moves spines to folders and adds a spine base and tip 
         row = layout.row()
