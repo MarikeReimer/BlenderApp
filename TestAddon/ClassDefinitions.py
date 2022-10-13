@@ -238,8 +238,8 @@ class AutoSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             face_center_mesh = bpy.data.meshes.new("face centers")  # add the new mesh
             obj = bpy.data.objects.new(face_center_mesh.name, face_center_mesh)
             col = bpy.data.collections.get("Collection")
-            col.objects.link(obj)
-            bpy.context.view_layer.objects.active = obj
+            # col.objects.link(obj)
+            # bpy.context.view_layer.objects.active = obj
                         
             face_centers = face_centers_list[counter]
 
