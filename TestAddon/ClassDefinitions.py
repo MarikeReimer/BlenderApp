@@ -76,6 +76,10 @@ class NeuronAnalysis(bpy.types.Panel):
         #Add button that separates meshes        
         row = layout.row()
         row.operator('object.exploding_bits', text = 'Separate Meshes')
+        
+        #Add button that merges fragmented meshes
+        row = layout.row()
+        row.operator('object.manual_merge', text = 'Show Fractured Spines')
 
         #Add button that moves spines to folders
         # row = layout.row()
@@ -421,6 +425,30 @@ class ManualLength(bpy.types.Operator):
         spine_tip = self.FindSpineTip(spine_base)
         self.CreateEndpointMesh(spine_base, spine_tip)
         return {'FINISHED'}
+
+class ManualMerge(bpy.types.Operator):
+    bl_idname = 'object.manual_merge' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'Show fractured spines'
+
+    def execute(self):
+        print('ping')
+        #Get selected spines
+        # selected_objects = bpy.context.selected_objects
+        # spine_list = []
+        # spine_BVHtree_list = []
+
+        # for spine in selected_objects:
+            
+        #     spine_mesh = bmesh.new()
+        #     spine_list.append(spine)
+        #     spine_mesh.from_mesh(bpy.context.scene.objects[spine.name].data)
+        #     spine_mesh.transform(spine.matrix_world)
+        #     spine_BVHtree = BVHTree.FromBMesh(spine_mesh)
+        #     spine_BVHtree_list.append(spine_BVHtree)
+        # print(spine_list)
+        # return spine_list, spine_BVHtree
+        return {'FINISHED'}
+
 
 class SpinesToCollections(bpy.types.Operator):
     bl_idname = 'object.spines_to_collections' #operators must follow the naming convention of object.lowercase_letters

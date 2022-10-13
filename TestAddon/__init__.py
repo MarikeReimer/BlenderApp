@@ -9,6 +9,7 @@ from . ClassDefinitions import SpinesToCollections
 from . ClassDefinitions import BoundingBoxes
 from . ClassDefinitions import AutoSegmenter
 from . ClassDefinitions import ManualLength
+from . ClassDefinitions import ManualMerge
 from . ClassDefinitions import WriteNWB
 
 #Information about the Addon created by the Blender Development VSCode Extension
@@ -32,6 +33,7 @@ def register():
     bpy.utils.register_class(BoundingBoxes)
     bpy.utils.register_class(AutoSegmenter)
     bpy.utils.register_class(ManualLength)
+    bpy.utils.register_class(ManualMerge)
     bpy.utils.register_class(WriteNWB)
   
         
@@ -116,6 +118,7 @@ def unregister():
     bpy.utils.unregister_class(BoundingBoxes)
     bpy.utils.unregister_class(AutoSegmenter)
     bpy.utils.unregister_class(ManualLength)
+    bpy.utils.unregister_class(ManualMerge)
     bpy.utils.unregister_class(WriteNWB)
 
     #Subject fields
