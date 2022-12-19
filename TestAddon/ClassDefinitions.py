@@ -670,6 +670,18 @@ class WriteNWB(bpy.types.Operator):
         point1 = i.data.vertices[0].co
         point2 = i.data.vertices[1].co
         length = math.dist(point1, point2)
+        print("spine name is", i.name, "length is ", length)
+        #return length
+        return point1, point2
+
+
+    #This purports to be a faster way             
+    def distance_vec(self, i, point1: Vector, point2: Vector) -> float:
+        point1 = i.data.vertices[0].co
+        point2 = i.data.vertices[1].co
+        #Calculate distance between two points.
+        length = (point2 - point1).length
+        print("spine name is", i.name, "vector length is ", length)
         return length
 
     #Extract attributes from spine meshes when running the execute loop
@@ -746,7 +758,10 @@ class WriteNWB(bpy.types.Operator):
             for i in collection.objects:
 
                 if i.type == 'MESH' and len(i.data.vertices) == 2:
-                    length = self.find_length(i)
+                    length_holder = self.find_length(i)
+                    point1 = length_holder[0]
+                    point2 = length_holder[1]
+                    length = self.distance_vec(i, point1, point2)
 
                 elif i.type == 'MESH' and len(i.data.vertices) > 2:
                     mesh_attributes = self.find_mesh_attributes(i)
