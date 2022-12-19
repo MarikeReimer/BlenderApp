@@ -706,10 +706,10 @@ class WriteNWB(bpy.types.Operator):
         nwbfile_name = holder[3]
         
         #Empty variables which are collected during the loop
-        length = ''
-        center_of_mass = ''
-        volume = ''
-        surface_area = ''
+        # length = ''
+        # center_of_mass = ''
+        # volume = ''
+        # surface_area = ''
 
         module = nwbfile.create_processing_module("SpineData", 'Contains processed neuromorphology data from Blender.')
         image_segmentation = ImageSegmentation()
@@ -723,7 +723,13 @@ class WriteNWB(bpy.types.Operator):
             #Create image segmentation
             #image_segmentation = ImageSegmentation()
             #Add the image segmentation to the module
-            #module.add(image_segmentation)
+
+            #Empty variables which are collected during the loop
+            length = ''
+            center_of_mass = ''
+            volume = ''
+            surface_area = ''
+
             #Create unique name
             segmentation_name = collection.name + ' mesh plane_segmentaton'
             print("segmentation_name", segmentation_name)
