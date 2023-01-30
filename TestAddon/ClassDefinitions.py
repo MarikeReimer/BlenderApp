@@ -77,9 +77,9 @@ class NeuronAnalysis(bpy.types.Panel):
         row = layout.row()
         row.operator('object.exploding_bits', text = 'Separate Meshes')
         
-        #Add button that merges fragmented meshes
-        row = layout.row()
-        row.operator('object.manual_merge', text = 'Show Fractured Spines')
+        # #Add button that merges fragmented meshes
+        # row = layout.row()
+        # row.operator('object.manual_merge', text = 'Show Fractured Spines')
 
         #Add button that moves spines to folders
         # row = layout.row()
