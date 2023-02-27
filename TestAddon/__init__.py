@@ -45,7 +45,7 @@ def register():
     #bpy.types.Scene.subject_description = bpy.props.StringProperty \
     #  (name = "Description", default = 'fuzzy')
     bpy.types.Scene.genotype = bpy.props.StringProperty \
-      (name = "Genotype", default = 'B6')
+      (name = "Genotype", default = 'Thy1-YFP')
     bpy.types.Scene.sex = bpy.props.StringProperty \
       (name = "Sex", default = "F")
     bpy.types.Scene.species = bpy.props.StringProperty \
@@ -54,7 +54,7 @@ def register():
       (name = "Strain", default = "C57BL/6")
     #NWBfile fields
     bpy.types.Scene.experiment_description = bpy.props.StringProperty \
-      (name = "Experiment Description", default = 'We studied spasticity and dendritic spines')    
+      (name = "Experiment Description", default = 'We studied the efficacy of romidepsin as a treatment to reduce spasticity and abnormal dendritic spine growth following a contusion injury.')    
     bpy.types.Scene.experimenter = bpy.props.StringProperty \
       (name = "Experimenter", default = "Sierra Kauer")
     bpy.types.Scene.identifier = bpy.props.StringProperty \
@@ -72,7 +72,7 @@ def register():
     bpy.types.Scene.session_start_time = bpy.props.StringProperty \
       (name = "Session Start Time", default = "08/30/2021  01:00:07") 
     bpy.types.Scene.session_description = bpy.props.StringProperty \
-      (name = "Session Description", default = "We imaged neurons")
+      (name = "Session Description", default = "Image stacks of neurons were converted into OBJs, traced in Tilt Brush, and then segmented in Blender.")
     bpy.types.Scene.slices = bpy.props.StringProperty \
       (name = "Slices", default = "Coronal")
     bpy.types.Scene.surgery = bpy.props.StringProperty \
@@ -80,13 +80,13 @@ def register():
 
     #Imaging Plane Fields
     bpy.types.Scene.plane_name = bpy.props.StringProperty \
-      (name = "Plane Name", default = "my plane")
+      (name = "Plane Name", default = "488nm GFP CF40")
     bpy.types.Scene.plane_description = bpy.props.StringProperty \
-      (name = "Plane Description", default = "plane description")
+      (name = "Plane Description", default = "Plane for GFP")
     bpy.types.Scene.excitation_lambda = bpy.props.FloatProperty \
-      (name = "Excitation Lambda")
+      (name = "Excitation Lambda", default = 488)
     bpy.types.Scene.external_file = bpy.props.StringProperty \
-      (name = "External File Link", default = "our link")
+      (name = "External File Link", default = "https://yalesecure.app.box.com/folder/184104062698")
     bpy.types.Scene.imaging_rate = bpy.props.FloatProperty \
       (name = "Imaging Rate")
     bpy.types.Scene.indicator = bpy.props.StringProperty \
@@ -99,13 +99,13 @@ def register():
       (name = "Grid Spacing Units", default = 'um')
     #Fields that would do better in a dropdown
     bpy.types.Scene.device = bpy.props.StringProperty \
-      (name = "Device", default = "2 Photon")
+      (name = "Device", default = "iXon EMCCD 1")
     bpy.types.Scene.optical_channel_name = bpy.props.StringProperty \
       (name = "Optical Channel Name", default = "Green")
     bpy.types.Scene.optical_channel_description = bpy.props.StringProperty \
       (name = "Optical Channel Description", default = "Channel for YFP")
     bpy.types.Scene.emission_lambda = bpy.props.FloatProperty \
-      (name = "emission_lambda")
+      (name = "emission_lambda", default = 525)
 
 #Unregister classes so that they don't clash with other addons
 def unregister():
