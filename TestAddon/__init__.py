@@ -66,11 +66,11 @@ def register():
     bpy.types.Scene.notes = bpy.props.StringProperty \
       (name = "Notes", default = "Intrathecal")  
     bpy.types.Scene.pharmacology = bpy.props.StringProperty \
-      (name = "Pharmacology", default = "Rhomidepsin")
+      (name = "Pharmacology", default = "Romidepsin")
     bpy.types.Scene.protocol = bpy.props.StringProperty \
       (name = "Protocol", default = "AT0003")
     bpy.types.Scene.session_start_time = bpy.props.StringProperty \
-      (name = "Session Start Time", default = "08/30/2021  01:00:07") 
+      (name = "Session Start Time", default = "2022-12-15 14:35:15") 
     bpy.types.Scene.session_description = bpy.props.StringProperty \
       (name = "Session Description", default = "Image stacks of neurons were converted into OBJs, traced in Tilt Brush, and then segmented in Blender.")
     bpy.types.Scene.slices = bpy.props.StringProperty \

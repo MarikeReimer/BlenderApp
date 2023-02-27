@@ -577,7 +577,7 @@ class WriteNWB(bpy.types.Operator):
         pharmacology = bpy.context.scene.pharmacology
         protocol =  bpy.context.scene.protocol
         session_start_time = bpy.context.scene.session_start_time
-        session_start_time = datetime.strptime(session_start_time, '%m/%d/%Y %I:%M:%S')      
+        session_start_time = datetime.strptime(session_start_time, '%Y-%m-%d %H:%M:%S')      
         session_description = bpy.context.scene.session_description
         slices = bpy.context.scene.slices
         surgery = bpy.context.scene.surgery
