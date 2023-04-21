@@ -8,6 +8,7 @@ from . ClassDefinitions import ExplodingBits
 from . ClassDefinitions import SpinesToCollections
 from . ClassDefinitions import BoundingBoxes
 from . ClassDefinitions import AutoSegmenter
+from . ClassDefinitions import DiscSegmenter
 from . ClassDefinitions import ManualLength
 from . ClassDefinitions import ManualMerge
 from . ClassDefinitions import WriteNWB
@@ -32,6 +33,7 @@ def register():
     bpy.utils.register_class(SpinesToCollections)
     bpy.utils.register_class(BoundingBoxes)
     bpy.utils.register_class(AutoSegmenter)
+    bpy.utils.register_class(DiscSegmenter)
     bpy.utils.register_class(ManualLength)
     bpy.utils.register_class(ManualMerge)
     bpy.utils.register_class(WriteNWB)
@@ -117,6 +119,7 @@ def unregister():
     bpy.utils.unregister_class(SpinesToCollections)
     bpy.utils.unregister_class(BoundingBoxes)
     bpy.utils.unregister_class(AutoSegmenter)
+    bpy.utils.unregister_class(DiscSegmenter)
     bpy.utils.unregister_class(ManualLength)
     bpy.utils.unregister_class(ManualMerge)
     bpy.utils.unregister_class(WriteNWB)

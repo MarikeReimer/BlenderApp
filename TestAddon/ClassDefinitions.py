@@ -93,6 +93,10 @@ class NeuronAnalysis(bpy.types.Panel):
         row = layout.row()
         row.operator('object.autosegmenter', text = 'Auto-Segment')
 
+        #Add button that moves spines to folders and adds a spine base and tip
+        row = layout.row()
+        row.operator('object.discsegmenter', text = 'Disc Method Segment')
+
         #Add button that adds a spine tip if you select its base
         row = layout.row()
         row.operator('object.individual_length_finder', text = 'Manual Length')    
@@ -343,6 +347,298 @@ class AutoSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         self.find_spine_tip()
         self.create_base_and_tip()
         return {'FINISHED'}
+
+#Discsegmenter as above, but for discs.  Uses verticies instead of polygons
+#Select dendrites
+#Get all other meshes and put them into a list
+#For each mesh in the list
+    #Turn it into a BVH Tree
+    #Find the indices of overlapping polygon faces
+    #Create a new mesh from the center of the polygons
+    #Create a vector called "Spine Base" at the center of the new mesh
+    #Measure the distance between Spine Base and all other vertices in the mesh
+    #Create Spine Tip at the maximum distance from Spine Base
+    #Create a collection named after the mesh, move the original mesh and the spine endpoints into it
+
+class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
+    bl_idname = 'object.discsegmenter' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'AutoSegmenter'
+    
+    #Get Spines
+    def get_spines(self):  
+        spine_list = [mesh for mesh in bpy.context.selected_objects if mesh.type == 'MESH']        
+        return(spine_list)
+    
+    def get_all_obs(self):
+        all_obs = [ mesh for mesh in bpy.data.objects]
+        print("all obs", all_obs)
+        return(all_obs)
+    
+    def get_slicers(self, all_obs, spine_list):
+        slicers = all_obs - spine_list
+        print("slicers", slicers)
+        return(slicers)
+
+    def find_intersections(self):
+        for spine_mesh in mesh_list:                                 
+            BVH_spine_mesh = bmesh.new()
+            BVH_spine_mesh.from_mesh(bpy.context.scene.object[spine_mesh.name].data)
+            BVH_spine_mesh.transform(spine_mesh.matrix_world)
+            BVH_spine_mesh.faces.ensure_lookup_table() 
+            BVHtree_mesh = BVHTree.FromBMesh(BVH_spine_mesh)                        
+            overlap = dendrite_BVHtree.overlap(BVHtree_mesh) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
+            overlapping_spine_face_index_list_local = [pair[1] for pair in overlap]
+
+            #Check other meshes to see if they intersect
+
+            if overlapping_spine_face_index_list_local:
+                overlapping_spine_face_index_list.append(overlapping_spine_face_index_list_local)
+                intersecting_spines.append(BVH_spine_mesh)
+                spine_names.append(spine_mesh.name)
+        
+        print(spine_names)
+        return {'FINISHED'}
+
+
+    def execute(self, context):
+        print("Executing")
+        spine_list = self.get_spines()
+        all_obs = self.get_all_obs()
+        self.get_slicers(spine_list, all_obs)
+        self.find_intersections
+        return {'FINISHED'}
+    
+    #Generate a BVH tree from the dendrite to check for intersecting spines
+    def dendrite_BVH_tree(self):
+        global dendrite_BVHtree
+        print("Growing BVHtree")
+        #Select Dendrite mesh        
+        dendrite = bpy.context.active_object     
+    
+        #Load the dendrite data into a mesh
+        dendrite_mesh = bmesh.new()
+        dendrite_mesh.from_mesh(bpy.context.scene.objects[dendrite.name].data)
+        dendrite_mesh.transform(dendrite.matrix_world)
+        dendrite_BVHtree = BVHTree.FromBMesh(dendrite_mesh)
+
+        dendrite_mesh.free()
+        return {dendrite}
+        
+
+    def list_meshes(self):
+        global mesh_list
+        print("finding meshes")
+        mesh_list = [ mesh for mesh in bpy.data.objects if mesh.type == 'MESH']
+
+        dendrite = bpy.context.active_object  
+        mesh_list.remove(dendrite)
+
+        return {'FINISHED'}
+        
+    #Iterate through the spines in the mesh list
+    #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
+    #Check to see if the spine overlaps 
+    def find_intersections(self):
+        global intersecting_spines
+        global spine_names
+        global overlapping_spine_face_index_list
+        overlapping_spine_face_index_list = []
+        intersecting_spines = []
+        spine_names = []
+        print("finding intersections")
+
+        for spine_mesh in mesh_list:                                 
+            BVH_spine_mesh = bmesh.new()
+            BVH_spine_mesh.from_mesh(bpy.context.scene.objects[spine_mesh.name].data)
+            BVH_spine_mesh.transform(spine_mesh.matrix_world)
+            BVH_spine_mesh.faces.ensure_lookup_table() 
+            BVHtree_mesh = BVHTree.FromBMesh(BVH_spine_mesh)                        
+            overlap = dendrite_BVHtree.overlap(BVHtree_mesh) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
+            overlapping_spine_face_index_list_local = [pair[1] for pair in overlap]
+            
+            #Check to see if the spines overlap the dendrite before passing them to the BVH spine mesh list.  If not, restart the loop.  This filters out disconnected spines
+
+            if overlapping_spine_face_index_list_local:
+                overlapping_spine_face_index_list.append(overlapping_spine_face_index_list_local)
+                intersecting_spines.append(BVH_spine_mesh)
+                spine_names.append(spine_mesh.name)
+            else:
+                pass
+        
+        return {'FINISHED'}
+
+    def spines_to_collections(self):
+        print("moving spines to folders")
+        #Add spines to their own folders
+        for spine_mesh in mesh_list:
+            old_collection_name = spine_mesh.users_collection
+            old_collection_name = old_collection_name[0]
+            old_collection_name.objects.unlink(spine_mesh)
+
+            new_collection_name = spine_mesh.name
+            new_collection = bpy.data.collections.new(new_collection_name)
+            bpy.context.scene.collection.children.link(new_collection)
+            new_collection.objects.link(spine_mesh)
+        return {'FINISHED'}
+
+    def find_intersecting_face_centers(self):
+        print("finding intersections")
+        global face_vertices_list
+        face_vertices_list = []
+        counter = 0
+
+        for BVH_spine_mesh in intersecting_spines:
+            face_vertices = []
+            
+            #Make a collection of points in the faces of intersecting faces    
+            for face_index in overlapping_spine_face_index_list[counter]:
+                face_data = BVH_spine_mesh.faces[face_index] 
+                face_verts = face_data.verts               
+                face_vertices.append(face_verts)
+            
+            counter += 1
+            face_vertices_list.append(face_vertices)
+            face_vertices = []
+
+        
+        return(face_vertices_list, intersecting_spines)     
+    
+    def find_spine_base(self):
+        global spine_base_list
+        spine_base_list = []
+        print("finding base")      
+        edges = []
+        faces = []
+        counter = 0
+
+        for spine_mesh in intersecting_spines:
+            #Add face centers as vertices:
+
+            # face_vertices_mesh = bpy.data.meshes.new("face vertices")  # add the new mesh
+            # obj = bpy.data.objects.new(face_vertices_mesh.name, face_vertices_mesh)
+            # col = bpy.data.collections.get("Collection")
+            # col.objects.link(obj)
+            # bpy.context.view_layer.objects.active = obj
+                        
+            #spine_face_data = face_vertices_list[counter]
+           
+            counter += 1
+
+            # face_vertices = []
+            # for v in face_vertices_mesh.vertices:
+            #     face_vertices.append[v.co]
+                      
+            #face_vertices_mesh.from_pydata(face_vertices, edges, faces)
+
+            #Add spine base as Mesh to Blender
+            spine_base_mesh = bpy.data.meshes.new("Spine Base")  # add the new mesh
+            obj = bpy.data.objects.new(spine_base_mesh.name, spine_base_mesh) 
+
+            #Find the center of the overlapping polygons and store it in "Spine Base"
+            x, y, z = [ sum( [v.co[i] for v in spine_mesh.verts] ) for i in range(3)] #Tested: This does need to be 3
+            count = float(len(spine_mesh.verts))
+            spine_base = Vector( (x, y, z ) ) / count        
+            spine_base_coords = [spine_base]
+            spine_base_mesh.from_pydata(spine_base_coords, edges, faces)
+            spine_base_list.append(spine_base_mesh)
+
+            
+        return(spine_base_list, intersecting_spines)
+    
+    def find_spine_tip(self, dendrite):
+        print("finding tip")
+        global spine_tip_list
+        spine_tip_list = []   
+        print(spine_base_list)
+
+        for spine_base in spine_base_list:
+            
+            spine_base_normal = spine_base.vertices[0].normal
+            spine_base = spine_base.vertices[0].co
+
+            # mesh_verts = np.array([v.co for v in spine_mesh.verts])
+            # mesh_verts_proj = mesh_verts - np.dot(mesh_verts, spine_base_normal)[:, np.newaxis] * spine_base_normal
+            # distances = np.linalg.norm(mesh_verts_proj, axis=1)
+            # farthest_point_idx = np.argmax(distances)
+            # farthest_point = mesh_verts[farthest_point_idx]
+            # print(farthest_point)
+
+            dendrite = bpy.context.object
+            ray_direction = spine_base_normal
+            #ray_direction = spine_base_normal.normalized()
+            #print(ray_direction)
+            # Cast the ray and get the hit location
+            hit, hit_location, _, _ = dendrite.ray_cast(spine_base, ray_direction)
+
+            # Print the distance
+            print(hit_location)
+
+
+            spine_tip_list.append(hit_location)
+
+        return(spine_tip_list)
+
+    def create_base_and_tip(self):
+        print("creating base and tip")
+        edges = []
+        faces = []
+        counter = 0
+        
+        for spine_mesh in intersecting_spines:
+            #remove mesh from collection
+            spine_base = spine_base_list[counter]            
+            spine_tip = spine_tip_list[counter]
+            spine_name = spine_names[counter]
+            spine_base = spine_base.vertices[0].co
+
+            #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"   
+            spine_length_dict = {}
+            spine_coordinates_dict = {}
+                                    
+            for vert in spine_mesh.verts:
+            #for vert in spine_mesh.verts:
+                length = math.dist(vert.co, spine_base)         
+                spine_length_dict[vert.index] = length
+                spine_coordinates_dict[vert.index] = vert.co                
+
+            spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
+            spine_tip = spine_coordinates_dict[spine_tip_index]
+
+            #Clear dictionary between loops    
+            spine_length_dict = {}
+            spine_coordinates_dict = {}
+
+            #Create a mesh with spine_base and spine_tip
+           
+            endpoint_mesh = bpy.data.meshes.new(spine_name)  # add the new mesh
+            endpoint_mesh_name = "endpoints_" + str(spine_name)
+            obj = bpy.data.objects.new(endpoint_mesh_name, endpoint_mesh)
+
+            #Put the endpoint mesh into the same folder as its spine
+            collection = bpy.context.scene.collection.children.get(spine_name)
+            collection.objects.link(obj)
+                                
+            verts = [spine_base, spine_tip]
+    
+            endpoint_mesh.from_pydata(verts, edges, faces)
+            counter += 1
+
+        return {'FINISHED'}          
+    
+    # def execute(self, context):
+    #     print("entering execute")
+    #     dendrite_mesh = self.dendrite_BVH_tree()
+    #     self.list_meshes()
+    #     self.find_intersections()
+    #     self.spines_to_collections()
+    #     self.find_intersecting_face_centers()
+    #     self.find_spine_base()
+    #     self.find_spine_tip(dendrite_mesh)
+    #     self.create_base_and_tip()
+    #     return {'FINISHED'}
+
+
+
 
 #This class is used to make endpoints for spines that weren't automatically segmented
     #Get selected vertex/verticies, find their center and turn them into a vector called "Spine Base"
