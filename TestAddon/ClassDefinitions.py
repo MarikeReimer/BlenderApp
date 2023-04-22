@@ -371,11 +371,14 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
     
     def get_all_obs(self):
         all_obs = [ mesh for mesh in bpy.data.objects]
-        print("all obs", all_obs)
         return(all_obs)
     
-    def get_slicers(self, all_obs, spine_list):
-        slicers = all_obs - spine_list
+    def make_slicers(self, all_obs, spine_list):
+        slicers = []
+        for mesh in all_obs:
+            print(mesh)
+            if mesh not in spine_list:
+                slicers.append(mesh)
         print("slicers", slicers)
         return(slicers)
 
@@ -404,7 +407,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         print("Executing")
         spine_list = self.get_spines()
         all_obs = self.get_all_obs()
-        self.get_slicers(spine_list, all_obs)
+        self.make_slicers(spine_list, all_obs)
         self.find_intersections
         return {'FINISHED'}
     
