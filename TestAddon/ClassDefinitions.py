@@ -366,50 +366,73 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
     
     #Get Spines
     def get_spines(self):  
-        spine_list = [mesh for mesh in bpy.context.selected_objects if mesh.type == 'MESH']
+        #spine_list = [mesh for mesh in bpy.context.selected_objects if mesh.type == 'MESH']
+        spine_list = [mesh for mesh in bpy.context.selected_objects]
+        
         all_obs = [ mesh for mesh in bpy.data.objects]
         slicer_list = []
 
         for obj in all_obs:
             if obj not in spine_list:
                 slicer_list.append(obj)
-          
+
+
         return(spine_list, slicer_list)
         
     def find_intersections(self, spine_list,slicer_list):
-        spine_names = []
-        bmesh_slicer= bmesh.new()
-        bmesh_slicer.from_mesh(slicer_list[0].data)    
-        #bmesh_slicer.transform(slicer.matrix_world)
-        bmesh_slicer.faces.ensure_lookup_table() 
-        slicer_BVHtree = BVHTree.FromBMesh(bmesh_slicer)  
-        print("slicer_BVHtree", slicer_BVHtree)
+        # bmesh_slicer= bmesh.new()
+        # bmesh_slicer.from_mesh(slicer_list[0].data)
 
-        for spine_mesh in spine_list:                                 
-            BVH_spine_mesh = bmesh.new()
-            BVH_spine_mesh.from_mesh(spine_mesh.data)
-            BVH_spine_mesh.transform(spine_mesh.matrix_world)
-            BVH_spine_mesh.faces.ensure_lookup_table()
-            BVH_spine_mesh = BVHTree.FromBMesh(BVH_spine_mesh)
-            print("BVH_spine_mesh", BVH_spine_mesh)
+        # print("spine_list", spine_list)
+        # print("slicer_list", slicer_list)
+         
+        # slicer_BVHtree = BVHTree.FromBMesh(bmesh_slicer)  
+        # print("slicer_BVHtree", slicer_BVHtree)
+
+        # for spine_mesh in spine_list:
+        #     print(spine_mesh.name)                                 
+        #     BVH_spine_mesh = bmesh.new()
+        #     BVH_spine_tree = BVHTree.FromBMesh(BVH_spine_mesh)
+        #     print("BVH_spine_mesh", BVH_spine_tree)
                       
-            overlap = BVH_spine_mesh.overlap(slicer_BVHtree) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
-            other_overlap = slicer_BVHtree.overlap(BVH_spine_mesh)
+        #     overlap = BVH_spine_tree.overlap(slicer_BVHtree) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
+        #     other_overlap = slicer_BVHtree.overlap(BVH_spine_tree)
             
-            print('first overlap', overlap)
-            print("other overlap", other_overlap)
+        #     print('first overlap', len(overlap))
+        #     print("other overlap", len(other_overlap))
 
-            overlapping_spine_face_index_list = [pair[1] for pair in overlap]
+        #     overlapping_spine_face_index_list = [pair[1] for pair in overlap]
 
-            #Check other meshes to see if they intersect
+        #     #Check other meshes to see if they intersect
 
-            if overlapping_spine_face_index_list:
-                print("overlapping_spine_face_index_list", overlapping_spine_face_index_list.polygons[0])
-                overlapping_spine_face_index_list.append(overlapping_spine_face_index_list)
-                intersecting_spines.append(BVH_spine_mesh)
-                spine_names.append(spine_mesh.name)
+        #     if overlapping_spine_face_index_list:
+        #         print("overlapping_spine_face_index_list", overlapping_spine_face_index_list)
+        #         overlapping_spine_face_index_list.append(overlapping_spine_face_index_list)
+        #         intersecting_spines.append(BVH_spine_mesh)
+        #         spine_names.append(spine_mesh.name)
         
-        print(spine_names)
+        # print(spine_names)
+        # Get their world matrix
+        mat1 = spine_list[0].matrix_world
+        mat2 = slicer_list[0].matrix_world
+
+        # Get the geometry in world coordinates
+        vert1 = [mat1 @ v.co for v in spine_list[0].data.vertices] 
+        poly1 = [p.vertices for p in spine_list[0].data.polygons]
+
+        vert2 = [mat2 @ v.co for v in slicer_list[0].data.vertices] 
+        poly2 = [p.vertices for p in slicer_list[0].data.polygons]
+
+        # Create the BVH trees
+        bvh1 = BVHTree.FromPolygons( vert1, poly1 )
+        bvh2 = BVHTree.FromPolygons( vert2, poly2 )
+
+        # Test if overlap
+        if bvh1.overlap( bvh2 ):
+            print(len(bvh1.overlap( bvh2 )))
+        else:
+            print( "No overlap" )
+
         return {'FINISHED'}
     
     def spines_to_collections(self, spine_list):
