@@ -366,114 +366,56 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
     
     #Get Spines
     def get_spines(self):  
-        spine_list = [mesh for mesh in bpy.context.selected_objects if mesh.type == 'MESH']        
-        return(spine_list)
-    
-    def get_all_obs(self):
+        spine_list = [mesh for mesh in bpy.context.selected_objects if mesh.type == 'MESH']
         all_obs = [ mesh for mesh in bpy.data.objects]
-        return(all_obs)
-    
-    def make_slicers(self, all_obs, spine_list):
-        slicers = []
-        for mesh in all_obs:
-            print(mesh)
-            if mesh not in spine_list:
-                slicers.append(mesh)
-        print("slicers", slicers)
-        return(slicers)
+        slicer_list = []
 
-    def find_intersections(self):
-        for spine_mesh in mesh_list:                                 
+        for obj in all_obs:
+            if obj not in spine_list:
+                slicer_list.append(obj)
+          
+        return(spine_list, slicer_list)
+        
+    def find_intersections(self, spine_list,slicer_list):
+        spine_names = []
+        bmesh_slicer= bmesh.new()
+        bmesh_slicer.from_mesh(slicer_list[0].data)    
+        #bmesh_slicer.transform(slicer.matrix_world)
+        bmesh_slicer.faces.ensure_lookup_table() 
+        slicer_BVHtree = BVHTree.FromBMesh(bmesh_slicer)  
+        print("slicer_BVHtree", slicer_BVHtree)
+
+        for spine_mesh in spine_list:                                 
             BVH_spine_mesh = bmesh.new()
-            BVH_spine_mesh.from_mesh(bpy.context.scene.object[spine_mesh.name].data)
+            BVH_spine_mesh.from_mesh(spine_mesh.data)
             BVH_spine_mesh.transform(spine_mesh.matrix_world)
-            BVH_spine_mesh.faces.ensure_lookup_table() 
-            BVHtree_mesh = BVHTree.FromBMesh(BVH_spine_mesh)                        
-            overlap = dendrite_BVHtree.overlap(BVHtree_mesh) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
-            overlapping_spine_face_index_list_local = [pair[1] for pair in overlap]
+            BVH_spine_mesh.faces.ensure_lookup_table()
+            BVH_spine_mesh = BVHTree.FromBMesh(BVH_spine_mesh)
+            print("BVH_spine_mesh", BVH_spine_mesh)
+                      
+            overlap = BVH_spine_mesh.overlap(slicer_BVHtree) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
+            other_overlap = slicer_BVHtree.overlap(BVH_spine_mesh)
+            
+            print('first overlap', overlap)
+            print("other overlap", other_overlap)
+
+            overlapping_spine_face_index_list = [pair[1] for pair in overlap]
 
             #Check other meshes to see if they intersect
 
-            if overlapping_spine_face_index_list_local:
-                overlapping_spine_face_index_list.append(overlapping_spine_face_index_list_local)
+            if overlapping_spine_face_index_list:
+                print("overlapping_spine_face_index_list", overlapping_spine_face_index_list.polygons[0])
+                overlapping_spine_face_index_list.append(overlapping_spine_face_index_list)
                 intersecting_spines.append(BVH_spine_mesh)
                 spine_names.append(spine_mesh.name)
         
         print(spine_names)
         return {'FINISHED'}
-
-
-    def execute(self, context):
-        print("Executing")
-        spine_list = self.get_spines()
-        all_obs = self.get_all_obs()
-        self.make_slicers(spine_list, all_obs)
-        self.find_intersections
-        return {'FINISHED'}
     
-    #Generate a BVH tree from the dendrite to check for intersecting spines
-    def dendrite_BVH_tree(self):
-        global dendrite_BVHtree
-        print("Growing BVHtree")
-        #Select Dendrite mesh        
-        dendrite = bpy.context.active_object     
-    
-        #Load the dendrite data into a mesh
-        dendrite_mesh = bmesh.new()
-        dendrite_mesh.from_mesh(bpy.context.scene.objects[dendrite.name].data)
-        dendrite_mesh.transform(dendrite.matrix_world)
-        dendrite_BVHtree = BVHTree.FromBMesh(dendrite_mesh)
-
-        dendrite_mesh.free()
-        return {dendrite}
-        
-
-    def list_meshes(self):
-        global mesh_list
-        print("finding meshes")
-        mesh_list = [ mesh for mesh in bpy.data.objects if mesh.type == 'MESH']
-
-        dendrite = bpy.context.active_object  
-        mesh_list.remove(dendrite)
-
-        return {'FINISHED'}
-        
-    #Iterate through the spines in the mesh list
-    #Find overlapping polygons between spines and dendrite meshes and store them in "face centers"
-    #Check to see if the spine overlaps 
-    def find_intersections(self):
-        global intersecting_spines
-        global spine_names
-        global overlapping_spine_face_index_list
-        overlapping_spine_face_index_list = []
-        intersecting_spines = []
-        spine_names = []
-        print("finding intersections")
-
-        for spine_mesh in mesh_list:                                 
-            BVH_spine_mesh = bmesh.new()
-            BVH_spine_mesh.from_mesh(bpy.context.scene.objects[spine_mesh.name].data)
-            BVH_spine_mesh.transform(spine_mesh.matrix_world)
-            BVH_spine_mesh.faces.ensure_lookup_table() 
-            BVHtree_mesh = BVHTree.FromBMesh(BVH_spine_mesh)                        
-            overlap = dendrite_BVHtree.overlap(BVHtree_mesh) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
-            overlapping_spine_face_index_list_local = [pair[1] for pair in overlap]
-            
-            #Check to see if the spines overlap the dendrite before passing them to the BVH spine mesh list.  If not, restart the loop.  This filters out disconnected spines
-
-            if overlapping_spine_face_index_list_local:
-                overlapping_spine_face_index_list.append(overlapping_spine_face_index_list_local)
-                intersecting_spines.append(BVH_spine_mesh)
-                spine_names.append(spine_mesh.name)
-            else:
-                pass
-        
-        return {'FINISHED'}
-
-    def spines_to_collections(self):
+    def spines_to_collections(self, spine_list):
         print("moving spines to folders")
         #Add spines to their own folders
-        for spine_mesh in mesh_list:
+        for spine_mesh in spine_list:
             old_collection_name = spine_mesh.users_collection
             old_collection_name = old_collection_name[0]
             old_collection_name.objects.unlink(spine_mesh)
@@ -483,28 +425,27 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             bpy.context.scene.collection.children.link(new_collection)
             new_collection.objects.link(spine_mesh)
         return {'FINISHED'}
-
+    
     def find_intersecting_face_centers(self):
         print("finding intersections")
-        global face_vertices_list
-        face_vertices_list = []
+        face_centers_list = []
         counter = 0
 
         for BVH_spine_mesh in intersecting_spines:
-            face_vertices = []
+            face_centers = []
             
             #Make a collection of points in the faces of intersecting faces    
             for face_index in overlapping_spine_face_index_list[counter]:
-                face_data = BVH_spine_mesh.faces[face_index] 
-                face_verts = face_data.verts               
-                face_vertices.append(face_verts)
+                face_data = BVH_spine_mesh.faces[face_index]                
+                face_centers.append(face_data.calc_center_median())
             
             counter += 1
-            face_vertices_list.append(face_vertices)
-            face_vertices = []
+            face_centers_list.append(face_centers)
+            face_centers = []
 
         
-        return(face_vertices_list, intersecting_spines)     
+        return(face_centers_list, intersecting_spines)     
+
     
     def find_spine_base(self):
         global spine_base_list
@@ -628,17 +569,19 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
 
         return {'FINISHED'}          
     
-    # def execute(self, context):
-    #     print("entering execute")
-    #     dendrite_mesh = self.dendrite_BVH_tree()
-    #     self.list_meshes()
-    #     self.find_intersections()
-    #     self.spines_to_collections()
-    #     self.find_intersecting_face_centers()
-    #     self.find_spine_base()
-    #     self.find_spine_tip(dendrite_mesh)
-    #     self.create_base_and_tip()
-    #     return {'FINISHED'}
+
+    def execute(self, context):
+        print("entering execute")
+        spine_and_slicers = self.get_spines()
+        spine_list = spine_and_slicers[0]
+        slicer_list = spine_and_slicers[1]
+        self.find_intersections(spine_list, slicer_list)
+        self.spines_to_collections()
+        self.find_intersecting_face_centers()
+        self.find_spine_base()
+        self.find_spine_tip(dendrite_mesh)
+        self.create_base_and_tip()
+        return {'FINISHED'}
 
 
 
