@@ -413,27 +413,32 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         
         # print(spine_names)
         # Get their world matrix
-        mat1 = spine_list[0].matrix_world
-        mat2 = slicer_list[0].matrix_world
+        # Get the objects
+        obj1 = bpy.data.objects["model_ThinSpine_0.001"]
+        
 
-        # Get the geometry in world coordinates
-        vert1 = [mat1 @ v.co for v in spine_list[0].data.vertices] 
-        poly1 = [p.vertices for p in spine_list[0].data.polygons]
+        # Get their world matrix
+        mat1 = obj1.matrix_world
+                
+        for obj2 in spine_list:
+            mat2 = obj2.matrix_world
 
-        vert2 = [mat2 @ v.co for v in slicer_list[0].data.vertices] 
-        poly2 = [p.vertices for p in slicer_list[0].data.polygons]
+            # Get the geometry in world coordinates
+            vert1 = [mat1 @ v.co for v in obj1.data.vertices] 
+            poly1 = [p.vertices for p in obj1.data.polygons]
 
-        # Create the BVH trees
-        bvh1 = BVHTree.FromPolygons( vert1, poly1 )
-        bvh2 = BVHTree.FromPolygons( vert2, poly2 )
+            vert2 = [mat2 @ v.co for v in obj2.data.vertices] 
+            poly2 = [p.vertices for p in obj2.data.polygons]
 
-        # Test if overlap
-        if bvh1.overlap( bvh2 ):
-            print(len(bvh1.overlap( bvh2 )))
-        else:
-            print( "No overlap" )
+            # Create the BVH trees
+            bvh1 = BVHTree.FromPolygons( vert1, poly1 )
+            bvh2 = BVHTree.FromPolygons( vert2, poly2 )
 
-        return {'FINISHED'}
+            # Test if overlap
+            if bvh1.overlap( bvh2 ):                
+                print(obj2.name, "Overlap" )
+            else:
+                print(obj2.name, "No overlap" )
     
     def spines_to_collections(self, spine_list):
         print("moving spines to folders")
