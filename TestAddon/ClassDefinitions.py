@@ -376,7 +376,6 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             if obj not in spine_list:
                 slicer_list.append(obj)
 
-
         return(spine_list, slicer_list)
         
     def find_intersections(self, spine_list,slicer_list):
@@ -390,7 +389,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                 
 
 
-    def spines_to_collections(self, spine_list):
+    def spines_to_collections(self, spine_list,slicer_list):
         print("moving spines to folders")
         #Add spines to their own folders
         for spine_mesh in spine_list:
@@ -404,25 +403,61 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             new_collection.objects.link(spine_mesh)
         return {'FINISHED'}
     
-    def find_intersecting_face_centers(self):
-        print("finding intersections")
+    def find_intersecting_face_centers(self, spine_list, slicer_list):
+        print("finding intersecting_face_centers")
         face_centers_list = []
         counter = 0
 
-        for BVH_spine_mesh in intersecting_spines:
+        slicer = slicer_list[0]
+        slicer_mesh = slicer.data
+        slicer_bm = bmesh.new()
+        slicer_bm.from_mesh(slicer_mesh)
+        slicer_bvh = BVHTree.FromBMesh(slicer_bm)
+
+        for spine in spine_list:
+            print(spine.name)
+            #Make a BVHtree, use it to find overlapping polygons between spine and slicer
+
             face_centers = []
+            # Get the active object and its mesh
+            spine_mesh = spine.data
+
+            # Create a new BMesh object and copy the mesh data into it
+            spine_bm = bmesh.new()
+            spine_bm.from_mesh(spine_mesh)
+
+            # Create a BVHTree for the mesh
+            spine_bvh = BVHTree.FromBMesh(spine_bm)
+
+            # Free the BMesh object
+            spine_bm.free()
+
+            overlap = spine_bvh.overlap(slicer_bvh) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
+            overlapping_spine_face_index_list_local = [pair[1] for pair in overlap]
+
+            print("overlap", overlap)
             
-            #Make a collection of points in the faces of intersecting faces    
-            for face_index in overlapping_spine_face_index_list[counter]:
-                face_data = BVH_spine_mesh.faces[face_index]                
-                face_centers.append(face_data.calc_center_median())
+            # Create a ray and cast it from a given origin and direction
+            origin = Vector((0, 0, 0))
+            direction = Vector((0, 0, 1))
+            location, normal, index, distance = spine_bvh.ray_cast(origin, direction)
+
+                        # If a face was hit, do something with the face index
+            if index != -1:
+                print("Face index hit:", index)
+            
+            # #Make a collection of points in the faces of intersecting faces    
+            # for face_index in overlapping_spine_face_index_list[counter]:
+            #     face_data = BVH_spine_mesh.faces[face_index]                
+            #     face_centers.append(face_data.calc_center_median())
             
             counter += 1
             face_centers_list.append(face_centers)
             face_centers = []
 
-        
-        return(face_centers_list, intersecting_spines)     
+        slicer_bm.free()
+
+        return(face_centers_list)     
 
     
     def find_spine_base(self):
@@ -553,7 +588,8 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         spine_and_slicers = self.get_spines()
         spine_list = spine_and_slicers[0]
         slicer_list = spine_and_slicers[1]
-        self.find_intersections(spine_list, slicer_list)
+        #self.find_intersections(spine_list, slicer_list)
+        self.find_intersecting_face_centers(spine_list,slicer_list)
         self.spines_to_collections()
         self.find_intersecting_face_centers()
         self.find_spine_base()
