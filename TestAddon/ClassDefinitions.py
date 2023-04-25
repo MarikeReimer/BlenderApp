@@ -432,7 +432,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             # Free the BMesh object
             spine_bm.free()
 
-            overlap = spine_bvh.overlap(slicer_bvh) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
+            overlap = slicer_bvh.overlap(spine_bvh) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
             overlapping_spine_face_index_list_local = [pair[1] for pair in overlap]
 
             print("overlap", overlap)
