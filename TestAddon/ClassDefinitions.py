@@ -382,6 +382,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
     def find_intersections(self, spine_list,slicer_list):
         for obj2 in spine_list:
             print(obj2.name, bmesh_check_intersect_objects(slicer_list[0], obj2))
+            #Find the largest intersecting polygon
                 
 
 
@@ -1087,6 +1088,7 @@ def bmesh_check_intersect_objects(obj, obj2):
     EPS_NORMAL = 0.000001
     EPS_CENTER = 0.01  # should always be bigger
 
+    hit_normal = []
     #for ed in me_tmp.edges:
     for ed in bm.edges:
         v1, v2 = ed.verts
@@ -1100,9 +1102,15 @@ def bmesh_check_intersect_objects(obj, obj2):
         co_2 = co_2.lerp(co_mid, EPS_CENTER) + no_mid
 
         success, co, no, index = ray_cast(co_1, (co_2 - co_1).normalized(), distance = ed.calc_length())
+        
         if index != -1:
             intersect = True
+            cast = ray_cast(co_1, (co_2 - co_1).normalized(), distance = ed.calc_length())
+            hit_normal = cast[2]
+            print(hit_normal)
             break
+
+    
 
     # scene.objects.unlink(obj_tmp)
     bpy.context.collection.objects.unlink(obj_tmp)
@@ -1110,7 +1118,7 @@ def bmesh_check_intersect_objects(obj, obj2):
     bpy.data.meshes.remove(me_tmp)
 
 
-    return intersect
+    return intersect, hit_normal
 # obj = bpy.context.object
 # obj2 = (ob for ob in bpy.context.selected_objects if ob != obj).__next__()
 # intersect = bmesh_check_intersect_objects(obj, obj2)
