@@ -380,65 +380,38 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         return(spine_list, slicer_list)
         
     def find_intersections(self, spine_list,slicer_list):
-        # bmesh_slicer= bmesh.new()
-        # bmesh_slicer.from_mesh(slicer_list[0].data)
-
-        # print("spine_list", spine_list)
-        # print("slicer_list", slicer_list)
-         
-        # slicer_BVHtree = BVHTree.FromBMesh(bmesh_slicer)  
-        # print("slicer_BVHtree", slicer_BVHtree)
-
-        # for spine_mesh in spine_list:
-        #     print(spine_mesh.name)                                 
-        #     BVH_spine_mesh = bmesh.new()
-        #     BVH_spine_tree = BVHTree.FromBMesh(BVH_spine_mesh)
-        #     print("BVH_spine_mesh", BVH_spine_tree)
-                      
-        #     overlap = BVH_spine_tree.overlap(slicer_BVHtree) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
-        #     other_overlap = slicer_BVHtree.overlap(BVH_spine_tree)
-            
-        #     print('first overlap', len(overlap))
-        #     print("other overlap", len(other_overlap))
-
-        #     overlapping_spine_face_index_list = [pair[1] for pair in overlap]
-
-        #     #Check other meshes to see if they intersect
-
-        #     if overlapping_spine_face_index_list:
-        #         print("overlapping_spine_face_index_list", overlapping_spine_face_index_list)
-        #         overlapping_spine_face_index_list.append(overlapping_spine_face_index_list)
-        #         intersecting_spines.append(BVH_spine_mesh)
-        #         spine_names.append(spine_mesh.name)
-        
-        # print(spine_names)
-        # Get their world matrix
-        # Get the objects
-        obj1 = bpy.data.objects["model_ThinSpine_0.001"]
+        obj1 = bpy.data.objects["model_ThinSpine_0.001"] #Slicer
         
 
-        # Get their world matrix
+        # # Get their world matrix
         mat1 = obj1.matrix_world
+        # Get the geometry in world coordinates
+        vert1 = [mat1 @ v.co for v in obj1.data.vertices] 
+        poly1 = [p.vertices for p in obj1.data.polygons]
+        # Create the BVH trees
+        bvh1 = BVHTree.FromPolygons( vert1, poly1 )
+
                 
         for obj2 in spine_list:
             mat2 = obj2.matrix_world
-
-            # Get the geometry in world coordinates
-            vert1 = [mat1 @ v.co for v in obj1.data.vertices] 
-            poly1 = [p.vertices for p in obj1.data.polygons]
 
             vert2 = [mat2 @ v.co for v in obj2.data.vertices] 
             poly2 = [p.vertices for p in obj2.data.polygons]
 
             # Create the BVH trees
-            bvh1 = BVHTree.FromPolygons( vert1, poly1 )
+
             bvh2 = BVHTree.FromPolygons( vert2, poly2 )
 
             # Test if overlap
-            if bvh1.overlap( bvh2 ):                
+            if bvh2.overlap( bvh1 ):                
                 print(obj2.name, "Overlap" )
+                #print(bvh2.overlap(bvh1))
+                print("Andrew's addition says ", bmesh_check_intersect_objects(obj1, obj2))
             else:
                 print(obj2.name, "No overlap" )
+                print("Andrew's addition says ", bmesh_check_intersect_objects(obj1, obj2))
+
+        
     
     def spines_to_collections(self, spine_list):
         print("moving spines to folders")
@@ -1072,3 +1045,103 @@ class WriteNWB(bpy.types.Operator):
             io.write(nwbfile)
 
         return {'FINISHED'}
+
+def bmesh_copy_from_object(obj, transform=True, triangulate=True, apply_modifiers=False):
+    """
+    Returns a transformed, triangulated copy of the mesh
+    """
+
+    assert(obj.type == 'MESH')
+
+    if apply_modifiers and obj.modifiers:
+        me = obj.to_mesh(bpy.context.scene, True, 'PREVIEW', calc_tessface=False)
+        bm = bmesh.new()
+        bm.from_mesh(me)
+        bpy.data.meshes.remove(me)
+    else:
+        me = obj.data
+        if obj.mode == 'EDIT':
+            bm_orig = bmesh.from_edit_mesh(me)
+            bm = bm_orig.copy()
+        else:
+            bm = bmesh.new()
+            bm.from_mesh(me)
+
+    # Remove custom data layers to save memory
+    for elem in (bm.faces, bm.edges, bm.verts, bm.loops):
+        for layers_name in dir(elem.layers):
+            if not layers_name.startswith("_"):
+                layers = getattr(elem.layers, layers_name)
+                for layer_name, layer in layers.items():
+                    layers.remove(layer)
+
+    if transform:
+        bm.transform(obj.matrix_world)
+
+    if triangulate:
+        bmesh.ops.triangulate(bm, faces=bm.faces)
+
+    return bm
+
+def bmesh_check_intersect_objects(obj, obj2):
+    """
+    Check if any faces intersect with the other object
+
+    returns a boolean
+    """
+    assert(obj != obj2)
+
+    # Triangulate
+    bm = bmesh_copy_from_object(obj, transform=True, triangulate=True)
+    bm2 = bmesh_copy_from_object(obj2, transform=True, triangulate=True)
+
+    # If bm has more edges, use bm2 instead for looping over its edges
+    # (so we cast less rays from the simpler object to the more complex object)
+    if len(bm.edges) > len(bm2.edges):
+        bm2, bm = bm, bm2
+
+    # Create a real mesh (lame!)
+    scene = bpy.context.scene
+    me_tmp = bpy.data.meshes.new(name="~temp~")
+    bm2.to_mesh(me_tmp)
+    bm2.free()
+    obj_tmp = bpy.data.objects.new(name=me_tmp.name, object_data=me_tmp)
+    # scene.objects.link(obj_tmp)
+    bpy.context.collection.objects.link(obj_tmp)
+    ray_cast = obj_tmp.ray_cast
+
+    intersect = False
+
+    EPS_NORMAL = 0.000001
+    EPS_CENTER = 0.01  # should always be bigger
+
+    #for ed in me_tmp.edges:
+    for ed in bm.edges:
+        v1, v2 = ed.verts
+
+        # setup the edge with an offset
+        co_1 = v1.co.copy()
+        co_2 = v2.co.copy()
+        co_mid = (co_1 + co_2) * 0.5
+        no_mid = (v1.normal + v2.normal).normalized() * EPS_NORMAL
+        co_1 = co_1.lerp(co_mid, EPS_CENTER) + no_mid
+        co_2 = co_2.lerp(co_mid, EPS_CENTER) + no_mid
+
+        success, co, no, index = ray_cast(co_1, (co_2 - co_1).normalized(), distance = ed.calc_length())
+        if index != -1:
+            intersect = True
+            break
+
+    # scene.objects.unlink(obj_tmp)
+    bpy.context.collection.objects.unlink(obj_tmp)
+    bpy.data.objects.remove(obj_tmp)
+    bpy.data.meshes.remove(me_tmp)
+
+
+    return intersect
+# obj = bpy.context.object
+# obj2 = (ob for ob in bpy.context.selected_objects if ob != obj).__next__()
+# intersect = bmesh_check_intersect_objects(obj, obj2)
+
+# print("There are%s intersections." % ("" if intersect else " NO"))
+
