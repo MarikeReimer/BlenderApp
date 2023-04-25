@@ -380,8 +380,12 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         return(spine_list, slicer_list)
         
     def find_intersections(self, spine_list,slicer_list):
-        for obj2 in spine_list:
-            print(obj2.name, bmesh_check_intersect_objects(slicer_list[0], obj2))
+        for spine in spine_list:
+            hit_normal = bmesh_check_intersect_objects(slicer_list[0], spine)
+            hit_normal = hit_normal[1]
+            print(spine.name, hit_normal)
+            
+        return {'FINISHED'}  
             #Find the largest intersecting polygon
                 
 
