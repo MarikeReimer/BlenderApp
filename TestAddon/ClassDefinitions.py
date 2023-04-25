@@ -380,39 +380,11 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         return(spine_list, slicer_list)
         
     def find_intersections(self, spine_list,slicer_list):
-        obj1 = bpy.data.objects["model_ThinSpine_0.001"] #Slicer
-        
-
-        # # Get their world matrix
-        mat1 = obj1.matrix_world
-        # Get the geometry in world coordinates
-        vert1 = [mat1 @ v.co for v in obj1.data.vertices] 
-        poly1 = [p.vertices for p in obj1.data.polygons]
-        # Create the BVH trees
-        bvh1 = BVHTree.FromPolygons( vert1, poly1 )
-
-                
         for obj2 in spine_list:
-            mat2 = obj2.matrix_world
+            print(obj2.name, bmesh_check_intersect_objects(slicer_list[0], obj2))
+                
 
-            vert2 = [mat2 @ v.co for v in obj2.data.vertices] 
-            poly2 = [p.vertices for p in obj2.data.polygons]
 
-            # Create the BVH trees
-
-            bvh2 = BVHTree.FromPolygons( vert2, poly2 )
-
-            # Test if overlap
-            if bvh2.overlap( bvh1 ):                
-                print(obj2.name, "Overlap" )
-                #print(bvh2.overlap(bvh1))
-                print("Andrew's addition says ", bmesh_check_intersect_objects(obj1, obj2))
-            else:
-                print(obj2.name, "No overlap" )
-                print("Andrew's addition says ", bmesh_check_intersect_objects(obj1, obj2))
-
-        
-    
     def spines_to_collections(self, spine_list):
         print("moving spines to folders")
         #Add spines to their own folders
