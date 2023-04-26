@@ -406,6 +406,8 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
     def find_intersecting_face_centers(self, spine_list, slicer_list):
         print("finding intersecting_face_centers")
         face_centers_list = []
+        intersection_normal_vector_list = []
+
         counter = 0
 
         slicer = slicer_list[0]
@@ -441,20 +443,14 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     bpy.data.collections.remove(collection)
                     spine_list.remove(spine)
                 bpy.context.scene.collection.objects.link(spine)
+                pass
             
             cast_results = bmesh_check_intersect_objects(slicer, spine)
             intersection_normal_vector = cast_results[1]
-            print("intersection_normal_vector", intersection_normal_vector)
-            # Create a ray and cast it from a given origin and direction
-            # origin = Vector((0, 0, 0))
-            # direction = Vector((0, 0, 1))
-            # location, normal, index, distance = spine_bvh.ray_cast(origin, direction)
+            intersection_normal_vector_list.append(intersection_normal_vector)
 
-            #             # If a face was hit, do something with the face index
-            # if index != -1:
-            #     print("Face index hit:", index)
-            
-            #Make a collection of points in the faces of intersecting faces    
+            print("intersection_normal_vector", intersection_normal_vector)
+
             for face_index in overlapping_spine_face_index_list:
                 face_data = spine_mesh.faces[face_index]
             
