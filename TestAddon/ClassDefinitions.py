@@ -432,27 +432,28 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
 
 
 
-            overlap = slicer_bvh.overlap(spine_bvh) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
-            overlapping_spine_face_index_list_local = [pair[1] for pair in overlap]
+            overlap = slicer_bvh.overlap(spine_bvh) #overlap is list containing pairs of polygon indices, the first index referencing the slicer tree, the second referencing the spine tree.
+            overlapping_spine_face_index_list = [pair[1] for pair in overlap]
 
-            print("overlap", overlap)
+            print("overlapping", len(overlapping_spine_face_index_list))
             
             # Create a ray and cast it from a given origin and direction
-            origin = Vector((0, 0, 0))
-            direction = Vector((0, 0, 1))
-            location, normal, index, distance = spine_bvh.ray_cast(origin, direction)
+            # origin = Vector((0, 0, 0))
+            # direction = Vector((0, 0, 1))
+            # location, normal, index, distance = spine_bvh.ray_cast(origin, direction)
 
-                        # If a face was hit, do something with the face index
-            if index != -1:
-                print("Face index hit:", index)
+            #             # If a face was hit, do something with the face index
+            # if index != -1:
+            #     print("Face index hit:", index)
             
-            # #Make a collection of points in the faces of intersecting faces    
-            # for face_index in overlapping_spine_face_index_list[counter]:
-            #     face_data = BVH_spine_mesh.faces[face_index]                
-            #     face_centers.append(face_data.calc_center_median())
+            #Make a collection of points in the faces of intersecting faces    
+            for face_index in overlapping_spine_face_index_list:
+                face_data = spine_mesh.faces[face_index]
+                print("face_data median", face_data.calc_center_median())  
             
             counter += 1
             face_centers_list.append(face_centers)
+            print("testing face centers",len(face_centers_list))
             face_centers = []
             # Free the BMesh object
             spine_mesh.free()
