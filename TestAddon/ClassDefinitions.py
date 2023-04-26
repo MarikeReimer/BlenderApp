@@ -411,7 +411,9 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         slicer = slicer_list[0]
         slicer_mesh = slicer.data
         slicer_bm = bmesh.new()
-        slicer_bm.from_mesh(slicer_mesh)
+        slicer_bm.from_mesh(bpy.context.scene.objects[slicer.name].data)
+        slicer_bm.transform(slicer.matrix_world)
+        slicer_bm.faces.ensure_lookup_table() 
         slicer_bvh = BVHTree.FromBMesh(slicer_bm)
 
         for spine in spine_list:
@@ -420,17 +422,15 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
 
             face_centers = []
             # Get the active object and its mesh
-            spine_mesh = spine.data
-
-            # Create a new BMesh object and copy the mesh data into it
-            spine_bm = bmesh.new()
-            spine_bm.from_mesh(spine_mesh)
+            spine_mesh = bmesh.new()
+            spine_mesh.from_mesh(bpy.context.scene.objects[spine.name].data)
+            spine_mesh.transform(spine.matrix_world)
+            spine_mesh.faces.ensure_lookup_table() 
 
             # Create a BVHTree for the mesh
-            spine_bvh = BVHTree.FromBMesh(spine_bm)
+            spine_bvh = BVHTree.FromBMesh(spine_mesh)
 
-            # Free the BMesh object
-            spine_bm.free()
+
 
             overlap = slicer_bvh.overlap(spine_bvh) #overlap is list containing pairs of polygon indices, the first index is a vertex from the dendrite mesh tree the second is from the spine mesh tree
             overlapping_spine_face_index_list_local = [pair[1] for pair in overlap]
@@ -454,6 +454,8 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             counter += 1
             face_centers_list.append(face_centers)
             face_centers = []
+            # Free the BMesh object
+            spine_mesh.free()
 
         slicer_bm.free()
 
