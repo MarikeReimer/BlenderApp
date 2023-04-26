@@ -389,7 +389,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                 
 
 
-    def spines_to_collections(self, spine_list,slicer_list):
+    def spines_to_collections(self, spine_list):
         print("moving spines to folders")
         #Add spines to their own folders
         for spine_mesh in spine_list:
@@ -590,12 +590,11 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         spine_and_slicers = self.get_spines()
         spine_list = spine_and_slicers[0]
         slicer_list = spine_and_slicers[1]
+        self.spines_to_collections(spine_list)
         #self.find_intersections(spine_list, slicer_list)
         self.find_intersecting_face_centers(spine_list,slicer_list)
-        self.spines_to_collections()
-        self.find_intersecting_face_centers()
         self.find_spine_base()
-        self.find_spine_tip(dendrite_mesh)
+        self.find_spine_tip()
         self.create_base_and_tip()
         return {'FINISHED'}
 
