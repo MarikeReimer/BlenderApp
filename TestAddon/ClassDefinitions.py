@@ -410,11 +410,9 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
 
     
         for spine in spine_list:
-            print("spine", spine)
             for slicer in slicer_list:
                 results = bmesh_check_intersect_objects(spine, slicer)
                 if results[0] == True:
-                    print("found slicer", slicer.name)
                     slicer_bm = bmesh.new()
                     slicer_bm.from_mesh(bpy.context.scene.objects[slicer.name].data) 
                     slicer_bm.transform(slicer.matrix_world)
@@ -488,7 +486,6 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
 
             x, y, z = [ sum( [v[i] for v in face_centers_collection] ) for i in range(3)] #Tested: This does need to be 3
             count = float(len(face_centers_collection))
-            print("count", count)
             spine_base = Vector( (x, y, z ) ) / count        
             spine_base_coords = [spine_base]
             spine_base_mesh.from_pydata(spine_base_coords, [], [])
@@ -497,16 +494,31 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         print("spine bases found", len(spine_base_list))    
         return(spine_base_list)
     
-    def find_spine_tip(self, dendrite):
+    def find_spine_tip(self, spine_list, spine_base_list):
         print("finding tip")
-        global spine_tip_list
-        spine_tip_list = []   
-        print(spine_base_list)
 
+        spine_tip_list = []   
         for spine_base in spine_base_list:
-            
-            spine_base_normal = spine_base.vertices[0].normal
-            spine_base = spine_base.vertices[0].co
+            for spine in spine_list:
+                counter = 0
+                spine_base = spine_base_list[counter]
+                counter += 1
+                spine_base = spine_base.vertices[0].co
+                spine_length_dict = {}
+                spine_coordinates_dict = {}
+                                        
+                for vert in spine.data.vertices:
+                #for vert in spine.verts:
+                    length = math.dist(vert.co, spine_base)         
+                    spine_length_dict[vert.index] = length
+                    spine_coordinates_dict[vert.index] = vert.co                
+
+                spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
+                spine_tip = spine_coordinates_dict[spine_tip_index]
+                spine_tip_list.append(spine_tip)
+                
+            # spine_base_normal = spine_base.vertices[0].normal
+            # spine_base = spine_base.vertices[0].co
 
             # mesh_verts = np.array([v.co for v in spine_mesh.verts])
             # mesh_verts_proj = mesh_verts - np.dot(mesh_verts, spine_base_normal)[:, np.newaxis] * spine_base_normal
@@ -515,39 +527,39 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             # farthest_point = mesh_verts[farthest_point_idx]
             # print(farthest_point)
 
-            dendrite = bpy.context.object
-            ray_direction = spine_base_normal
+        
+            #ray_direction = spine_base_normal
             #ray_direction = spine_base_normal.normalized()
             #print(ray_direction)
             # Cast the ray and get the hit location
-            hit, hit_location, _, _ = dendrite.ray_cast(spine_base, ray_direction)
+            #hit, hit_location, _, _ = dendrite.ray_cast(spine_base, ray_direction)
 
             # Print the distance
-            print(hit_location)
+            #print(hit_location)
 
 
-            spine_tip_list.append(hit_location)
+            #spine_tip_list.append(hit_location)
 
         return(spine_tip_list)
 
-    def create_base_and_tip(self):
+    def create_base_and_tip(self, spine_list, spine_base_list, spine_tip_list):
         print("creating base and tip")
         edges = []
         faces = []
         counter = 0
         
-        for spine_mesh in intersecting_spines:
+        for spine in spine_list:
             #remove mesh from collection
-            spine_base = spine_base_list[counter]            
+            spine_base = spine_base_list[counter]          
             spine_tip = spine_tip_list[counter]
-            spine_name = spine_names[counter]
+            spine_name = spine_list[counter]
             spine_base = spine_base.vertices[0].co
 
             #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"   
             spine_length_dict = {}
             spine_coordinates_dict = {}
                                     
-            for vert in spine_mesh.verts:
+            for vert in spine.data.vertices:
             #for vert in spine_mesh.verts:
                 length = math.dist(vert.co, spine_base)         
                 spine_length_dict[vert.index] = length
@@ -562,13 +574,16 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
 
             #Create a mesh with spine_base and spine_tip
            
-            endpoint_mesh = bpy.data.meshes.new(spine_name)  # add the new mesh
-            endpoint_mesh_name = "endpoints_" + str(spine_name)
+            endpoint_mesh = bpy.data.meshes.new(spine_name.name)  # add the new mesh
+            endpoint_mesh_name = "endpoints_" + str(spine_name.name)
             obj = bpy.data.objects.new(endpoint_mesh_name, endpoint_mesh)
 
             #Put the endpoint mesh into the same folder as its spine
-            collection = bpy.context.scene.collection.children.get(spine_name)
-            collection.objects.link(obj)
+            collection = bpy.context.scene.collection.children.get(spine_name.name)
+            if not collection:
+                pass
+            else:
+                collection.objects.link(obj)
                                 
             verts = [spine_base, spine_tip]
     
@@ -589,9 +604,9 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         face_centers_list = face_centers_and_normal_vectors[0]
         #print("face centers in execute", len(face_centers_list))
         intersection_normals = face_centers_and_normal_vectors[1] 
-        self.find_spine_base(face_centers_list)
-        self.find_spine_tip()
-        self.create_base_and_tip()
+        spine_base_list = self.find_spine_base(face_centers_list)
+        spine_tip_list = self.find_spine_tip(spine_list, spine_base_list)
+        self.create_base_and_tip(spine_list, spine_base_list, spine_tip_list)
         return {'FINISHED'}
 
 
