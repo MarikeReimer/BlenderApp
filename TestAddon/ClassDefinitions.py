@@ -408,14 +408,21 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         face_centers_list = []
         intersection_normal_vector_list = []
 
-        slicer = slicer_list[0]
-        slicer_bm = bmesh.new()
-        slicer_bm.from_mesh(bpy.context.scene.objects[slicer.name].data) 
-        slicer_bm.transform(slicer.matrix_world)
-        slicer_bm.faces.ensure_lookup_table() 
-        slicer_bvh = BVHTree.FromBMesh(slicer_bm)
-
+    
         for spine in spine_list:
+            print("spine", spine)
+            for slicer in slicer_list:
+                results = bmesh_check_intersect_objects(spine, slicer)
+                if results[0] == True:
+                    print("found slicer", slicer.name)
+                    slicer_bm = bmesh.new()
+                    slicer_bm.from_mesh(bpy.context.scene.objects[slicer.name].data) 
+                    slicer_bm.transform(slicer.matrix_world)
+                    slicer_bm.faces.ensure_lookup_table() 
+                    slicer_bvh = BVHTree.FromBMesh(slicer_bm)
+                else:
+                    continue
+
             #Make a BVHtree, use it to find overlapping polygons between spine and slicer
 
             face_centers = []
@@ -467,12 +474,11 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         spine_base_list = []
 
         print("finding base")   
+
         for face_centers_collection in face_centers_list:
             if len(face_centers_collection[0]) < 1:
-                print('ping')
                 continue
 
-            print("face centers list?", len(face_centers_collection))
             face_centers_collection = face_centers_collection[0]
 
             #Add spine base as Mesh to Blender
