@@ -447,6 +447,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                 pass
 
             face_centers_list.append([face_centers])
+            #print("face centers found", face_centers_list[0])
             #print(spine.name, "faces found", face_centers)
             face_centers = []
             # Free the BMesh object
@@ -464,29 +465,41 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
     
     def find_spine_base(self, face_centers_list):
         spine_base_list = []
+
         print("finding base")   
         print("face centers in find base", len(face_centers_list))
-        for face_centers in face_centers_list:
-            #print("face centers?", face_centers)
+        for face_centers_collection in face_centers_list:
+            if len(face_centers_collection[0]) < 1:
+                print('ping')
+                continue
+            
+            #vert_vectors = face_centers_list.pop(0)
+
+            print("face centers list?", len(face_centers_collection))
+            face_centers_collection = face_centers_collection[0]
+            #print("face centers?", face_centers_collection)
             #Add face centers as vertices:
 
-            face_vertices_mesh = bpy.data.meshes.new("face vertices")  # add the new mesh
-            obj = bpy.data.objects.new("MyObject", face_vertices_mesh)  # add a new object using the mesh
+            #face_vertices_mesh = bpy.data.meshes.new("face vertices")  # add the new mesh
+            #obj = bpy.data.objects.new("MyObject", face_vertices_mesh)  # add a new object using the mesh
 
             # scene = bpy.context.scene
             # scene.objects.link(obj)  # put the object into the scene (link)
             # scene.objects.active = obj  # set as the active object in the scene
             # obj.select = True  # select object
 
-            #mesh = bpy.context.object.data
-            bm = bmesh.new()
+            # #mesh = bpy.context.object.data
+            # bm = bmesh.new()
 
-            for x,y,z in face_centers:
-                bm.verts.new(x,y,z)  # add a new vert
+            # x = vert_vectors[0]
+            # print("face_centers x", x)
+            # y = vert_vectors[1]
+            # z = vert_vectors[2]
+            # bm.verts.new(x,y,z)  # add a new vert
 
-            # make the bmesh the object's mesh
-            bm.to_mesh(face_vertices_mesh)  
-            bm.free()
+            # # make the bmesh the object's mesh
+            # bm.to_mesh(face_vertices_mesh)  
+            # bm.free()
             # obj = bpy.data.objects.new("face vertices", face_vertices_mesh)
             # col = bpy.data.collections.get("Collection")
             # col.objects.link(obj)
@@ -494,18 +507,20 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             #face_vertices_mesh.from_pydata(face_centers, [], [])
 
             #Add spine base as Mesh to Blender
-            # spine_base_mesh = bpy.data.meshes.new("Spine Base")  # add the new mesh
-            # obj = bpy.data.objects.new(spine_base_mesh.name, spine_base_mesh) 
+            spine_base_mesh = bpy.data.meshes.new("Spine Base")  # add the new mesh
+            obj = bpy.data.objects.new(spine_base_mesh.name, spine_base_mesh) 
 
-            # #Find the center of the overlapping polygons and store it in "Spine Base"
-            #x, y, z = [ sum( [v[i] for v in face_centers] ) for i in range(3)] #Tested: This does need to be 3
-            # count = float(len(face_centers))
-            # spine_base = Vector( (x, y, z ) ) / count        
-            # spine_base_coords = [spine_base]
-            # spine_base_mesh.from_pydata(spine_base_coords, [], [])
-            # spine_base_list.append(spine_base_mesh)
+            #Find the center of the overlapping polygons and store it in "Spine Base"
 
-        print("spine bases found", len(spine_base_list))    
+            x, y, z = [ sum( [v[i] for v in face_centers_collection] ) for i in range(3)] #Tested: This does need to be 3
+            count = float(len(face_centers_collection))
+            print("count", count)
+            spine_base = Vector( (x, y, z ) ) / count        
+            spine_base_coords = [spine_base]
+            spine_base_mesh.from_pydata(spine_base_coords, [], [])
+            spine_base_list.append(spine_base_mesh)
+
+            print("spine bases found", len(spine_base_list))    
         return(spine_base_list)
     
     def find_spine_tip(self, dendrite):
