@@ -475,6 +475,8 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
 
         for face_centers_collection in face_centers_list:
             if len(face_centers_collection[0]) < 1:
+                print("missing base")
+                spine_base_list.append("missing")
                 continue
 
             face_centers_collection = face_centers_collection[0]
@@ -553,6 +555,11 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             spine_base = spine_base_list[counter]          
             spine_tip = spine_tip_list[counter]
             spine_name = spine_list[counter]
+
+            if isinstance(spine_base, str):
+                counter += 1
+                continue
+
             spine_base = spine_base.vertices[0].co
 
             #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"   
