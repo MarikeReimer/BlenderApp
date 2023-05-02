@@ -405,7 +405,6 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                 results = bmesh_check_intersect_objects(spine, slicer)
                 #make a BVH tree for the slicer and find the intersection normal vector
                 if results[0] == True and len(results[1]) > 0:
-                    #print(spine.name, "found intersections")
                     slicer_bm = bmesh.new()
                     slicer_bm.from_mesh(bpy.context.scene.objects[slicer.name].data) 
                     slicer_bm.transform(slicer.matrix_world)
@@ -415,16 +414,6 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     found_slicer = slicer.name
                     break
                    
-            #Handle spines that were missed
-            if len(found_slicer) == 0:
-                intersection_normal_vector_list.append('missing')
-                face_centers_list.append('missing')
-                spines_without_bases.append(spine.name)
-                for collection in spine.users_collection:
-                    collection.objects.unlink(spine)
-                    bpy.data.collections.remove(collection)
-                    bpy.context.scene.collection.objects.link(spine)
-                continue
 
             # Make a BVHtree, use it to find overlapping polygons between spine and slicer
             found_slicer = ''
@@ -440,8 +429,18 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             overlap = slicer_bvh.overlap(spine_bvh) #overlap is list containing pairs of polygon indices, the first index referencing the slicer tree, the second referencing the spine tree.
             overlapping_spine_face_index_list = [pair[1] for pair in overlap]
 
+            #Handle spines that were missed
+            if len(overlapping_spine_face_index_list) == 0:
+                intersection_normal_vector_list.append('missing')
+                face_centers_list.append('missing')
+                spines_without_bases.append(spine.name)
+                for collection in spine.users_collection:
+                    collection.objects.unlink(spine)
+                    bpy.data.collections.remove(collection)
+                    bpy.context.scene.collection.objects.link(spine)
+                continue
+
             for face_index in overlapping_spine_face_index_list:
-                #face_data =spine.faces[face_index]
                 face_data =spine_mesh.faces[face_index]                
                 face_centers.append(face_data.calc_center_median())
             
@@ -457,12 +456,18 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         spine_base_list = []
 
         print("finding base")
-        print(len(face_centers_list))   
-
         for face_centers_collection in face_centers_list:
+                         
             if face_centers_collection[0] == [] or face_centers_collection == 'missing':
                 spine_base_list.append('missing')
                 continue
+
+            # elif len(face_centers_collection[0]) == 1:
+            #     spine_base_coords = [face_centers_collection[0]]
+            #     print(spine_base_coords, "coords to unpack")
+            #     spine_base_mesh = bpy.data.meshes.new("Spine Base")
+            #     spine_base_mesh.from_pydata(spine_base_coords, [], [])
+            #     spine_base_list.append(spine_base_mesh)
          
             else:
                 face_centers_collection = face_centers_collection[0]
@@ -479,6 +484,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                 spine_base_mesh.from_pydata(spine_base_coords, [], [])
                 spine_base_list.append(spine_base_mesh)
 
+        print("bases lost?", "16", spine_base_list[15], "24", spine_base_list[23])
         return(spine_base_list)
     
     def find_spine_tip(self, spine_list, spine_base_list, intersection_normal_vector_list):
