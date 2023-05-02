@@ -378,17 +378,6 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
 
         return(spine_list, slicer_list)
         
-    def find_intersections(self, spine_list,slicer_list):
-        for spine in spine_list:
-            hit_normal = bmesh_check_intersect_objects(slicer_list[0], spine)
-            hit_normal = hit_normal[1]
-            print(spine.name, hit_normal)
-            
-        return {'FINISHED'}  
-            #Find the largest intersecting polygon
-                
-
-
     def spines_to_collections(self, spine_list):
         print("moving spines to folders")
         #Add spines to their own folders
@@ -408,6 +397,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         face_centers_list = []
         intersection_normal_vector_list = []
         found_slicer = ''
+        spines_without_bases = []
     
         for spine in spine_list:            
             for slicer in slicer_list:
@@ -429,6 +419,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             if len(found_slicer) == 0:
                 intersection_normal_vector_list.append('missing')
                 face_centers_list.append('missing')
+                spines_without_bases.append(spine.name)
                 for collection in spine.users_collection:
                     collection.objects.unlink(spine)
                     bpy.data.collections.remove(collection)
@@ -458,6 +449,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             face_centers = []
             spine_mesh.free()
             slicer_bm.free()
+        print("spines_without_bases", spines_without_bases)
         return(face_centers_list, intersection_normal_vector_list)     
 
     
@@ -487,8 +479,6 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                 spine_base_mesh.from_pydata(spine_base_coords, [], [])
                 spine_base_list.append(spine_base_mesh)
 
-
-        print("spine bases found", len(spine_base_list))    
         return(spine_base_list)
     
     def find_spine_tip(self, spine_list, spine_base_list, intersection_normal_vector_list):
@@ -501,9 +491,9 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         counter = 0
 
         for spine in spine_list:
-            print(spine.name, counter, "counter")
             spine_base = spine_base_list[counter]
             if spine_base == 'missing':
+                print(spine.name, "is missing its base")
                 counter += 1
                 spine_tip_list.append('missing')
                 continue
