@@ -425,10 +425,8 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     found_slicer = slicer.name
                     break
                    
-            print("current spine", spine.name, "found slicer is", found_slicer, len(found_slicer))       
             #Handle spines that were missed
             if len(found_slicer) == 0:
-                print(spine.name, "added 'missing' to face centers list")
                 intersection_normal_vector_list.append('missing')
                 face_centers_list.append('missing')
                 for collection in spine.users_collection:
@@ -456,12 +454,10 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                 face_data =spine_mesh.faces[face_index]                
                 face_centers.append(face_data.calc_center_median())
             
-            print(spine.name, "appending face centers to face centers list")
             face_centers_list.append([face_centers])
             face_centers = []
             spine_mesh.free()
             slicer_bm.free()
-            print(len(face_centers_list))
         return(face_centers_list, intersection_normal_vector_list)     
 
     
@@ -475,13 +471,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             if face_centers_collection[0] == [] or face_centers_collection == 'missing':
                 spine_base_list.append('missing')
                 continue
-            # elif len(face_centers_collection[0]) == 1:
-            #     print("wtf centers", face_centers_collection[0])
-            #     spine_base_coords = face_centers_collection[0]
-            #     spine_base_mesh.from_pydata(spine_base_coords, [], [])
-            #     spine_base_list.append(spine_base_mesh)
-            #     print(spine_base_mesh)
-        
+         
             else:
                 face_centers_collection = face_centers_collection[0]
 
@@ -511,7 +501,11 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         counter = 0
 
         for spine in spine_list:
+            print(spine.name, counter, "counter")
             spine_base = spine_base_list[counter]
+            if spine_base == 'missing':
+                counter += 1
+                continue
             spine_base = spine_base.vertices[0].co
             spine_length_dict = {}
             spine_coordinates_dict = {}
@@ -527,22 +521,20 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     counter += 1
                     continue
 
-            for spine_base in spine_base_list:
-                if spine_base != 'missing':
-                    print('spine_base', spine_base)
-                    #Otherwise use brute force method
-                    for vert in spine.data.vertices:
-                    #for vert in spine.verts:
-                        length = math.dist(vert.co, spine_base.vertices[0].co)         
-                        spine_length_dict[vert.index] = length
-                        spine_coordinates_dict[vert.index] = vert.co                
+            if spine_base != 'missing':
+                #Otherwise use brute force method
+                for vert in spine.data.vertices:
+                #for vert in spine.verts:
+                    length = math.dist(vert.co, spine_base)         
+                    spine_length_dict[vert.index] = length
+                    spine_coordinates_dict[vert.index] = vert.co                
 
-                    spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
-                    spine_tip = spine_coordinates_dict[spine_tip_index]
-                    spine_tip_list.append(spine_tip)
-                    counter += 1
-                else:
-                    counter += 1
+                spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
+                spine_tip = spine_coordinates_dict[spine_tip_index]
+                spine_tip_list.append(spine_tip)
+                counter += 1
+            else:
+                counter += 1
 
         return(spine_tip_list)
 
