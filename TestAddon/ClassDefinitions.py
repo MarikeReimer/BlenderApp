@@ -407,22 +407,38 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         print("finding intersecting_face_centers")
         face_centers_list = []
         intersection_normal_vector_list = []
-
+        found_slicer = ''
     
-        for spine in spine_list:
+        for spine in spine_list:            
             for slicer in slicer_list:
+                #Check for intersections
                 results = bmesh_check_intersect_objects(spine, slicer)
-                if results[0] == True:
+                #make a BVH tree for the slicer and find the intersection normal vector
+                if results[0] == True and len(results[1]) > 0:
+                    #print(spine.name, "found intersections")
                     slicer_bm = bmesh.new()
                     slicer_bm.from_mesh(bpy.context.scene.objects[slicer.name].data) 
                     slicer_bm.transform(slicer.matrix_world)
                     slicer_bm.faces.ensure_lookup_table() 
                     slicer_bvh = BVHTree.FromBMesh(slicer_bm)
-                else:
-                    continue
+                    intersection_normal_vector_list.append(results[1])
+                    found_slicer = slicer.name
+                    break
+                   
+            print("current spine", spine.name, "found slicer is", found_slicer, len(found_slicer))       
+            #Handle spines that were missed
+            if len(found_slicer) == 0:
+                print(spine.name, "added 'missing' to face centers list")
+                intersection_normal_vector_list.append('missing')
+                face_centers_list.append('missing')
+                for collection in spine.users_collection:
+                    collection.objects.unlink(spine)
+                    bpy.data.collections.remove(collection)
+                    bpy.context.scene.collection.objects.link(spine)
+                continue
 
-            #Make a BVHtree, use it to find overlapping polygons between spine and slicer
-
+            # Make a BVHtree, use it to find overlapping polygons between spine and slicer
+            found_slicer = ''
             face_centers = []
             # Get the active object and its mesh
             spine_mesh = bmesh.new()
@@ -440,107 +456,93 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                 face_data =spine_mesh.faces[face_index]                
                 face_centers.append(face_data.calc_center_median())
             
-            #Error Handling for non-overlapping spines - should probably move this earlier in code
-            if len(overlap) == 0:
-                print(spine.name, "needs manual length")
-                for collection in spine.users_collection:
-                    collection.objects.unlink(spine)
-                    bpy.data.collections.remove(collection)
-                    #spine_list.remove(spine)
-                bpy.context.scene.collection.objects.link(spine)
-            else:
-                pass
-
+            print(spine.name, "appending face centers to face centers list")
             face_centers_list.append([face_centers])
-            #print("face centers found", face_centers_list[0])
-            #print(spine.name, "faces found", face_centers)
             face_centers = []
-            # Free the BMesh object
             spine_mesh.free()
-
-            #Get the normal vector
-            cast_results = bmesh_check_intersect_objects(spine, slicer)
-            intersection_normal_vector = cast_results[1]
-            intersection_normal_vector_list.append(intersection_normal_vector)
-
-        slicer_bm.free()
-        #print("face centers in find intersecting face centers", len(face_centers_list))
+            slicer_bm.free()
+            print(len(face_centers_list))
         return(face_centers_list, intersection_normal_vector_list)     
 
     
     def find_spine_base(self, face_centers_list):
         spine_base_list = []
 
-        print("finding base")   
+        print("finding base")
+        print(len(face_centers_list))   
 
         for face_centers_collection in face_centers_list:
-            if len(face_centers_collection[0]) < 1:
-                print("missing base")
-                spine_base_list.append("missing")
+            if face_centers_collection[0] == [] or face_centers_collection == 'missing':
+                spine_base_list.append('missing')
                 continue
+            # elif len(face_centers_collection[0]) == 1:
+            #     print("wtf centers", face_centers_collection[0])
+            #     spine_base_coords = face_centers_collection[0]
+            #     spine_base_mesh.from_pydata(spine_base_coords, [], [])
+            #     spine_base_list.append(spine_base_mesh)
+            #     print(spine_base_mesh)
+        
+            else:
+                face_centers_collection = face_centers_collection[0]
 
-            face_centers_collection = face_centers_collection[0]
+                #Add spine base as Mesh to Blender
+                spine_base_mesh = bpy.data.meshes.new("Spine Base")  # add the new mesh
 
-            #Add spine base as Mesh to Blender
-            spine_base_mesh = bpy.data.meshes.new("Spine Base")  # add the new mesh
+                #Find the center of the overlapping polygons and store it in "Spine Base"
 
-            #Find the center of the overlapping polygons and store it in "Spine Base"
+                x, y, z = [ sum( [v[i] for v in face_centers_collection] ) for i in range(3)] #Tested: This does need to be 3
+                count = float(len(face_centers_collection))
+                spine_base = Vector( (x, y, z ) ) / count        
+                spine_base_coords = [spine_base]
+                spine_base_mesh.from_pydata(spine_base_coords, [], [])
+                spine_base_list.append(spine_base_mesh)
 
-            x, y, z = [ sum( [v[i] for v in face_centers_collection] ) for i in range(3)] #Tested: This does need to be 3
-            count = float(len(face_centers_collection))
-            spine_base = Vector( (x, y, z ) ) / count        
-            spine_base_coords = [spine_base]
-            spine_base_mesh.from_pydata(spine_base_coords, [], [])
-            spine_base_list.append(spine_base_mesh)
 
         print("spine bases found", len(spine_base_list))    
         return(spine_base_list)
     
-    def find_spine_tip(self, spine_list, spine_base_list):
+    def find_spine_tip(self, spine_list, spine_base_list, intersection_normal_vector_list):
         print("finding tip")
+        print(len(spine_base_list), "spine_base_list")
+        print(len(spine_list), "spine_list")
+        print(len(intersection_normal_vector_list), "intersection_normal_vector_list")
 
-        spine_tip_list = []   
-        for spine_base in spine_base_list:
-            for spine in spine_list:
-                counter = 0
-                spine_base = spine_base_list[counter]
-                counter += 1
-                spine_base = spine_base.vertices[0].co
-                spine_length_dict = {}
-                spine_coordinates_dict = {}
-                                        
-                for vert in spine.data.vertices:
-                #for vert in spine.verts:
-                    length = math.dist(vert.co, spine_base)         
-                    spine_length_dict[vert.index] = length
-                    spine_coordinates_dict[vert.index] = vert.co                
+        spine_tip_list = []
+        counter = 0
 
-                spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
-                spine_tip = spine_coordinates_dict[spine_tip_index]
-                spine_tip_list.append(spine_tip)
-                
-            # spine_base_normal = spine_base.vertices[0].normal
-            # spine_base = spine_base.vertices[0].co
+        for spine in spine_list:
+            spine_base = spine_base_list[counter]
+            spine_base = spine_base.vertices[0].co
+            spine_length_dict = {}
+            spine_coordinates_dict = {}
 
-            # mesh_verts = np.array([v.co for v in spine_mesh.verts])
-            # mesh_verts_proj = mesh_verts - np.dot(mesh_verts, spine_base_normal)[:, np.newaxis] * spine_base_normal
-            # distances = np.linalg.norm(mesh_verts_proj, axis=1)
-            # farthest_point_idx = np.argmax(distances)
-            # farthest_point = mesh_verts[farthest_point_idx]
-            # print(farthest_point)
+            #Check to see if it's a stubby spine and use the Raycast method to determine Length
+            if spine.name.startswith("Stubby",0, 8):
+                ray_direction = intersection_normal_vector_list[counter]
+                if len(ray_direction) > 0:                    
+                    #Cast the ray and get the hit location
+                    hit, hit_location, _, _ = spine.ray_cast(spine_base, ray_direction)                
+                    #Print the distance
+                    spine_tip_list.append(hit_location)
+                    counter += 1
+                    continue
 
-        
-            #ray_direction = spine_base_normal
-            #ray_direction = spine_base_normal.normalized()
-            #print(ray_direction)
-            # Cast the ray and get the hit location
-            #hit, hit_location, _, _ = dendrite.ray_cast(spine_base, ray_direction)
+            for spine_base in spine_base_list:
+                if spine_base != 'missing':
+                    print('spine_base', spine_base)
+                    #Otherwise use brute force method
+                    for vert in spine.data.vertices:
+                    #for vert in spine.verts:
+                        length = math.dist(vert.co, spine_base.vertices[0].co)         
+                        spine_length_dict[vert.index] = length
+                        spine_coordinates_dict[vert.index] = vert.co                
 
-            # Print the distance
-            #print(hit_location)
-
-
-            #spine_tip_list.append(hit_location)
+                    spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
+                    spine_tip = spine_coordinates_dict[spine_tip_index]
+                    spine_tip_list.append(spine_tip)
+                    counter += 1
+                else:
+                    counter += 1
 
         return(spine_tip_list)
 
@@ -555,12 +557,10 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             spine_base = spine_base_list[counter]          
             spine_tip = spine_tip_list[counter]
             spine_name = spine_list[counter]
-
-            if isinstance(spine_base, str):
-                counter += 1
+            if spine_base != 'missing':
+                spine_base = spine_base.vertices[0].co
+            else:
                 continue
-
-            spine_base = spine_base.vertices[0].co
 
             #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"   
             spine_length_dict = {}
@@ -612,7 +612,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         #print("face centers in execute", len(face_centers_list))
         intersection_normals = face_centers_and_normal_vectors[1] 
         spine_base_list = self.find_spine_base(face_centers_list)
-        spine_tip_list = self.find_spine_tip(spine_list, spine_base_list)
+        spine_tip_list = self.find_spine_tip(spine_list, spine_base_list, intersection_normals)
         self.create_base_and_tip(spine_list, spine_base_list, spine_tip_list)
         return {'FINISHED'}
 
