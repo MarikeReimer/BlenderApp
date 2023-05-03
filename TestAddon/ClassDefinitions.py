@@ -410,6 +410,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     slicer_bm.transform(slicer.matrix_world)
                     slicer_bm.faces.ensure_lookup_table() 
                     slicer_bvh = BVHTree.FromBMesh(slicer_bm)
+                    print(spine.name, "normal vector", results[1] )
                     intersection_normal_vector_list.append(results[1])
                     found_slicer = slicer.name
                     break
@@ -508,10 +509,10 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                 continue
 
             #Check to see if it's a stubby spine and use the Raycast method to determine Length
-            elif spine.name.startswith("Stubby",0, 8):  
-                print(spine.name, "is a stubby spine")             
+            elif spine.name.startswith("Stubby",0, 8):         
                 depsgraph = bpy.context.evaluated_depsgraph_get()
                 ray_direction = intersection_normal_vector_list[counter] 
+                print(spine.name, "ray direction", ray_direction)
                 ray_max_distance = 100
                 ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base.vertices[0].co, ray_direction, distance = ray_max_distance)
                 spine_tip = ray_cast[1]
@@ -519,7 +520,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                 counter += 1
 
             elif spine_base != 'missing' and spine.name.startswith("Stubby",0, 8) == False:
-                print(spine.name, "entering brute force method")
+                print(spine.name, "entering brute force")
                 #Otherwise use brute force method
                 for vert in spine.data.vertices:
                 #for vert in spine.verts:
@@ -1159,7 +1160,8 @@ def bmesh_check_intersect_objects(obj, obj2):
         
         if index != -1:
             intersect = True
-            cast = ray_cast(co_1, (co_2 - co_1).normalized(), distance = ed.calc_length())
+            #cast = ray_cast(co_1, (co_2 - co_1).normalized(), distance = ed.calc_length())
+            cast = ray_cast(co_1, (co_2 - co_1).normalized(), distance = 100)
             hit_normal = cast[2]
             #print(hit_normal)
             break
