@@ -411,8 +411,25 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     slicer_bm.faces.ensure_lookup_table() 
                     slicer_bvh = BVHTree.FromBMesh(slicer_bm)
                     print(spine.name, "normal vector", results[1] )
-                    intersection_normal_vector_list.append(results[1])
+                    #intersection_normal_vector_list.append(results[1])
                     found_slicer = slicer.name
+
+                    slicer.select_set(True) #The origin_set operator only works on selected object
+                    bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
+                    slicer_center_of_mass = slicer.location
+
+                    spine.select_set(True) #The origin_set operator only works on selected object
+                    bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
+                    spine_center_of_mass = spine.location
+                    
+                    ray_direction = spine_center_of_mass - slicer_center_of_mass
+
+                    depsgraph = bpy.context.evaluated_depsgraph_get()
+                     
+                    ray_max_distance = 100
+                    ray_cast = bpy.context.scene.ray_cast(depsgraph, slicer_center_of_mass, ray_direction, distance = ray_max_distance)
+                    intersection_normal_vector_list.append(ray_cast[2])
+                    print(spine.name, "new normal vector", ray_cast[2])
                     break
                    
             #Handle spines that were missed
@@ -1161,7 +1178,7 @@ def bmesh_check_intersect_objects(obj, obj2):
         if index != -1:
             intersect = True
             #cast = ray_cast(co_1, (co_2 - co_1).normalized(), distance = ed.calc_length())
-            cast = ray_cast(co_1, (co_2 - co_1).normalized(), distance = 100)
+            cast = ray_cast(co_1, (co_2 - co_1).normalized(), distance = ed.calc_length())
             hit_normal = cast[2]
             #print(hit_normal)
             break
@@ -1175,9 +1192,3 @@ def bmesh_check_intersect_objects(obj, obj2):
 
 
     return intersect, hit_normal
-# obj = bpy.context.object
-# obj2 = (ob for ob in bpy.context.selected_objects if ob != obj).__next__()
-# intersect = bmesh_check_intersect_objects(obj, obj2)
-
-# print("There are%s intersections." % ("" if intersect else " NO"))
-
