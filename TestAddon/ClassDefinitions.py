@@ -496,32 +496,34 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         counter = 0
 
         for spine in spine_list:
+            #print(spine.name, "Cycle #", counter)
+            spine_length_dict = {}
+            spine_coordinates_dict = {}
             spine_base = spine_base_list[counter]
+
             if spine_base == 'missing':
                 print(spine.name, "is missing its base")
                 counter += 1
                 spine_tip_list.append('missing')
                 continue
-            spine_base = spine_base.vertices[0].co
-            spine_length_dict = {}
-            spine_coordinates_dict = {}
 
             #Check to see if it's a stubby spine and use the Raycast method to determine Length
-            if spine.name.startswith("Stubby",0, 8):
-                ray_direction = intersection_normal_vector_list[counter]
-                if len(ray_direction) > 0:                    
-                    #Cast the ray and get the hit location
-                    hit, hit_location, _, _ = spine.ray_cast(spine_base, ray_direction)                
-                    #Print the distance
-                    spine_tip_list.append(hit_location)
-                    counter += 1
-                    continue
+            elif spine.name.startswith("Stubby",0, 8):  
+                print(spine.name, "is a stubby spine")             
+                depsgraph = bpy.context.evaluated_depsgraph_get()
+                ray_direction = intersection_normal_vector_list[counter] 
+                ray_max_distance = 100
+                ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base.vertices[0].co, ray_direction, distance = ray_max_distance)
+                spine_tip = ray_cast[1]
+                spine_tip_list.append(spine_tip)
+                counter += 1
 
-            if spine_base != 'missing':
+            elif spine_base != 'missing' and spine.name.startswith("Stubby",0, 8) == False:
+                print(spine.name, "entering brute force method")
                 #Otherwise use brute force method
                 for vert in spine.data.vertices:
                 #for vert in spine.verts:
-                    length = math.dist(vert.co, spine_base)         
+                    length = math.dist(vert.co, spine_base.vertices[0].co)         
                     spine_length_dict[vert.index] = length
                     spine_coordinates_dict[vert.index] = vert.co                
 
@@ -530,9 +532,11 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                 spine_tip_list.append(spine_tip)
                 counter += 1
             else:
+                print(spine.name, "missing base")
                 spine_tip_list.append('missing')
                 counter += 1
 
+        print(len(spine_tip_list), "spine_tip_list")
         return(spine_tip_list)
 
     def create_base_and_tip(self, spine_list, spine_base_list, spine_tip_list):
