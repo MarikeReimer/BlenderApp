@@ -436,15 +436,21 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     # spine_base_list.append(spine_base_mesh)
                     spine_base_list.append(spine_base) 
 
+                    for x,y in overlap:
+                        slicer_index = x
+                        face_normal = slicer.data.polygons[slicer_index].normal
+                        face_normal.normalized()
+                        face_normals.append(face_normal)
+
                     #for face in slicer.polygons:
                     #for face in slicer.faces:
                     #for face in slicer_bm.polygons:
                     #for face in slicer_bm.polygons:
-                    for face in slicer.data.polygons:
-                        verts = [slicer.data.vertices[i].co for i in face.vertices]
-                        normal = (verts[1]-verts[0]).cross(verts[2]-verts[0]).normalized()
-                        print(slicer.name, normal)
-                        face_normals.append(normal)
+                    # for face in slicer.data.polygons:
+                    #     verts = [slicer.data.vertices[i].co for i in face.vertices]
+                    #     normal = (verts[1]-verts[0]).cross(verts[2]-verts[0]).normalized()
+                    #     print(slicer.name, normal)
+                    #     face_normals.append(normal)
                                     
                     group_normal = Vector((0,0,0))
                     for vector in face_normals:
@@ -458,15 +464,8 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, group_normal, distance = ray_max_distance)
                     #ray_cast = spine.ray_cast(spine_base, group_normal, distance = ray_max_distance)
                     #ray_cast = slicer.ray_cast(spine_base, group_normal, distance = ray_max_distance)
-                    
-                    # hit_face = ray_cast[3]
-                    # print(spine.name, "hit face", hit_face, "total faces", len(spine.data.polygons))
-                    # spine.data.polygons[hit_face].select = True
 
                     intersection_normal_vector_list.append(ray_cast[2])
-                    face_centers = []
-                    face_data = []
-                    face_normals = []
                     spine_bm.free()
                     slicer_bm.free()
                     break
