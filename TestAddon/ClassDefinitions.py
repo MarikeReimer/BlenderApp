@@ -399,8 +399,10 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         found_slicer = ''
         spines_without_bases = []
     
-        for spine in spine_list:            
+        for spine in spine_list:
+            #spine.transform(spine.matrix_world)            
             for slicer in slicer_list:
+                #slicer.transform(slicer.matrix_world)
                 #Check for intersections
                 results = bmesh_check_intersect_objects(spine, slicer)
                 #make a BVH tree for the slicer and find the intersection normal vector
@@ -410,19 +412,18 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     slicer_bm.transform(slicer.matrix_world)
                     slicer_bm.faces.ensure_lookup_table() 
                     slicer_bvh = BVHTree.FromBMesh(slicer_bm)
-                    print(spine.name, "normal vector", results[1] )
                     #intersection_normal_vector_list.append(results[1])
                     found_slicer = slicer.name
 
                     slicer.select_set(True) #The origin_set operator only works on selected object
-                    bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
+                    #bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
                     slicer_center_of_mass = slicer.location
 
                     spine.select_set(True) #The origin_set operator only works on selected object
-                    bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
+                    #bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
                     spine_center_of_mass = spine.location
                     
-                    ray_direction = spine_center_of_mass - slicer_center_of_mass
+                    ray_direction = slicer_center_of_mass - spine_center_of_mass
 
                     depsgraph = bpy.context.evaluated_depsgraph_get()
                      
@@ -501,7 +502,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                 spine_base_mesh.from_pydata(spine_base_coords, [], [])
                 spine_base_list.append(spine_base_mesh)
 
-        print("bases lost?", "16", spine_base_list[15], "24", spine_base_list[23])
+        
         return(spine_base_list)
     
     def find_spine_tip(self, spine_list, spine_base_list, intersection_normal_vector_list):
@@ -529,15 +530,14 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             elif spine.name.startswith("Stubby",0, 8):         
                 depsgraph = bpy.context.evaluated_depsgraph_get()
                 ray_direction = intersection_normal_vector_list[counter] 
-                print(spine.name, "ray direction", ray_direction)
                 ray_max_distance = 100
                 ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base.vertices[0].co, ray_direction, distance = ray_max_distance)
                 spine_tip = ray_cast[1]
+                print(spine.name, "spine tip", spine_tip)
                 spine_tip_list.append(spine_tip)
                 counter += 1
 
             elif spine_base != 'missing' and spine.name.startswith("Stubby",0, 8) == False:
-                print(spine.name, "entering brute force")
                 #Otherwise use brute force method
                 for vert in spine.data.vertices:
                 #for vert in spine.verts:
@@ -547,6 +547,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
 
                 spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
                 spine_tip = spine_coordinates_dict[spine_tip_index]
+                print(spine.name, "spine tip", spine_tip)
                 spine_tip_list.append(spine_tip)
                 counter += 1
             else:
@@ -559,7 +560,6 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
 
     def create_base_and_tip(self, spine_list, spine_base_list, spine_tip_list):
         print("creating base and tip")
-        print("tip list length", len(spine_tip_list))
         edges = []
         faces = []
         counter = 0
@@ -568,6 +568,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
             #remove mesh from collection
             spine_base = spine_base_list[counter]          
             spine_tip = spine_tip_list[counter]
+            print(spine.name, "cre4ating tip at ", spine_tip)
             spine_name = spine_list[counter]
             if spine_base != 'missing':
                 spine_base = spine_base.vertices[0].co
