@@ -402,7 +402,7 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
         for spine in spine_list:
             face_centers = []
             face_data = []
-            face_normals = []
+            slicer_normals = []
 
             spine_bm = bmesh.new()
             spine_bm.from_mesh(bpy.context.scene.objects[spine.name].data) 
@@ -430,42 +430,42 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     x, y, z = [ sum( [v[i] for v in face_centers] ) for i in range(3)]
                     count = float(len(face_centers))
                     spine_base = Vector( (x, y, z ) ) / count      
-                    #spine_base_coords = [spine_base]
-                    # spine_base_mesh = bpy.data.meshes.new("Spine Base")
-                    # spine_base_mesh.from_pydata(spine_base_coords, [], [])
-                    # spine_base_list.append(spine_base_mesh)
                     spine_base_list.append(spine_base) 
 
-                    for x,y in overlap:
-                        slicer_index = x
-                        face_normal = slicer.data.polygons[slicer_index].normal
-                        face_normal.normalized()
-                        face_normals.append(face_normal)
-
-                    #for face in slicer.polygons:
-                    #for face in slicer.faces:
-                    #for face in slicer_bm.polygons:
-                    #for face in slicer_bm.polygons:
-                    # for face in slicer.data.polygons:
-                    #     verts = [slicer.data.vertices[i].co for i in face.vertices]
-                    #     normal = (verts[1]-verts[0]).cross(verts[2]-verts[0]).normalized()
-                    #     print(slicer.name, normal)
-                    #     face_normals.append(normal)
+                    slicer_normal = slicer.matrix_world @ Vector((0.0000, 1.0000, 0.0000)) #All faces have this as normal
+                    slicer_normal.normalized()
+                    slicer_normals.append(slicer_normal)
+                    
+                    # for p,q in overlap:
+                    #     slicer_index = p
+                    #     face_normal = slicer.matrix_world @ Vector((0.0000, 1.0000, 0.0000)) #All faces have this as normal 
+                    #     print("face_normal", face_normal)
+                    #     print(slicer.data.polygons[slicer_index])
+                    #     print(slicer.data.polygons[slicer_index].normal)
+                    #     face_normal.normalized()
+                    #     face_normals.append(face_normal)
                                     
-                    group_normal = Vector((0,0,0))
-                    for vector in face_normals:
-                        group_normal += vector
-                    group_normal = group_normal/len(face_normals)
-                    group_normal = spine.matrix_world @ group_normal
-                    print(spine.name, "group_normals", group_normal)
+                    # group_normal = Vector((0,0,0))
+                    # for vector in face_normals:
+                    #     group_normal += vector
+                    # group_normal = group_normal/len(face_normals)
+                    # group_normal = spine.matrix_world @ group_normal
+                    print(spine.name, slicer.name, "slicer normals", slicer_normal)
 
                     depsgraph = bpy.context.evaluated_depsgraph_get()                     
                     ray_max_distance = 100
-                    ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, group_normal, distance = ray_max_distance)
+                    ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, slicer_normal, distance = ray_max_distance)
+                    spine_tip = ray_cast[1]
+                    print("spine_tip", spine_tip)
+
+                    # spine_tip_mesh = bpy.data.meshes.new(spine_tip)  # add the new mesh
+                    # spine_tip_mesh = "endpoints_" + str("spine tip")
+                    # spine_tip_mesh.select_set = True
                     #ray_cast = spine.ray_cast(spine_base, group_normal, distance = ray_max_distance)
                     #ray_cast = slicer.ray_cast(spine_base, group_normal, distance = ray_max_distance)
 
-                    intersection_normal_vector_list.append(ray_cast[2])
+                    #intersection_normal_vector_list.append(ray_cast[2])
+                    intersection_normal_vector_list.append(slicer_normal)
                     spine_bm.free()
                     slicer_bm.free()
                     break
@@ -481,66 +481,8 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     bpy.data.collections.remove(collection)
                     bpy.context.scene.collection.objects.link(spine)
 
-            # # Make a BVHtree, use it to find overlapping polygons between spine and slicer
-            # found_slicer = ''
-            # face_centers = []
-            # # Get the active object and its mesh
-            # spine_mesh = bmesh.new()
-            # spine_mesh.from_mesh(bpy.context.scene.objects[spine.name].data)
-            # spine_mesh.transform(spine.matrix_world)
-            # spine_mesh.faces.ensure_lookup_table() 
-
-            # # Create a BVHTree for the mesh
-            # spine_bvh = BVHTree.FromBMesh(spine_mesh)
-            # overlap = slicer_bvh.overlap(spine_bvh) #overlap is list containing pairs of polygon indices, the first index referencing the slicer tree, the second referencing the spine tree.
-            # overlapping_spine_face_index_list = [pair[1] for pair in overlap]
-
-            # for face_index in overlapping_spine_face_index_list:
-            #     face_data =spine_mesh.faces[face_index]                
-            #     face_centers.append(face_data.calc_center_median())
-            
-            # face_centers_list.append([face_centers])
-            # face_centers = []
-            # spine_mesh.free()
-            # slicer_bm.free()
         print("spines_without_bases", spines_without_bases)
         return(face_centers_list, intersection_normal_vector_list, spine_base_list)     
-
-    
-    # def find_spine_base(self, face_centers_list):
-    #     spine_base_list = []
-
-    #     print("finding base")
-    #     for face_centers_collection in face_centers_list:
-                         
-    #         if face_centers_collection[0] == [] or face_centers_collection == 'missing':
-    #             spine_base_list.append('missing')
-    #             continue
-
-    #         # elif len(face_centers_collection[0]) == 1:
-    #         #     spine_base_coords = [face_centers_collection[0]]
-    #         #     print(spine_base_coords, "coords to unpack")
-    #         #     spine_base_mesh = bpy.data.meshes.new("Spine Base")
-    #         #     spine_base_mesh.from_pydata(spine_base_coords, [], [])
-    #         #     spine_base_list.append(spine_base_mesh)
-         
-    #         else:
-    #             face_centers_collection = face_centers_collection[0]
-
-    #             #Add spine base as Mesh to Blender
-    #             spine_base_mesh = bpy.data.meshes.new("Spine Base")  # add the new mesh
-
-    #             #Find the center of the overlapping polygons and store it in "Spine Base"
-
-    #             x, y, z = [ sum( [v[i] for v in face_centers_collection] ) for i in range(3)] #Tested: This does need to be 3
-    #             count = float(len(face_centers_collection))
-    #             spine_base = Vector( (x, y, z ) ) / count        
-    #             spine_base_coords = [spine_base]
-    #             spine_base_mesh.from_pydata(spine_base_coords, [], [])
-    #             spine_base_list.append(spine_base_mesh)
-
-        
-    #     return(spine_base_list)
     
     def find_spine_tip(self, spine_list, spine_base_list, intersection_normal_vector_list):
         print("finding tip")
