@@ -435,6 +435,8 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     slicer_normal = slicer.matrix_world @ Vector((0.0000, 1.0000, 0.0000)) #All faces have this as normal
                     slicer_normal.normalized()
                     slicer_normals.append(slicer_normal)
+                    bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(slicer_normal), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
+                    
                     
                     # for p,q in overlap:
                     #     slicer_index = p
