@@ -431,61 +431,41 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     count = float(len(face_centers))
                     spine_base = Vector( (x, y, z ) ) / count      
                     spine_base_list.append(spine_base) 
-                    
 
-                    slicer_matrix = slicer.matrix_world
-                    slicer_normal = slicer_matrix @ Vector((0.0000, 1.0000, 0.0000)) #All faces have this as normal
-                    #slicer_normal.normalized()
+                    slicer_normal = slicer.matrix_world @ Vector((0.0000, 1.0000, 0.0000)) #All faces have this as normal
+                    slicer_normal.normalized()
                     slicer_normals.append(slicer_normal)
-                    intersection_normal_vector_list.append(slicer_normal)
                     
+                    # for p,q in overlap:
+                    #     slicer_index = p
+                    #     face_normal = slicer.matrix_world @ Vector((0.0000, 1.0000, 0.0000)) #All faces have this as normal 
+                    #     print("face_normal", face_normal)
+                    #     print(slicer.data.polygons[slicer_index])
+                    #     print(slicer.data.polygons[slicer_index].normal)
+                    #     face_normal.normalized()
+                    #     face_normals.append(face_normal)
+                                    
+                    # group_normal = Vector((0,0,0))
+                    # for vector in face_normals:
+                    #     group_normal += vector
+                    # group_normal = group_normal/len(face_normals)
+                    # group_normal = spine.matrix_world @ group_normal
                     print(spine.name, slicer.name, "slicer normals", slicer_normal)
 
-                    # depsgraph = bpy.context.evaluated_depsgraph_get()                     
-                    # ray_max_distance = 100
-                    #ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, slicer_normal, distance = ray_max_distance)
-                    #ray_cast = bpy.context.scene.ray_cast(depsgraph,spine_base, slicer_normal, distance = ray_max_distance)
-                    # ray_cast = spine.ray_cast(spine_base, slicer_normal, distance = ray_max_distance)
-                    # spine_tip = ray_cast[1]
-                    # print("spine_tip", spine_tip)
+                    depsgraph = bpy.context.evaluated_depsgraph_get()                     
+                    ray_max_distance = 100
+                    ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, slicer_normal, distance = ray_max_distance)
+                    spine_tip = ray_cast[1]
+                    print("spine_tip", spine_tip)
+
+                    # spine_tip_mesh = bpy.data.meshes.new(spine_tip)  # add the new mesh
+                    # spine_tip_mesh = "endpoints_" + str("spine tip")
+                    # spine_tip_mesh.select_set = True
                     #ray_cast = spine.ray_cast(spine_base, group_normal, distance = ray_max_distance)
                     #ray_cast = slicer.ray_cast(spine_base, group_normal, distance = ray_max_distance)
 
-                    ray_begin = spine_base
-                    ray_end = slicer_normal
-                    ray_direction = ray_end - ray_begin
-                    ray_direction.normalize()
-                    ray_direction_reversed = spine_base - slicer_normal
-                    ray_direction_reversed.normalize()
-                    # covert ray_begin to "plane_ob" local space
-                    ray_begin_local = spine.matrix_world.inverted() @ ray_begin
-                    ray_begin_reversed = spine.matrix_world.inverted() @ slicer_normal
-                    # do a ray cast on newly created plane
-                    cast_result = spine.ray_cast(ray_begin_local, ray_direction)
-                    print("cast_result:", cast_result)
-
-                    cast_result2 = spine.ray_cast(ray_begin_reversed, ray_direction_reversed)
-                    print("cast_result2:", cast_result2)
-                    # endpoint_mesh = bpy.data.meshes.new("spinebase")  # add the new mesh
-                    # endpoint_mesh_name = "spinebase"
-                    # obj = bpy.data.objects.new(endpoint_mesh_name, endpoint_mesh)
-                                        
-                    # corrected_verts = cast_result[1] @ spine.matrix_world
-                    # verts = [corrected_verts]
-            
-                    # endpoint_mesh.from_pydata(verts, [], [])
-                    bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_base), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
-                    bpy.ops.mesh.primitive_cube_add(size=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(slicer_normal), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
-                    bpy.ops.mesh.primitive_cylinder_add(vertices=32,radius=.01, depth=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(cast_result2[1]), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
-
-
-                    #Put the endpoint mesh into the same folder as its spine
-                    # collection = bpy.context.scene.collection.children.get(spine.name)
-                    # if not collection:
-                    #     pass
-                    # else:
-                    #     collection.objects.link(bob)
-
+                    #intersection_normal_vector_list.append(ray_cast[2])
+                    intersection_normal_vector_list.append(slicer_normal)
                     spine_bm.free()
                     slicer_bm.free()
                     break
