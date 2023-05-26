@@ -1,5 +1,6 @@
 import bpy
 import bmesh
+import mathutils
 import os
 import numpy as np 
 from datetime import datetime
@@ -432,8 +433,30 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     spine_base = Vector( (x, y, z ) ) / count      
                     spine_base_list.append(spine_base) 
 
-                    slicer_normal = slicer.matrix_world @ Vector((0.0000, 1.0000, 0.0000)) #All faces have this as normal
-                    slicer_normal.normalized()
+                    #Clean up mesh data
+                    mesh_obj = bpy.data.objects[slicer.name]
+                    # Set the mesh object as active
+                    bpy.context.view_layer.objects.active = mesh_obj
+                    bpy.ops.object.mode_set(mode='EDIT')
+                    # Select all vertices
+                    bpy.ops.mesh.select_all(action='SELECT')
+                    # Remove duplicate vertices
+                    bpy.ops.mesh.remove_doubles()
+                    # Switch back to object mode
+                    bpy.ops.object.mode_set(mode='OBJECT')
+                    slicer_mesh = mesh_obj.data
+
+                    index = find_nearest_point(slicer, spine_base)
+                    print(slicer.name)
+                    slicer_vert = slicer_mesh.vertices[index]
+                    slicer_normal = slicer_vert.normal
+                    slicer_normal =  slicer.matrix_world @ slicer_normal
+
+                    print("slicer normal", slicer_normal)
+                    # for vertex in slicer_mesh.vertices:
+                    #     normal = vertex.normal
+                    #     print(normal)
+
                     slicer_normals.append(slicer_normal)
                     bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(slicer_normal), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
                     
@@ -1175,3 +1198,19 @@ def bmesh_check_intersect_objects(obj, obj2):
 
 
     return intersect, hit_normal
+
+
+def find_nearest_point(obj, point):
+    obj_data = obj.data
+    nearest_point_index = -1
+    nearest_point_distance = float('inf')
+
+    for i, vertex in enumerate(obj_data.vertices):
+        vertex_co = obj.matrix_world @ vertex.co
+        distance = (point - vertex_co).length
+
+        if distance < nearest_point_distance:
+            nearest_point_distance = distance
+            nearest_point_index = i
+
+    return nearest_point_index
