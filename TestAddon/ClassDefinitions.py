@@ -442,40 +442,35 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     bpy.ops.mesh.select_all(action='SELECT')
                     # Remove duplicate vertices
                     bpy.ops.mesh.remove_doubles()
+                    # Recalculate normals
+                    bpy.ops.mesh.normals_make_consistent(inside=False)
+                    # Triangulate faces
+                    #bpy.ops.mesh.quads_convert_to_tris(quad_method='BEAUTY', ngon_method='BEAUTY')
                     # Switch back to object mode
                     bpy.ops.object.mode_set(mode='OBJECT')
                     slicer_mesh = mesh_obj.data
 
-                    index = find_nearest_point(slicer, spine_base)
-                    print(slicer.name)
-                    slicer_vert = slicer_mesh.vertices[index]
+                    nearest_vertex, index, distance = find_nearest_point(slicer_mesh, spine_base)
+                    slicer_vert = slicer_mesh.vertices[index]                    
                     slicer_normal = slicer_vert.normal
                     slicer_normal =  slicer.matrix_world @ slicer_normal
-
-                    print("slicer normal", slicer_normal)
-                    # for vertex in slicer_mesh.vertices:
-                    #     normal = vertex.normal
-                    #     print(normal)
-
                     slicer_normals.append(slicer_normal)
+
+                    empty = bpy.data.objects.new(name=slicer.name + "start", object_data=None)
+                    empty_spot = slicer.matrix_world @ slicer_vert.co                    
+                    empty.location = empty_spot 
+
+                    # Link the empty object to the scene
+                    scene = bpy.context.scene
+                    scene.collection.objects.link(empty)
+                    # Select the empty object
+                    empty.select_set(True)
+                    scene.view_layers.update()
+
+
                     bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(slicer_normal), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
-                    
-                    
-                    # for p,q in overlap:
-                    #     slicer_index = p
-                    #     face_normal = slicer.matrix_world @ Vector((0.0000, 1.0000, 0.0000)) #All faces have this as normal 
-                    #     print("face_normal", face_normal)
-                    #     print(slicer.data.polygons[slicer_index])
-                    #     print(slicer.data.polygons[slicer_index].normal)
-                    #     face_normal.normalized()
-                    #     face_normals.append(face_normal)
-                                    
-                    # group_normal = Vector((0,0,0))
-                    # for vector in face_normals:
-                    #     group_normal += vector
-                    # group_normal = group_normal/len(face_normals)
-                    # group_normal = spine.matrix_world @ group_normal
-                    print(spine.name, slicer.name, "slicer normals", slicer_normal)
+                    obj = bpy.context.object
+                    obj.name = slicer.name + "NormalVector"
 
                     depsgraph = bpy.context.evaluated_depsgraph_get()                     
                     ray_max_distance = 100
@@ -483,13 +478,6 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
                     spine_tip = ray_cast[1]
                     print("spine_tip", spine_tip)
 
-                    # spine_tip_mesh = bpy.data.meshes.new(spine_tip)  # add the new mesh
-                    # spine_tip_mesh = "endpoints_" + str("spine tip")
-                    # spine_tip_mesh.select_set = True
-                    #ray_cast = spine.ray_cast(spine_base, group_normal, distance = ray_max_distance)
-                    #ray_cast = slicer.ray_cast(spine_base, group_normal, distance = ray_max_distance)
-
-                    #intersection_normal_vector_list.append(ray_cast[2])
                     intersection_normal_vector_list.append(slicer_normal)
                     spine_bm.free()
                     slicer_bm.free()
@@ -550,7 +538,6 @@ class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
 
                 spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
                 spine_tip = spine_coordinates_dict[spine_tip_index]
-                print(spine.name, "spine tip", spine_tip)
                 spine_tip_list.append(spine_tip)
                 counter += 1
             else:
@@ -1200,17 +1187,16 @@ def bmesh_check_intersect_objects(obj, obj2):
     return intersect, hit_normal
 
 
-def find_nearest_point(obj, point):
-    obj_data = obj.data
-    nearest_point_index = -1
-    nearest_point_distance = float('inf')
+def find_nearest_point(mesh, reference_point):
+    kd = mathutils.kdtree.KDTree(len(mesh.vertices))
 
-    for i, vertex in enumerate(obj_data.vertices):
-        vertex_co = obj.matrix_world @ vertex.co
-        distance = (point - vertex_co).length
+    # Add mesh vertices to the kd-tree
+    for i, vert in enumerate(mesh.vertices):
+        kd.insert(vert.co, i)
 
-        if distance < nearest_point_distance:
-            nearest_point_distance = distance
-            nearest_point_index = i
+    kd.balance()  # Balance the kd-tree
 
-    return nearest_point_index
+    # Find the nearest vertex to the reference point
+    nearest_vertex, index, distance = kd.find(reference_point)
+
+    return nearest_vertex, index, distance
