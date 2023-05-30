@@ -361,241 +361,24 @@ class AutoSegmenter(bpy.types.Operator): #TODO Remove globals from this class
     #Create Spine Tip at the maximum distance from Spine Base
     #Create a collection named after the mesh, move the original mesh and the spine endpoints into it
 
-class DiscSegmenter(bpy.types.Operator): #TODO Remove globals from this class
+class DiscSegmenter(bpy.types.Operator): 
     bl_idname = 'object.discsegmenter' #operators must follow the naming convention of object.lowercase_letters
-    bl_label = 'AutoSegmenter'    
-    
-    # def find_intersecting_face_centers(self, spine_list, slicer_list):
-    #     print("finding intersecting_face_centers")
-    #     face_centers_list = []
-    #     intersection_normal_vector_list = []
-    #     spine_base_list = []
-    #     spines_without_bases = []
-    
-    #     for spine in spine_list:
-    #         face_centers = []
-    #         face_data = []
-    #         slicer_normals = []
-
-    #         spine_bm = bmesh.new()
-    #         spine_bm.from_mesh(bpy.context.scene.objects[spine.name].data) 
-    #         spine_bm.transform(spine.matrix_world)
-    #         spine_bm.faces.ensure_lookup_table() 
-    #         spine_bm.verts.ensure_lookup_table()
-    #         spine_bvh = BVHTree.FromBMesh(spine_bm)
-    #         intersections_found = False            
-    #         for slicer in slicer_list:
-    #             slicer_bm = bmesh.new()
-    #             slicer_bm.from_mesh(bpy.context.scene.objects[slicer.name].data) 
-    #             slicer_bm.transform(slicer.matrix_world)
-    #             slicer_bm.faces.ensure_lookup_table() 
-    #             slicer_bvh = BVHTree.FromBMesh(slicer_bm)
-
-    #             #overlap is list containing pairs of polygon indices, the first index is a vertex from the slicer mesh tree the second is from the spine mesh tree
-    #             overlap = slicer_bvh.overlap(spine_bvh)
-    #             if len(overlap) > 1:
-    #                 intersections_found = True
-    #                 for x,y in overlap:
-    #                     face_index = y
-    #                     face_data = spine_bm.faces[face_index]
-    #                     face_centers.append(face_data.calc_center_median())    
-                    
-    #                 x, y, z = [ sum( [v[i] for v in face_centers] ) for i in range(3)]
-    #                 count = float(len(face_centers))
-    #                 spine_base = Vector( (x, y, z ) ) / count      
-    #                 spine_base_list.append(spine_base) 
-
-    #                 #Clean up mesh data
-    #                 mesh_obj = bpy.data.objects[slicer.name]
-    #                 # Set the mesh object as active
-    #                 bpy.context.view_layer.objects.active = mesh_obj
-    #                 bpy.ops.object.mode_set(mode='EDIT')
-    #                 # Select all vertices
-    #                 bpy.ops.mesh.select_all(action='SELECT')
-    #                 # Remove duplicate vertices
-    #                 bpy.ops.mesh.remove_doubles()
-    #                 # Recalculate normals
-    #                 bpy.ops.mesh.normals_make_consistent(inside=False)
-    #                 # Triangulate faces
-    #                 #bpy.ops.mesh.quads_convert_to_tris(quad_method='BEAUTY', ngon_method='BEAUTY')
-    #                 # Switch back to object mode
-    #                 bpy.ops.object.mode_set(mode='OBJECT')
-    #                 slicer_mesh = mesh_obj.data
-
-    #                 nearest_vertex, index, distance = find_nearest_point(slicer_mesh, spine_base)
-    #                 slicer_vert = slicer_mesh.vertices[index]                    
-    #                 slicer_normal = slicer_vert.normal
-    #                 slicer_normal =  slicer.matrix_world @ slicer_normal
-    #                 slicer_normals.append(slicer_normal)
-
-    #                 empty = bpy.data.objects.new(name=slicer.name + "start", object_data=None)
-    #                 empty_spot = slicer.matrix_world @ slicer_vert.co                    
-    #                 empty.location = empty_spot 
-
-    #                 # Link the empty object to the scene
-    #                 scene = bpy.context.scene
-    #                 scene.collection.objects.link(empty)
-    #                 # Select the empty object
-    #                 empty.select_set(True)
-    #                 scene.view_layers.update()
-
-
-    #                 bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(slicer_normal), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
-    #                 obj = bpy.context.object
-    #                 obj.name = slicer.name + "NormalVector"
-
-    #                 depsgraph = bpy.context.evaluated_depsgraph_get()                     
-    #                 ray_max_distance = 100
-    #                 ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, slicer_normal, distance = ray_max_distance)
-    #                 spine_tip = ray_cast[1]
-    #                 print("spine_tip", spine_tip)
-
-    #                 intersection_normal_vector_list.append(slicer_normal)
-    #                 spine_bm.free()
-    #                 slicer_bm.free()
-    #                 break
-                   
-    #         #Handle spines that were missed
-    #         if intersections_found == False:
-    #             intersection_normal_vector_list.append('missing')
-    #             face_centers_list.append('missing')
-    #             spine_base_list.append('missing')
-    #             spines_without_bases.append(spine.name)
-    #             for collection in spine.users_collection:
-    #                 collection.objects.unlink(spine)
-    #                 bpy.data.collections.remove(collection)
-    #                 bpy.context.scene.collection.objects.link(spine)
-
-    #     print("spines_without_bases", spines_without_bases)
-    #     return(face_centers_list, intersection_normal_vector_list, spine_base_list)     
-    
-    def find_spine_tip(self, spine_list, spine_base_list, intersection_normal_vector_list):
-        print("finding tip")
-        print(len(spine_base_list), "spine_base_list")
-        print(len(spine_list), "spine_list")
-        print(len(intersection_normal_vector_list), "intersection_normal_vector_list")
-
-        spine_tip_list = []
-        counter = 0
-
-        for spine in spine_list:
-            #print(spine.name, "Cycle #", counter)
-            spine_length_dict = {}
-            spine_coordinates_dict = {}
-            spine_base = spine_base_list[counter]
-
-            if spine_base == 'missing':
-                print(spine.name, "is missing its base")
-                counter += 1
-                spine_tip_list.append('missing')
-                continue
-
-            #Check to see if it's a stubby spine and use the Raycast method to determine Length
-            elif spine.name.startswith("Stubby",0, 8):         
-                depsgraph = bpy.context.evaluated_depsgraph_get()
-                ray_direction = intersection_normal_vector_list[counter] 
-                ray_max_distance = 100
-                ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction, distance = ray_max_distance)
-                spine_tip = ray_cast[1]
-                spine_tip_list.append(spine_tip)
-                counter += 1
-
-            elif spine_base != 'missing' and spine.name.startswith("Stubby",0, 8) == False:
-                #Otherwise use brute force method
-                
-                for vert in spine.data.vertices:
-                    length = math.dist(vert.co, spine_base)      
-                    spine_length_dict[vert.index] = length
-                    spine_coordinates_dict[vert.index] = vert.co                
-
-                spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
-                spine_tip = spine_coordinates_dict[spine_tip_index]
-                spine_tip_list.append(spine_tip)
-                counter += 1
-            else:
-                print(spine.name, "missing base")
-                spine_tip_list.append('missing')
-                counter += 1
-
-        print(len(spine_tip_list), "spine_tip_list")
-        return(spine_tip_list)
-
-    def create_base_and_tip(self, spine_list, spine_base_list, spine_tip_list):
-        print("creating base and tip")
-        edges = []
-        faces = []
-        counter = 0
-        
-        for spine in spine_list:
-            mesh_matrix = spine.matrix_world
-            #remove mesh from collection
-            spine_base = spine_base_list[counter]          
-            spine_tip = spine_tip_list[counter]
-            spine_name = spine_list[counter]
-            if spine_base != 'missing':
-                spine_base = spine_base
-            else:
-                counter += 1
-                continue
-
-            #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"   
-            spine_length_dict = {}
-            spine_coordinates_dict = {}
-                                    
-            for vert in spine.data.vertices:
-            #for vert in spine_mesh.verts:
-                length = math.dist(vert.co, spine_base)         
-                spine_length_dict[vert.index] = length
-                spine_coordinates_dict[vert.index] = vert.co                
-
-            spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
-            spine_tip = spine_coordinates_dict[spine_tip_index]
-            spine_tip = mesh_matrix @ spine_tip
-            
-            #Clear dictionary between loops    
-            spine_length_dict = {}
-            spine_coordinates_dict = {}
-
-            #Create a mesh with spine_base and spine_tip
-           
-            endpoint_mesh = bpy.data.meshes.new(spine_name.name)  # add the new mesh
-            endpoint_mesh_name = "endpoints_" + str(spine_name.name)
-            obj = bpy.data.objects.new(endpoint_mesh_name, endpoint_mesh)
-
-            #Put the endpoint mesh into the same folder as its spine
-            collection = bpy.context.scene.collection.children.get(spine_name.name)
-            if not collection:
-                pass
-            else:
-                collection.objects.link(obj)
-                                
-            verts = [spine_base, spine_tip]
-    
-            endpoint_mesh.from_pydata(verts, edges, faces)
-            counter += 1
-
-        return {'FINISHED'}          
-    
-
+    bl_label = 'AutoSegmenter'        
+  
     def execute(self, context):
         print("entering execute")
         spine_and_slicers = get_spines(self)
         spine_list = spine_and_slicers[0]
         slicer_list = spine_and_slicers[1]
         spines_to_collections(self, spine_list)
-
-        face_centers_and_normal_vectors = find_intersecting_face_centers(self, spine_list,slicer_list)
-        face_centers_list = face_centers_and_normal_vectors[0]
-        #print("face centers in execute", len(face_centers_list))
-        intersection_normals = face_centers_and_normal_vectors[1]
-        spine_base_list = face_centers_and_normal_vectors[2] 
-        #spine_base_list = self.find_spine_base(face_centers_list)
-        spine_tip_list = self.find_spine_tip(spine_list, spine_base_list, intersection_normals)
-        self.create_base_and_tip(spine_list, spine_base_list, spine_tip_list)
+        faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
+        spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
+        spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
+        spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict,spine_and_slicer_dict)
+        slicer_normal_dict = find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict)
+        spine_tip_dict = find_spine_tip(self, spine_base_dict, slicer_normal_dict)
+        create_base_and_tip(self, spine_base_dict, spine_tip_dict)
         return {'FINISHED'}
-
-
-
 
 #This class is used to make endpoints for spines that weren't automatically segmented
     #Get selected vertex/verticies, find their center and turn them into a vector called "Spine Base"
@@ -1173,6 +956,7 @@ def find_nearest_point(mesh, reference_point):
 
     return nearest_vertex, index, distance
 
+#DiscSegmentor
 #Put the selected meshes into spine list.  Put unselected objects into slicer list  #TODO check to see if they are meshes first
 def get_spines(self):  
     #spine_list = [mesh for mesh in bpy.context.selected_objects if mesh.type == 'MESH']
@@ -1201,109 +985,209 @@ def spines_to_collections(self, spine_list):
         bpy.context.scene.collection.children.link(new_collection)
         new_collection.objects.link(spine_mesh)
     return {'FINISHED'}
-    
-#Check each spine to find its intersecting slicer.  
-#Find the spine faces that intersect with the slicer and the normal vector of the slicer which is currently borked     
-def find_intersecting_face_centers(self, spine_list, slicer_list):
-    print("finding intersecting_face_centers")
-    face_centers_list = []
-    intersection_normal_vector_list = []
-    spine_base_list = []
+
+def find_overlapping_spine_faces(self, spine_list, slicer_list):
+    print("finding overlapping faces")
+    spine_overlapping_indices_dict = {}
+    spine_and_slicer_dict = {}
     spines_without_bases = []
-
     for spine in spine_list:
-        face_centers = []
-        face_data = []
-        slicer_normals = []
-
+        intersects = False
         spine_bm = bmesh.new()
         spine_bm.from_mesh(bpy.context.scene.objects[spine.name].data) 
         spine_bm.transform(spine.matrix_world)
         spine_bm.faces.ensure_lookup_table() 
-        spine_bm.verts.ensure_lookup_table()
-        spine_bvh = BVHTree.FromBMesh(spine_bm)
-        intersections_found = False            
+        spine_bvh = BVHTree.FromBMesh(spine_bm)     
         for slicer in slicer_list:
             slicer_bm = bmesh.new()
             slicer_bm.from_mesh(bpy.context.scene.objects[slicer.name].data) 
             slicer_bm.transform(slicer.matrix_world)
             slicer_bm.faces.ensure_lookup_table() 
             slicer_bvh = BVHTree.FromBMesh(slicer_bm)
-
             #overlap is list containing pairs of polygon indices, the first index is a vertex from the slicer mesh tree the second is from the spine mesh tree
             overlap = slicer_bvh.overlap(spine_bvh)
-            if len(overlap) > 1:
-                intersections_found = True
-                for x,y in overlap:
-                    face_index = y
-                    face_data = spine_bm.faces[face_index]
-                    face_centers.append(face_data.calc_center_median())    
-                
-                x, y, z = [ sum( [v[i] for v in face_centers] ) for i in range(3)]
-                count = float(len(face_centers))
-                spine_base = Vector( (x, y, z ) ) / count      
-                spine_base_list.append(spine_base) 
 
-                #Clean up mesh data
-                mesh_obj = bpy.data.objects[slicer.name]
-                # Set the mesh object as active
-                bpy.context.view_layer.objects.active = mesh_obj
-                bpy.ops.object.mode_set(mode='EDIT')
-                # Select all vertices
-                bpy.ops.mesh.select_all(action='SELECT')
-                # Remove duplicate vertices
-                bpy.ops.mesh.remove_doubles()
-                # Recalculate normals
-                bpy.ops.mesh.normals_make_consistent(inside=False)
-                # Triangulate faces
-                #bpy.ops.mesh.quads_convert_to_tris(quad_method='BEAUTY', ngon_method='BEAUTY')
-                # Switch back to object mode
-                bpy.ops.object.mode_set(mode='OBJECT')
-                slicer_mesh = mesh_obj.data
+            if len(overlap) >= 1:
+                intersects = True
+                spine_overlapping_indices_dict[spine.name] = overlap
+                spine_and_slicer_dict[spine.name] = slicer.name
+                break 
 
-                nearest_vertex, index, distance = find_nearest_point(slicer_mesh, spine_base)
-                slicer_vert = slicer_mesh.vertices[index]                    
-                slicer_normal = slicer_vert.normal
-                slicer_normal =  slicer.matrix_world @ slicer_normal
-                slicer_normals.append(slicer_normal)
-
-                empty = bpy.data.objects.new(name=slicer.name + "start", object_data=None)
-                empty_spot = slicer.matrix_world @ slicer_vert.co                    
-                empty.location = empty_spot 
-
-                # Link the empty object to the scene
-                scene = bpy.context.scene
-                scene.collection.objects.link(empty)
-                # Select the empty object
-                empty.select_set(True)
-                scene.view_layers.update()
-
-
-                bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(slicer_normal), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
-                obj = bpy.context.object
-                obj.name = slicer.name + "NormalVector"
-
-                depsgraph = bpy.context.evaluated_depsgraph_get()                     
-                ray_max_distance = 100
-                ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, slicer_normal, distance = ray_max_distance)
-                spine_tip = ray_cast[1]
-                print("spine_tip", spine_tip)
-
-                intersection_normal_vector_list.append(slicer_normal)
-                spine_bm.free()
-                slicer_bm.free()
-                break
-                
-        #Handle spines that were missed
-        if intersections_found == False:
-            intersection_normal_vector_list.append('missing')
-            face_centers_list.append('missing')
-            spine_base_list.append('missing')
+        if intersects == False:
             spines_without_bases.append(spine.name)
             for collection in spine.users_collection:
                 collection.objects.unlink(spine)
                 bpy.data.collections.remove(collection)
                 bpy.context.scene.collection.objects.link(spine)
+    spine_bm.free()
+    slicer_bm.free()
+    return(spine_overlapping_indices_dict, spine_and_slicer_dict)
 
-    print("spines_without_bases", spines_without_bases)
-    return(face_centers_list, intersection_normal_vector_list, spine_base_list)     
+#Check each spine to find its intersecting slicer.  
+#Find the spine faces that intersect with the slicer and the normal vector of the slicer which is currently borked     
+def find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict):
+    print("finding bases")
+    spine_base_dict = {}
+    for spine in spine_overlapping_indices_dict.keys():
+        face_centers = []
+        face_data = []
+
+        spine_bm = bmesh.new()
+        spine = bpy.data.objects[spine]
+        spine_bm.from_mesh(spine.data) 
+        #spine_bm.transform(spine.matrix_world)
+        spine_bm.faces.ensure_lookup_table() 
+        spine_bm.verts.ensure_lookup_table()
+
+        overlap = spine_overlapping_indices_dict[spine.name]
+        slicer_name = spine_and_slicer_dict[spine.name]
+        slicer = bpy.context.scene.objects[slicer_name]
+        slicer_bm = bmesh.new()
+        slicer_bm.from_mesh(slicer.data) 
+        #slicer_bm.transform(slicer.matrix_world)
+        slicer_bm.faces.ensure_lookup_table() 
+        slicer_bm.verts.ensure_lookup_table()
+        for x,y in overlap:
+            face_index = y
+            face_data = spine_bm.faces[face_index]
+            face_centers.append(face_data.calc_center_median())            
+        x, y, z = [ sum( [v[i] for v in face_centers] ) for i in range(3)]
+        count = float(len(face_centers))
+        spine_base = Vector( (x, y, z ) ) / count      
+        spine_base_dict[spine.name] = spine_base 
+
+        face_centers = []
+        face_data = [] 
+        spine_bm.free()
+        slicer_bm.free()
+    return(spine_base_dict)
+
+def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
+    slicer_normal_dict = {}  
+    for spine in spine_base_dict.keys():
+        slicer = spine_and_slicer_dict[spine]
+        spine_base = spine_base_dict[spine] 
+
+        #Clean up mesh data
+        # Set the mesh object as active
+        slicer = bpy.data.objects[slicer]
+        bpy.context.view_layer.objects.active = slicer
+        bpy.ops.object.mode_set(mode='EDIT')
+        # Select all vertices
+        bpy.ops.mesh.select_all(action='SELECT')
+        # Remove duplicate vertices
+        bpy.ops.mesh.remove_doubles()
+        # Recalculate normals
+        bpy.ops.mesh.normals_make_consistent(inside=False)
+        # Triangulate faces
+        #bpy.ops.mesh.quads_convert_to_tris(quad_method='BEAUTY', ngon_method='BEAUTY')
+        # Switch back to object mode
+        bpy.ops.object.mode_set(mode='OBJECT')
+
+        slicer_mesh = slicer.data
+        nearest_vertex, index, distance = find_nearest_point(slicer_mesh, spine_base)
+        slicer_vert = slicer_mesh.vertices[index]                    
+        slicer_normal = slicer_vert.normal
+        slicer_normal =  slicer.matrix_world @ slicer_normal
+        slicer_normal_dict[spine] = slicer_normal  
+
+        #Mark the spot
+        empty = bpy.data.objects.new(name=slicer.name + "start", object_data=None)
+        empty_spot = slicer.matrix_world @ slicer_vert.co                    
+        empty.location = empty_spot 
+        # Link the empty object to the scene
+        scene = bpy.context.scene
+        scene.collection.objects.link(empty)
+        # Select the empty object
+        empty.select_set(True)
+        scene.view_layers.update()
+        bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(slicer_normal), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
+        obj = bpy.context.object
+        obj.name = slicer.name + "NormalVector"
+
+    print(slicer_normal_dict, "slicer_normal_dict")
+    return(slicer_normal_dict)
+
+def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
+        print("finding tip")
+        print(len(spine_base_dict), "spine_base_list")
+        print(len(slicer_normal_dict), "normal_vector dict")
+
+        spine_tip_dict = {}
+
+        for spine in spine_base_dict.keys():
+            spine_length_dict = {}
+            spine_coordinates_dict = {}
+            spine_base = spine_base_dict[spine]
+            spine = bpy.data.objects[spine]
+
+            #Check to see if it's a stubby spine and use the Raycast method to determine Length
+            if spine.name.startswith("Stubby",0, 8):         
+                depsgraph = bpy.context.evaluated_depsgraph_get()
+                ray_direction = slicer_normal_dict[spine] 
+                ray_max_distance = 100
+                ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction, distance = ray_max_distance)
+                spine_tip = ray_cast[1]
+                spine_tip_list.append(spine_tip)
+
+            else:
+                #Otherwise use brute force method                
+                for vert in spine.data.vertices:
+                    length = math.dist(vert.co, spine_base)      
+                    spine_length_dict[vert.index] = length
+                    spine_coordinates_dict[vert.index] = vert.co                
+
+                spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
+                spine_tip = spine_coordinates_dict[spine_tip_index]
+                spine_tip_dict[spine] = spine_tip
+
+        print(len(spine_tip_dict), "spine_tip_list")
+        return(spine_tip_dict)
+
+def create_base_and_tip(self, spine_base_dict, spine_tip_dict):
+    print("creating base and tip")
+    
+    for spine in spine_tip_dict.keys():
+        spine_base = spine_base_dict[spine.name] #TODO Be consistent with object vs name as dict keys
+        spine_tip = spine_tip_dict[spine]
+
+        #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"   
+        spine_length_dict = {}
+        spine_coordinates_dict = {}
+
+        #spine = bpy.data.objects[spine.name]
+        mesh_matrix = spine.matrix_world
+                                
+        for vert in spine.data.vertices:
+        #for vert in spine_mesh.verts:
+            length = math.dist(vert.co, spine_base)         
+            spine_length_dict[vert.index] = length
+            spine_coordinates_dict[vert.index] = vert.co                
+
+        spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
+        spine_tip = spine_coordinates_dict[spine_tip_index]
+        spine_tip = mesh_matrix @ spine_tip
+        
+        #Clear dictionary between loops    
+        spine_length_dict = {}
+        spine_coordinates_dict = {}
+
+        #Create a mesh with spine_base and spine_tip
+        
+        endpoint_mesh = bpy.data.meshes.new(spine.name)  # add the new mesh
+        endpoint_mesh_name = "endpoints_" + str(spine.name)
+        obj = bpy.data.objects.new(endpoint_mesh_name, endpoint_mesh)
+
+        #Put the endpoint mesh into the same folder as its spine
+        collection = bpy.context.scene.collection.children.get(spine.name)
+        if not collection:
+            pass
+        else:
+            collection.objects.link(obj)
+                            
+        verts = [spine_base, spine_tip]
+
+        endpoint_mesh.from_pydata(verts, [], [])
+
+
+    return {'FINISHED'}          
