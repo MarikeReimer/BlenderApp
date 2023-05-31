@@ -967,7 +967,7 @@ def get_spines(self):
 
     for obj in all_obs:
         if obj not in spine_list:
-            slicer_list.append(obj)
+            slicer_list.append(obj.name)
 
     return(spine_list, slicer_list)
 
@@ -991,37 +991,72 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
     spine_overlapping_indices_dict = {}
     spine_and_slicer_dict = {}
     spines_without_bases = []
-    for spine in spine_list:
-        intersects = False
-        spine_bm = bmesh.new()
-        spine_bm.from_mesh(bpy.context.scene.objects[spine.name].data) 
-        spine_bm.transform(spine.matrix_world)
-        spine_bm.faces.ensure_lookup_table() 
-        spine_bvh = BVHTree.FromBMesh(spine_bm)     
-        for slicer in slicer_list:
-            slicer_bm = bmesh.new()
-            slicer_bm.from_mesh(bpy.context.scene.objects[slicer.name].data) 
-            slicer_bm.transform(slicer.matrix_world)
-            slicer_bm.faces.ensure_lookup_table() 
-            slicer_bvh = BVHTree.FromBMesh(slicer_bm)
-            #overlap is list containing pairs of polygon indices, the first index is a vertex from the slicer mesh tree the second is from the spine mesh tree
-            overlap = slicer_bvh.overlap(spine_bvh)
 
-            if len(overlap) >= 1:
-                intersects = True
-                spine_overlapping_indices_dict[spine.name] = overlap
-                spine_and_slicer_dict[spine.name] = slicer.name
-                break 
+    bpy.ops.object.select_all(action='DESELECT')
+    for spine in spine_list:        
+        for slicer in slicer_list:          
+            print('slicer', slicer, "spine", spine)
+            index = slicer_list.index(slicer)
+            slicer = bpy.data.objects[slicer]
+            bpy.context.collection.objects.link(slicer)           
+            bpy.context.view_layer.objects.active = spine
+            temp_slicer = bpy.context.active_object.copy()
+            temp_slicer.data = slicer.data.copy()
+            slicer.select_set(True)
+            spine.select_set(True)
 
-        if intersects == False:
-            spines_without_bases.append(spine.name)
-            for collection in spine.users_collection:
-                collection.objects.unlink(spine)
-                bpy.data.collections.remove(collection)
-                bpy.context.scene.collection.objects.link(spine)
-    print("spines without bases", spines_without_bases)
-    spine_bm.free()
-    slicer_bm.free()
+
+            bpy.ops.object.join()
+
+            # Enter edit mode and select all vertices
+            bpy.ops.object.mode_set(mode='EDIT')
+            bpy.ops.mesh.select_all(action='SELECT')
+
+            # Perform the mesh intersection operation
+            bpy.ops.mesh.intersect()
+            bpy.ops.object.mode_set(mode='OBJECT')
+            
+            # Retrieve the intersection vertices
+            intersection_vertices = [v.co for v in bpy.context.object.data.vertices if v.select]
+            slicer_list[index] = temp_slicer.name
+            if len(intersection_vertices) == 0:
+                break
+            else:
+                spine_and_slicer_dict[str(spine.name)] = temp_slicer.name
+
+        print(spine_and_slicer_dict)
+            
+    # for spine in spine_list:
+    #     intersects = False
+    #     spine_bm = bmesh.new()
+    #     spine_bm.from_mesh(bpy.context.scene.objects[spine.name].data) 
+    #     spine_bm.transform(spine.matrix_world)
+    #     spine_bm.faces.ensure_lookup_table() 
+    #     spine_bvh = BVHTree.FromBMesh(spine_bm)     
+    #     for slicer in slicer_list:
+    #         slicer_bm = bmesh.new()
+    #         slicer_bm.from_mesh(bpy.context.scene.objects[slicer.name].data) 
+    #         slicer_bm.transform(slicer.matrix_world)
+    #         slicer_bm.faces.ensure_lookup_table() 
+    #         slicer_bvh = BVHTree.FromBMesh(slicer_bm)
+    #         #overlap is list containing pairs of polygon indices, the first index is a vertex from the slicer mesh tree the second is from the spine mesh tree
+    #         overlap = slicer_bvh.overlap(spine_bvh)
+
+    #         if len(overlap) >= 1:
+    #             intersects = True
+    #             spine_overlapping_indices_dict[spine.name] = overlap
+    #             spine_and_slicer_dict[spine.name] = slicer.name
+    #             break 
+
+    #     if intersects == False:
+    #         spines_without_bases.append(spine.name)
+    #         for collection in spine.users_collection:
+    #             collection.objects.unlink(spine)
+    #             bpy.data.collections.remove(collection)
+    #             bpy.context.scene.collection.objects.link(spine)
+    # print("spines without bases", spines_without_bases)
+    # spine_bm.free()
+    # slicer_bm.free()
     return(spine_overlapping_indices_dict, spine_and_slicer_dict)
 
 #Check each spine to find its intersecting slicer.  
