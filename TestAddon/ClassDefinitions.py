@@ -988,6 +988,7 @@ def spines_to_collections(self, spine_list):
 
 def find_overlapping_spine_faces(self, spine_list, slicer_list):
     print("finding overlapping faces")
+    print("slicer_list", slicer_list)
     spine_overlapping_indices_dict = {}
     spine_and_slicer_dict = {}
     spines_without_bases = []
@@ -995,16 +996,15 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
     bpy.ops.object.select_all(action='DESELECT')
     for spine in spine_list:        
         for slicer in slicer_list:          
-            print('slicer', slicer, "spine", spine)
-            index = slicer_list.index(slicer)
-            slicer = bpy.data.objects[slicer]
-            bpy.context.collection.objects.link(slicer)           
-            bpy.context.view_layer.objects.active = spine
+            slicer = bpy.data.objects[slicer]        
+            bpy.context.view_layer.objects.active = slicer      
             temp_slicer = bpy.context.active_object.copy()
             temp_slicer.data = slicer.data.copy()
-            slicer.select_set(True)
+            bpy.context.collection.objects.link(temp_slicer)
+            
+            temp_slicer.select_set(True)
+            bpy.context.view_layer.objects.active = spine 
             spine.select_set(True)
-
 
             bpy.ops.object.join()
 
@@ -1018,11 +1018,10 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
             
             # Retrieve the intersection vertices
             intersection_vertices = [v.co for v in bpy.context.object.data.vertices if v.select]
-            slicer_list[index] = temp_slicer.name
             if len(intersection_vertices) == 0:
-                break
+                pass
             else:
-                spine_and_slicer_dict[str(spine.name)] = temp_slicer.name
+                spine_and_slicer_dict[spine.name] = slicer.name
 
         print(spine_and_slicer_dict)
             
