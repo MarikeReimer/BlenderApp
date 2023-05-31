@@ -893,7 +893,7 @@ def bmesh_check_intersect_objects(obj, obj2):
     if len(bm.edges) > len(bm2.edges):
         bm2, bm = bm, bm2
 
-    # Create a real mesh (lame!)
+    # Create a real mesh
     scene = bpy.context.scene
     me_tmp = bpy.data.meshes.new(name="~temp~")
     bm2.to_mesh(me_tmp)
@@ -1019,6 +1019,7 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
                 collection.objects.unlink(spine)
                 bpy.data.collections.remove(collection)
                 bpy.context.scene.collection.objects.link(spine)
+    print("spines without bases", spines_without_bases)
     spine_bm.free()
     slicer_bm.free()
     return(spine_overlapping_indices_dict, spine_and_slicer_dict)
@@ -1049,11 +1050,23 @@ def find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict
         slicer_bm.verts.ensure_lookup_table()
         for x,y in overlap:
             face_index = y
-            face_data = spine_bm.faces[face_index]
-            face_centers.append(face_data.calc_center_median())            
-        x, y, z = [ sum( [v[i] for v in face_centers] ) for i in range(3)]
+            face_data = spine_bm.faces[face_index]          
+            face_centers.append(face_data.calc_center_median())
+
+            #Mark the spot
+            bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(face_data.calc_center_median()), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
+            obj = bpy.context.object
+            obj.name = spine.name + "intersecting face"
+
+        face_center_mesh = bpy.data.meshes.new("face centers")  # add the new mesh
+        face_center_mesh.from_pydata(face_centers, [], [])
+        #Find the center of the overlapping polygons and store it in "Spine Base"
+        x, y, z = [ sum( [v.co[i] for v in face_center_mesh.vertices] ) for i in range(3)] #Tested: This does need to be 3            
+
         count = float(len(face_centers))
-        spine_base = Vector( (x, y, z ) ) / count      
+        spine_base = Vector( (x, y, z ) ) / count
+        
+        spine_base =  spine.matrix_world @ spine_base    
         spine_base_dict[spine.name] = spine_base 
 
         face_centers = []
@@ -1098,8 +1111,10 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
         # Normalize the ray direction
         ray_direction.normalize()
 
-        # Perform the raycast
-        result, location, normal, index, object, matrix = bpy.context.scene.ray_cast(spine_base, ray_direction)
+        # Perform the raycast #This one returns an index that is out of range
+        #depsgraph = bpy.context.evaluated_depsgraph_get()
+        #result, location, normal, index, object, matrix = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction)
+        nearest_vertex, index, distance = find_nearest_point(slicer_mesh, spine_base)
 
         #Use the index to find the normal
         slicer_vert = slicer_mesh.vertices[index]                    
@@ -1133,16 +1148,31 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
             spine_length_dict = {}
             spine_coordinates_dict = {}
             spine_base = spine_base_dict[spine]
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            ray_direction = slicer_normal_dict[spine] 
             spine = bpy.data.objects[spine]
 
             #Check to see if it's a stubby spine and use the Raycast method to determine Length
-            if spine.name.startswith("Stubby",0, 8):         
-                depsgraph = bpy.context.evaluated_depsgraph_get()
-                ray_direction = slicer_normal_dict[spine] 
+            if spine.name.startswith("Stubby",0, 8):
+                print("dealing with stubbies")         
                 ray_max_distance = 100
                 ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction, distance = ray_max_distance)
                 spine_tip = ray_cast[1]
-                spine_tip_list.append(spine_tip)
+                spine_tip_dict[spine] = spine_tip
+
+                #Mark the spot
+                empty = bpy.data.objects.new(name=spine.name + "tip", object_data=None)
+                empty_spot = spine.matrix_world @ spine_tip                    
+                empty.location = empty_spot 
+                # Link the empty object to the scene
+                scene = bpy.context.scene
+                scene.collection.objects.link(empty)
+                # Select the empty object
+                empty.select_set(True)
+                scene.view_layers.update()
+                bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_base), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
+                obj = bpy.context.object
+                obj.name = spine.name + "tip"
 
             else:
                 #Otherwise use brute force method                
