@@ -5,6 +5,7 @@ import os
 import numpy as np 
 from datetime import datetime
 import math
+from collections import defaultdict
 
 #The new way of adding python libraries
 import sys
@@ -370,16 +371,15 @@ class DiscSegmenter(bpy.types.Operator):
         spine_and_slicers = get_spines(self)
         spine_list = spine_and_slicers[0]
         slicer_list = spine_and_slicers[1]
-        spines_to_collections(self, spine_list)
         faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
         spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
         spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
+        spines_to_collections(self, spine_and_slicer_dict)
         paint_spines(self, spine_and_slicer_dict)
-        spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict,spine_and_slicer_dict)
+        spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict)
         slicer_normal_dict = find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict)
         spine_tip_dict = find_spine_tip(self, spine_base_dict, slicer_normal_dict)
         create_base_and_tip(self, spine_base_dict, spine_tip_dict)
-        rename_spines(self, spine_and_slicer_dict)
         return {'FINISHED'}
 
 #This class is used to make endpoints for spines that weren't automatically segmented
@@ -974,16 +974,17 @@ def get_spines(self):
     return(spine_list, slicer_list)
 
 #Put spines into folders with their name
-def spines_to_collections(self, spine_list):
+def spines_to_collections(self, spine_and_slicer_dict):
     #Add spines to their own folders
-    for spine_mesh in spine_list:
-        old_collection_name = spine_mesh.users_collection
+    for spine, slicer in spine_and_slicer_dict.items():
+        spine = bpy.data.objects.get(spine)
+        old_collection_name = spine.users_collection
         old_collection_name = old_collection_name[0]
-        old_collection_name.objects.unlink(spine_mesh)
-        new_collection_name = spine_mesh.name
+        old_collection_name.objects.unlink(spine)
+        new_collection_name = spine.name
         new_collection = bpy.data.collections.new(new_collection_name)
         bpy.context.scene.collection.children.link(new_collection)
-        new_collection.objects.link(spine_mesh)
+        new_collection.objects.link(spine)
     return {'FINISHED'}
 
 def find_overlapping_spine_faces(self, spine_list, slicer_list):
@@ -1010,6 +1011,7 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
 
             if len(overlap) >= 1:
                 intersects = True
+                spine.name = slicer.name[6:]
                 spine_overlapping_indices_dict[spine.name] = overlap
                 spine_and_slicer_dict[spine.name] = slicer.name
                 break 
@@ -1020,13 +1022,15 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
                 collection.objects.unlink(spine)
                 bpy.data.collections.remove(collection)
                 bpy.context.scene.collection.objects.link(spine)
+    
+    
     print("spines without bases", spines_without_bases)
     spine_bm.free()
     slicer_bm.free()
     return(spine_overlapping_indices_dict, spine_and_slicer_dict)
 
-def paint_spines(self, spine_and_slicer_dict):
-    for spine, slicer in spine_and_slicer_dict.items():
+def paint_spines(self, modified_spine_and_slicer_dict):
+    for spine, slicer in modified_spine_and_slicer_dict.items():
         slicer = bpy.data.objects.get(slicer)
         spine = bpy.data.objects.get(spine)
 
@@ -1041,7 +1045,7 @@ def paint_spines(self, spine_and_slicer_dict):
 
 #Check each spine to find its intersecting slicer.  
 #Find the spine faces that intersect with the slicer and the normal vector of the slicer which is currently borked     
-def find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict):
+def find_spine_bases(self, spine_overlapping_indices_dict, modified_spine_and_slicer_dict):
     spine_base_dict = {}
     for spine in spine_overlapping_indices_dict.keys():
         face_centers = []
@@ -1055,7 +1059,7 @@ def find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict
         spine_bm.verts.ensure_lookup_table()
 
         overlap = spine_overlapping_indices_dict[spine.name]
-        slicer_name = spine_and_slicer_dict[spine.name]
+        slicer_name = modified_spine_and_slicer_dict[spine.name]
         slicer = bpy.context.scene.objects[slicer_name]
         slicer_bm = bmesh.new()
         slicer_bm.from_mesh(slicer.data) 
@@ -1228,16 +1232,3 @@ def create_base_and_tip(self, spine_base_dict, spine_tip_dict):
 
         endpoint_mesh.from_pydata(verts, [], [])
     return {'FINISHED'}          
-
-def rename_spines(self, spine_and_slicer_dict):
-    for spine, slicer in spine_and_slicer_dict.items():
-        spine = bpy.data.objects.get(spine)
-        ("before fixing name", spine.name)
-        slicer_name = slicer[6:]
-
-        collection = bpy.context.scene.collection.children.get(spine.name)
-        collection.name = slicer_name
-      
-        spine.name = slicer_name
-        print("spine", spine.name, "slicer", slicer_name) 
-    return {'FINISHED'}  
