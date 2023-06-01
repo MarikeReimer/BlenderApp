@@ -379,6 +379,7 @@ class DiscSegmenter(bpy.types.Operator):
         slicer_normal_dict = find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict)
         spine_tip_dict = find_spine_tip(self, spine_base_dict, slicer_normal_dict)
         create_base_and_tip(self, spine_base_dict, spine_tip_dict)
+        rename_spines(self, spine_and_slicer_dict)
         return {'FINISHED'}
 
 #This class is used to make endpoints for spines that weren't automatically segmented
@@ -979,7 +980,6 @@ def spines_to_collections(self, spine_list):
         old_collection_name = spine_mesh.users_collection
         old_collection_name = old_collection_name[0]
         old_collection_name.objects.unlink(spine_mesh)
-
         new_collection_name = spine_mesh.name
         new_collection = bpy.data.collections.new(new_collection_name)
         bpy.context.scene.collection.children.link(new_collection)
@@ -1026,21 +1026,6 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
     return(spine_overlapping_indices_dict, spine_and_slicer_dict)
 
 def paint_spines(self, spine_and_slicer_dict):
-    
-    #Remove spine color
-    # for spine, slicer in spine_and_slicer_dict.items():
-    #     spine = bpy.data.objects[spine]
-    #     spine = bpy.context.active_object
-        
-    #     material_slots = spine.data.materials
-
-    #     # Get the first material slot
-    #     first_material_slot = material_slots[0]
-    #     # Check if there are any material slots and empty them
-    #     if first_material_slot != None:
-    #         # Delete the material data-block from Blender
-    #         bpy.data.materials.remove(first_material_slot)
-
     for spine, slicer in spine_and_slicer_dict.items():
         slicer = bpy.data.objects.get(slicer)
         spine = bpy.data.objects.get(spine)
@@ -1052,7 +1037,7 @@ def paint_spines(self, spine_and_slicer_dict):
                 if spine.data.materials:
                     spine.data.materials[0] = slicer_color
                 else:
-                    spine.data.materials.append(slicer_color)
+                    spine.data.materials.append(slicer_color)  
 
 #Check each spine to find its intersecting slicer.  
 #Find the spine faces that intersect with the slicer and the normal vector of the slicer which is currently borked     
@@ -1194,7 +1179,8 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
                 # Select the empty object
                 empty.select_set(True)
                 scene.view_layers.update()
-                bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_base), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
+                #Useful for testing, but runs slowly
+                #bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_base), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
                 obj = bpy.context.object
                 obj.name = spine.name + "tip"
 
@@ -1241,6 +1227,17 @@ def create_base_and_tip(self, spine_base_dict, spine_tip_dict):
         verts = [spine_base, spine_tip]
 
         endpoint_mesh.from_pydata(verts, [], [])
-
-
     return {'FINISHED'}          
+
+def rename_spines(self, spine_and_slicer_dict):
+    for spine, slicer in spine_and_slicer_dict.items():
+        spine = bpy.data.objects.get(spine)
+        ("before fixing name", spine.name)
+        slicer_name = slicer[6:]
+
+        collection = bpy.context.scene.collection.children.get(spine.name)
+        collection.name = slicer_name
+      
+        spine.name = slicer_name
+        print("spine", spine.name, "slicer", slicer_name) 
+    return {'FINISHED'}  
