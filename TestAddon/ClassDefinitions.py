@@ -566,7 +566,6 @@ def get_spines(self):
 
     for obj in all_obs:
         if obj not in spine_list:
-            obj.scale *= 1.0001 #This makes the slicers slightly larger to ensure overlapping faces.  #TODO: The dendrite shouldn't be scaled
             slicer_list.append(obj)
 
     return(spine_list, slicer_list)
@@ -651,7 +650,6 @@ def find_spine_bases(self, spine_overlapping_indices_dict, modified_spine_and_sl
         spine_bm = bmesh.new()
         spine = bpy.data.objects[spine]
         spine_bm.from_mesh(spine.data) 
-        #spine_bm.transform(spine.matrix_world)
         spine_bm.faces.ensure_lookup_table() 
         spine_bm.verts.ensure_lookup_table()
 
@@ -660,7 +658,6 @@ def find_spine_bases(self, spine_overlapping_indices_dict, modified_spine_and_sl
         slicer = bpy.context.scene.objects[slicer_name]
         slicer_bm = bmesh.new()
         slicer_bm.from_mesh(slicer.data) 
-        #slicer_bm.transform(slicer.matrix_world)
         slicer_bm.faces.ensure_lookup_table() 
         slicer_bm.verts.ensure_lookup_table()
         for x,y in overlap:
@@ -670,8 +667,8 @@ def find_spine_bases(self, spine_overlapping_indices_dict, modified_spine_and_sl
 
             #Mark the spot
             #bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(face_data.calc_center_median()), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
-            obj = bpy.context.object
-            obj.name = spine.name + "intersecting face"
+            # obj = bpy.context.object
+            # obj.name = spine.name + "intersecting face"
 
         face_center_mesh = bpy.data.meshes.new("face centers")  # add the new mesh
         face_center_mesh.from_pydata(face_centers, [], [])
@@ -727,8 +724,6 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
         ray_direction.normalize()
 
         # Perform the raycast #This one returns an index that is out of range
-        #depsgraph = bpy.context.evaluated_depsgraph_get()
-        #result, location, normal, index, object, matrix = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction)
         nearest_vertex, index, distance = find_nearest_point(slicer_mesh, spine_base)
 
         #Use the index to find the normal
@@ -804,7 +799,7 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
 
 def create_base_and_tip(self, spine_base_dict, spine_tip_dict):   
     for spine in spine_tip_dict.keys():
-        spine_base = spine_base_dict[spine.name] #TODO Be consistent with object vs name as dict keys
+        spine_base = spine_base_dict[spine.name]
         spine_tip = spine_tip_dict[spine]
 
         #Create a mesh with spine_base and spine_tip
