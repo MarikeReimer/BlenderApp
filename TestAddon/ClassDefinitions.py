@@ -374,6 +374,7 @@ class DiscSegmenter(bpy.types.Operator):
         faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
         spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
         spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
+        paint_spines(self, spine_and_slicer_dict)
         spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict,spine_and_slicer_dict)
         slicer_normal_dict = find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict)
         spine_tip_dict = find_spine_tip(self, spine_base_dict, slicer_normal_dict)
@@ -957,9 +958,8 @@ def find_nearest_point(mesh, reference_point):
     return nearest_vertex, index, distance
 
 #DiscSegmentor
-#Put the selected meshes into spine list.  Put unselected objects into slicer list  #TODO check to see if they are meshes first
+#Put the selected meshes into spine list.  Put unselected objects into slicer list  #TODO put only object names in lists
 def get_spines(self):  
-    #spine_list = [mesh for mesh in bpy.context.selected_objects if mesh.type == 'MESH']
     spine_list = [mesh for mesh in bpy.context.selected_objects]
     
     all_obs = [ mesh for mesh in bpy.data.objects]
@@ -967,13 +967,13 @@ def get_spines(self):
 
     for obj in all_obs:
         if obj not in spine_list:
+            obj.scale *= 1.0001 #This makes the slicers slightly larger to ensure overlapping faces.  #TODO: The dendrite shouldn't be scaled
             slicer_list.append(obj.name)
 
     return(spine_list, slicer_list)
 
 #Put spines into folders with their name
 def spines_to_collections(self, spine_list):
-    print("moving spines to folders")
     #Add spines to their own folders
     for spine_mesh in spine_list:
         old_collection_name = spine_mesh.users_collection
@@ -987,44 +987,10 @@ def spines_to_collections(self, spine_list):
     return {'FINISHED'}
 
 def find_overlapping_spine_faces(self, spine_list, slicer_list):
-    print("finding overlapping faces")
-    print("slicer_list", slicer_list)
     spine_overlapping_indices_dict = {}
     spine_and_slicer_dict = {}
     spines_without_bases = []
 
-    # bpy.ops.object.select_all(action='DESELECT')
-    # for spine in spine_list:        
-    #     for slicer in slicer_list:          
-    #         slicer = bpy.data.objects[slicer]        
-    #         bpy.context.view_layer.objects.active = slicer      
-    #         temp_slicer = bpy.context.active_object.copy()
-    #         temp_slicer.data = slicer.data.copy()
-    #         bpy.context.collection.objects.link(temp_slicer)
-            
-    #         temp_slicer.select_set(True)
-    #         bpy.context.view_layer.objects.active = spine 
-    #         spine.select_set(True)
-
-    #         bpy.ops.object.join()
-
-    #         # Enter edit mode and select all vertices
-    #         bpy.ops.object.mode_set(mode='EDIT')
-    #         bpy.ops.mesh.select_all(action='SELECT')
-
-    #         # Perform the mesh intersection operation
-    #         bpy.ops.mesh.intersect()
-    #         bpy.ops.object.mode_set(mode='OBJECT')
-            
-    #         # Retrieve the intersection vertices
-    #         intersection_vertices = [v.co for v in bpy.context.object.data.vertices if v.select]
-    #         if len(intersection_vertices) == 0:
-    #             pass
-    #         else:
-    #             spine_and_slicer_dict[spine.name] = slicer.name
-
-    #     print(spine_and_slicer_dict)
-            
     for spine in spine_list:
         intersects = False
         spine_bm = bmesh.new()
@@ -1055,14 +1021,42 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
                 bpy.data.collections.remove(collection)
                 bpy.context.scene.collection.objects.link(spine)
     print("spines without bases", spines_without_bases)
-    # spine_bm.free()
-    # slicer_bm.free()
+    spine_bm.free()
+    slicer_bm.free()
     return(spine_overlapping_indices_dict, spine_and_slicer_dict)
+
+def paint_spines(self, spine_and_slicer_dict):
+    
+    #Remove spine color
+    # for spine, slicer in spine_and_slicer_dict.items():
+    #     spine = bpy.data.objects[spine]
+    #     spine = bpy.context.active_object
+        
+    #     material_slots = spine.data.materials
+
+    #     # Get the first material slot
+    #     first_material_slot = material_slots[0]
+    #     # Check if there are any material slots and empty them
+    #     if first_material_slot != None:
+    #         # Delete the material data-block from Blender
+    #         bpy.data.materials.remove(first_material_slot)
+
+    for spine, slicer in spine_and_slicer_dict.items():
+        slicer = bpy.data.objects.get(slicer)
+        spine = bpy.data.objects.get(spine)
+
+        if slicer and spine:
+            if slicer.data.materials:
+                slicer_color = slicer.data.materials[0]
+
+                if spine.data.materials:
+                    spine.data.materials[0] = slicer_color
+                else:
+                    spine.data.materials.append(slicer_color)
 
 #Check each spine to find its intersecting slicer.  
 #Find the spine faces that intersect with the slicer and the normal vector of the slicer which is currently borked     
 def find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict):
-    print("finding bases")
     spine_base_dict = {}
     for spine in spine_overlapping_indices_dict.keys():
         face_centers = []
@@ -1173,10 +1167,6 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
     return(slicer_normal_dict)
 
 def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
-        print("finding tip")
-        print(len(spine_base_dict), "spine_base_list")
-        print(len(slicer_normal_dict), "normal_vector dict")
-
         spine_tip_dict = {}
 
         for spine in spine_base_dict.keys():
@@ -1188,8 +1178,7 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
             spine = bpy.data.objects[spine]
 
             #Check to see if it's a stubby spine and use the Raycast method to determine Length
-            if spine.name.startswith("Stubby",0, 8):
-                print("dealing with stubbies")         
+            if spine.name.startswith("Stubby",0, 8): 
                 ray_max_distance = 100
                 ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction, distance = ray_max_distance)
                 spine_tip = ray_cast[1]
@@ -1220,7 +1209,6 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
                     spine_length_dict[vert.index] = length
                     spine_coordinates_dict[vert.index] = vert.co                
 
-                print("spine", spine.name, "Spine length dict",len(spine_length_dict))
                 spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
                 spine_tip = spine_coordinates_dict[spine_tip_index]
                 #spine_tip = mesh_matrix @ spine_tip
@@ -1230,12 +1218,9 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
                 spine_coordinates_dict = {}            
                 spine_tip_dict[spine] = spine_tip
 
-        print(len(spine_tip_dict), "spine_tip_list")
         return(spine_tip_dict)
 
-def create_base_and_tip(self, spine_base_dict, spine_tip_dict):
-    print("creating base and tip")
-    
+def create_base_and_tip(self, spine_base_dict, spine_tip_dict):   
     for spine in spine_tip_dict.keys():
         spine_base = spine_base_dict[spine.name] #TODO Be consistent with object vs name as dict keys
         spine_tip = spine_tip_dict[spine]
