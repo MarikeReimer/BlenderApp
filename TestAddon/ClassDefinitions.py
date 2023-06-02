@@ -713,35 +713,44 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
         #nearest_vertex, index, distance = find_nearest_point(slicer_mesh, spine_base)
         # Get the center of mass of the slicer
         
-        slicer.select_set(True) #The origin_set operator only works on selected object
-        bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
-        center_of_mass = slicer.location
+        # slicer.select_set(True) #The origin_set operator only works on selected object
+        # bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
+        # center_of_mass = slicer.location
 
+        slicer_center = find_slicer_center(slicer, spine_base)
+        slicer_center =  slicer.matrix_world @ slicer_center
         # Calculate the direction of the ray towards the center of mass
-        ray_direction = center_of_mass - spine_base
+        #ray_direction = spine_base - slicer_center 
 
-        # Normalize the ray direction
-        ray_direction.normalize()
+        # # Normalize the ray direction
+        # ray_direction.normalize()
 
-        # Perform the raycast #This one returns an index that is out of range
-        nearest_vertex, index, distance = find_nearest_point(slicer_mesh, spine_base)
+        # hit, location, normal, index = slicer.closest_point_on_mesh(spine_base)
+
+        # Perform the raycast
+        #nearest_vertex, index, distance = find_nearest_point(slicer_mesh, spine_base)
+        nearest_vertex, index, distance = find_nearest_point(slicer_mesh, slicer_center)
 
         #Use the index to find the normal
-        slicer_vert = slicer_mesh.vertices[index]                    
+        #slicer_vert = slicer_mesh.vertices[index] 
+        slicer_vert = slicer.data.vertices[index]
+        #slicer_vert_location = slicer.data.vertices[index].co                   
         slicer_normal = slicer_vert.normal
         slicer_normal =  slicer.matrix_world @ slicer_normal
+        #slicer_vert_location = slicer.matrix_world @ slicer_vert_location
         slicer_normal_dict[spine] = slicer_normal  
 
         #Mark the spot
-        empty = bpy.data.objects.new(name=slicer.name + "start", object_data=None)
-        empty_spot = slicer.matrix_world @ slicer_vert.co                    
+        empty = bpy.data.objects.new(name=slicer.name + "normal start", object_data=None)
+        empty_spot = slicer_center         
         empty.location = empty_spot 
         # Link the empty object to the scene
         scene = bpy.context.scene
-        scene.collection.objects.link(empty)
+        scene.collection.objects.link(empty)        
         # Select the empty object
         empty.select_set(True)
         scene.view_layers.update()
+
         bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(slicer_normal), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
         obj = bpy.context.object
         obj.name = slicer.name + "NormalVector"
@@ -755,7 +764,7 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
             spine_coordinates_dict = {}
             spine_base = spine_base_dict[spine]
             depsgraph = bpy.context.evaluated_depsgraph_get()
-            ray_direction = slicer_normal_dict[spine] 
+            ray_direction = -slicer_normal_dict[spine] 
             spine = bpy.data.objects[spine]
 
             #Check to see if it's a stubby spine and use the Raycast method to determine Length
@@ -819,3 +828,13 @@ def create_base_and_tip(self, spine_base_dict, spine_tip_dict):
 
         endpoint_mesh.from_pydata(verts, [], [])
     return {'FINISHED'}          
+
+def find_slicer_center(slicer, spine_base):
+    bpy.ops.object.mode_set(mode='EDIT')
+    #slicer_object = bpy.data.objects[slicer.name]
+    me = slicer.data
+    bm = bmesh.from_edit_mesh(me)
+    bvhtree = BVHTree.FromBMesh(bm)
+    slicer_closest_spot, norm, idx, d = bvhtree.find_nearest(spine_base)
+    bpy.ops.object.mode_set(mode='OBJECT')
+    return(slicer_closest_spot)
