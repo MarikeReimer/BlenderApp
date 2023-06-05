@@ -719,8 +719,6 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
 
         slicer_center = find_slicer_center(slicer, spine_base)
         slicer_center =  slicer.matrix_world @ slicer_center
-        # Calculate the direction of the ray towards the center of mass
-        #ray_direction = spine_base - slicer_center 
 
         # # Normalize the ray direction
         # ray_direction.normalize()
@@ -735,9 +733,13 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
         #slicer_vert = slicer_mesh.vertices[index] 
         slicer_vert = slicer.data.vertices[index]
         #slicer_vert_location = slicer.data.vertices[index].co                   
-        slicer_normal = slicer_vert.normal
-        slicer_normal =  slicer.matrix_world @ slicer_normal
-        #slicer_vert_location = slicer.matrix_world @ slicer_vert_location
+        local_normal = slicer_vert.normal
+        local_normal.normalize()
+        local_normal = slicer.matrix_world @ local_normal
+        slicer_normal = slicer_center + local_normal
+        
+        #slicer_normal =  slicer.matrix_world.inverted() @ slicer_normal
+        #slicer_normal =  slicer.matrix_world @ slicer_normal
         slicer_normal_dict[spine] = slicer_normal  
 
         #Mark the spot
