@@ -708,41 +708,24 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
         #bpy.ops.mesh.quads_convert_to_tris(quad_method='BEAUTY', ngon_method='BEAUTY')
         # Switch back to object mode
         bpy.ops.object.mode_set(mode='OBJECT')
-
         slicer_mesh = slicer.data
-        #nearest_vertex, index, distance = find_nearest_point(slicer_mesh, spine_base)
         # Get the center of mass of the slicer
-        
-        # slicer.select_set(True) #The origin_set operator only works on selected object
-        # bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
-        # center_of_mass = slicer.location
+    
 
         slicer_center = find_slicer_center(slicer, spine_base)
         slicer_center =  slicer.matrix_world @ slicer_center
+        slicer.select_set(True) #The origin_set operator only works on selected object
+        bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
 
-        # # Normalize the ray direction
-        # ray_direction.normalize()
-
-        # hit, location, normal, index = slicer.closest_point_on_mesh(spine_base)
-
-        # Perform the raycast
-        #nearest_vertex, index, distance = find_nearest_point(slicer_mesh, spine_base)
         nearest_vertex, index, distance = find_nearest_point(slicer_mesh, slicer_center)
 
         #Use the index to find the normal
-        #slicer_vert = slicer_mesh.vertices[index] 
-        slicer_vert = slicer.data.vertices[index]
-        #slicer_vert_location = slicer.data.vertices[index].co                   
-        local_normal = slicer_vert.normal
-        local_normal.normalize()
-        local_normal = slicer.matrix_world @ local_normal
-        slicer_normal = slicer_center + local_normal
-        
-        #slicer_normal =  slicer.matrix_world.inverted() @ slicer_normal
-        #slicer_normal =  slicer.matrix_world @ slicer_normal
+        slicer_vert = slicer.data.vertices[index]            
+        slicer_normal = slicer_vert.normal
+        slicer_normal =  slicer.matrix_world @ slicer_normal
         slicer_normal_dict[spine] = slicer_normal  
 
-        #Mark the spot
+        #Mark the normal starting point
         empty = bpy.data.objects.new(name=slicer.name + "normal start", object_data=None)
         empty_spot = slicer_center         
         empty.location = empty_spot 
@@ -753,6 +736,7 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
         empty.select_set(True)
         scene.view_layers.update()
 
+        #Mark the normal vector
         bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(slicer_normal), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
         obj = bpy.context.object
         obj.name = slicer.name + "NormalVector"
@@ -760,13 +744,12 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
 
 def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
         spine_tip_dict = {}
-
         for spine in spine_base_dict.keys():
             spine_length_dict = {}
             spine_coordinates_dict = {}
             spine_base = spine_base_dict[spine]
             depsgraph = bpy.context.evaluated_depsgraph_get()
-            ray_direction = -slicer_normal_dict[spine] 
+            ray_direction = slicer_normal_dict[spine] 
             spine = bpy.data.objects[spine]
 
             #Check to see if it's a stubby spine and use the Raycast method to determine Length
