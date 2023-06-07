@@ -696,6 +696,7 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
         #Clean up mesh data
         # Set the mesh object as active
         slicer = bpy.data.objects[slicer]
+        spine = bpy.data.objects[spine]
         bpy.context.view_layer.objects.active = slicer
         bpy.ops.object.mode_set(mode='EDIT')
         # Select all vertices
@@ -705,30 +706,28 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
         # Recalculate normals
         bpy.ops.mesh.normals_make_consistent(inside=False)
         # Triangulate faces
-        #bpy.ops.mesh.quads_convert_to_tris(quad_method='BEAUTY', ngon_method='BEAUTY')
+        bpy.ops.mesh.quads_convert_to_tris(quad_method='BEAUTY', ngon_method='BEAUTY')
         # Switch back to object mode
         bpy.ops.object.mode_set(mode='OBJECT')
-        slicer_mesh = slicer.data  
 
-        closest_face = find_nearest_face(slicer, spine_base)
+        slicer_mesh = slicer.data
+        closest_face = find_nearest_face(slicer, spine.location)
         closest_face_index = closest_face.index
-        #closest_face =  slicer.matrix_world @ closest_face
-
 
         slicer.select_set(True) #The origin_set operator only works on selected object
         bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
 
-        # nearest_vertex, index, distance = find_nearest_point(slicer_mesh, closest_face)
-        #Use the index to find the normal
+
         slicer_face = slicer.data.polygons[closest_face_index]
         slicer_normal = slicer_face.normal
-        slicer_normal =  slicer.matrix_world @ slicer_normal
-        slicer_normal_dict[spine] = slicer_normal  
 
-        #Mark the normal starting point
+        slicer_normal =  slicer.matrix_world @ slicer_normal
+        slicer_normal_dict[spine.name] = slicer_normal  
+
+        #Mark the spot
         empty = bpy.data.objects.new(name=slicer.name + "normal start", object_data=None)
-        empty_spot = closest_face.center   
-        empty_spot =  slicer.matrix_world @ empty_spot      
+        empty_spot = slicer_face.center  
+        empty_spot =  slicer.matrix_world @ empty_spot        
         empty.location = empty_spot 
         # Link the empty object to the scene
         scene = bpy.context.scene
@@ -737,7 +736,6 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
         empty.select_set(True)
         scene.view_layers.update()
 
-        #Mark the normal vector
         bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(slicer_normal), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
         obj = bpy.context.object
         obj.name = slicer.name + "NormalVector"
@@ -745,6 +743,9 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
 
 def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
         spine_tip_dict = {}
+        print(slicer_normal_dict.keys())
+        print(spine_base_dict.keys())
+
         for spine in spine_base_dict.keys():
             spine_length_dict = {}
             spine_coordinates_dict = {}
@@ -758,6 +759,8 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
                 ray_max_distance = 100
                 ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction, distance = ray_max_distance)
                 spine_tip = ray_cast[1]
+                
+                #spine_tip_location = spine.matrix_world @ spine_tip 
                 spine_tip_dict[spine] = spine_tip
 
                 #Mark the spot
@@ -813,7 +816,7 @@ def create_base_and_tip(self, spine_base_dict, spine_tip_dict):
         endpoint_mesh.from_pydata(verts, [], [])
     return {'FINISHED'}          
 
-def find_closest_face(slicer, spine_base):
+def find_slicer_center(slicer, spine_base):
     bpy.ops.object.mode_set(mode='EDIT')
     #slicer_object = bpy.data.objects[slicer.name]
     me = slicer.data
@@ -822,7 +825,6 @@ def find_closest_face(slicer, spine_base):
     slicer_closest_spot, norm, idx, d = bvhtree.find_nearest(spine_base)
     bpy.ops.object.mode_set(mode='OBJECT')
     return(slicer_closest_spot)
-
 
 def find_nearest_face(mesh_object, target_vector):
     mesh = mesh_object.data
