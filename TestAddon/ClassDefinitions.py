@@ -566,6 +566,15 @@ def get_spines(self):
 
     for obj in all_obs:
         if obj not in spine_list:
+            bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
+            # original_location = obj.location
+            # # Get the mesh data
+            # mesh = obj.data
+            # # Resize the mesh
+            # scale_factor = 1.1  # Adjust the scale factor as desired
+            # for vertex in mesh.vertices:
+            #     vertex.co *= scale_factor
+            # obj.location = original_location
             slicer_list.append(obj)
 
     return(spine_list, slicer_list)
