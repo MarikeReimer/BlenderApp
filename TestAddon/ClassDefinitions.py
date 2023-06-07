@@ -124,10 +124,13 @@ class DiscSegmenter(bpy.types.Operator):
     bl_label = 'AutoSegmenter'        
   
     def execute(self, context):
-        print("entering execute")
         spine_and_slicers = get_spines(self)
         spine_list = spine_and_slicers[0]
+        for spine in spine_list:
+            mesh_cleaner(spine)
         slicer_list = spine_and_slicers[1]
+        for slicer in slicer_list:
+            mesh_cleaner(slicer)
         faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
         spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
         spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
@@ -566,7 +569,6 @@ def get_spines(self):
 
     for obj in all_obs:
         if obj not in spine_list:
-            bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
             # original_location = obj.location
             # # Get the mesh data
             # mesh = obj.data
@@ -706,19 +708,6 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
         # Set the mesh object as active
         slicer = bpy.data.objects[slicer]
         spine = bpy.data.objects[spine]
-        bpy.context.view_layer.objects.active = slicer
-        bpy.ops.object.mode_set(mode='EDIT')
-        # Select all vertices
-        bpy.ops.mesh.select_all(action='SELECT')
-        # Remove duplicate vertices
-        bpy.ops.mesh.remove_doubles()
-        # Recalculate normals
-        bpy.ops.mesh.normals_make_consistent(inside=False)
-        # Triangulate faces
-        bpy.ops.mesh.quads_convert_to_tris(quad_method='BEAUTY', ngon_method='BEAUTY')
-        # Switch back to object mode
-        bpy.ops.object.mode_set(mode='OBJECT')
-
         slicer_mesh = slicer.data
         closest_face = find_nearest_face(slicer, spine.location)
         closest_face_index = closest_face.index
@@ -861,3 +850,22 @@ def find_nearest_face(mesh_object, target_vector):
     
     # Return the nearest face
     return nearest_face
+
+def mesh_cleaner(mesh_object):
+    bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
+    # Switch to Edit Mode
+    bpy.context.view_layer.objects.active = mesh_object
+    bpy.ops.object.mode_set(mode='EDIT')
+
+    # Select all vertices
+    bpy.ops.mesh.select_all(action='SELECT')
+    bpy.ops.mesh.remove_doubles()
+    # Recalculate normals
+    bpy.ops.mesh.normals_make_consistent(inside=False)
+    # Triangulate faces
+    bpy.ops.mesh.quads_convert_to_tris(quad_method='BEAUTY', ngon_method='BEAUTY')
+    # Recalculate normals
+    bpy.ops.mesh.normals_make_consistent(inside=False)
+
+    # Switch back to Object Mode
+    bpy.ops.object.mode_set(mode='OBJECT')
