@@ -787,7 +787,7 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
             #Check to see if it's a stubby spine and use the Raycast method to determine Length
             if spine.name.startswith("Stubby",0, 8): 
                 ray_max_distance = 100
-                ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction, distance = ray_max_distance)
+                ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, -ray_direction, distance = ray_max_distance)
                 spine_tip = ray_cast[1]
                 
                 #spine_tip_location = spine.matrix_world @ spine_tip 
