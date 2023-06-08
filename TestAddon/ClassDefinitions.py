@@ -135,7 +135,7 @@ class DiscSegmenter(bpy.types.Operator):
         spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
         spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
         spines_to_collections(self, spine_and_slicer_dict)
-        paint_spines(self, spine_and_slicer_dict)
+        #paint_spines(self, spine_and_slicer_dict)
         spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict)
         slicer_normal_dict = find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict)
         spine_tip_dict = find_spine_tip(self, spine_base_dict, slicer_normal_dict)
@@ -636,19 +636,54 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
     slicer_bm.free()
     return(spine_overlapping_indices_dict, spine_and_slicer_dict)
 
-def paint_spines(self, modified_spine_and_slicer_dict):
-    for spine, slicer in modified_spine_and_slicer_dict.items():
-        slicer = bpy.data.objects.get(slicer)
-        spine = bpy.data.objects.get(spine)
+# def find_overlapping_spine_faces(self, spine_list, slicer_list):
+#     spine_overlapping_indices_dict = {}
+#     spine_and_slicer_dict = {}
+#     spines_without_bases = []
+#     for spine in spine_list:
+#         slicer_overlapping_indices= []
+#         mesh1 = spine.data
+#         for slicer in slicer_list:
+#             mesh2 = slicer.data
 
-        if slicer and spine:
-            if slicer.data.materials:
-                slicer_color = slicer.data.materials[0]
+#             # Create sets of face indices for faster lookup
+#             face_indices1 = set(range(len(mesh1.polygons)))
+#             face_indices2 = set(range(len(mesh2.polygons)))
 
-                if spine.data.materials:
-                    spine.data.materials[0] = slicer_color
-                else:
-                    spine.data.materials.append(slicer_color)  
+#             # Iterate over the faces of the first icosphere
+#             for face_index1 in face_indices1:
+#                 face1 = mesh1.polygons[face_index1]
+#                 vertices1 = [spine.matrix_world @ mesh1.vertices[index].co for index in face1.vertices]
+
+#                 # Iterate over the faces of the second icosphere
+#                 for face_index2 in face_indices2:
+#                     face2 = mesh2.polygons[face_index2]
+#                     vertices2 = [slicer.matrix_world @ mesh2.vertices[index].co for index in face2.vertices]
+
+#                     # Perform face-face intersection test
+#                     intersection = False
+#                     for v1 in vertices1:
+#                         for v2 in vertices2:
+#                             if (v1 - v2).length < 1:  # Adjust the threshold as needed
+#                                 intersection = True
+#                                 slicer_overlapping_indices.append(face_index2)
+#                                 break
+#                         if intersection:
+#                             break
+
+# def paint_spines(self, modified_spine_and_slicer_dict):
+#     for spine, slicer in modified_spine_and_slicer_dict.items():
+#         slicer = bpy.data.objects.get(slicer)
+#         spine = bpy.data.objects.get(spine)
+
+#         if slicer and spine:
+#             if slicer.data.materials:
+#                 slicer_color = slicer.data.materials[0]
+
+#                 if spine.data.materials:
+#                     spine.data.materials[0] = slicer_color
+#                 else:
+#                     spine.data.materials.append(slicer_color)  
 
 #Check each spine to find its intersecting slicer.  
 #Find the spine faces that intersect with the slicer and the normal vector of the slicer which is currently borked     
