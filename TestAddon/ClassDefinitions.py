@@ -797,6 +797,9 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
 
 def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
         spine_tip_dict = {}
+        cone_angle = 45
+        cone_length = 5
+        num_rays = 10
 
         for spine in spine_base_dict.keys():
             spine_length_dict = {}
@@ -806,12 +809,19 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
             ray_direction = slicer_normal_dict[spine] 
             spine = bpy.data.objects[spine]
 
+            tip_length_dict = {}
+
             #Check to see if it's a stubby spine and use the Raycast method to determine Length
             if spine.name.startswith("Stubby",0, 8): 
                 ray_max_distance = 100
+                # #Cone Method Ray cast
+                # results = cone_ray_cast(spine_base, -ray_direction, cone_angle, cone_length, num_rays)
+                # for obj, hit_point in results:
+                #     print(f"Object: {obj.name}, Hit Point: {hit_point}")
                 ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, -ray_direction, distance = ray_max_distance)
                 spine_tip = ray_cast[1]
                 
+
                 #spine_tip_location = spine.matrix_world @ spine_tip 
                 spine_tip_dict[spine] = spine_tip
 
@@ -926,3 +936,34 @@ def find_nearest_face(mesh_object, target_vector):
 
 #             # Switch back to Object Mode
 #             bpy.ops.object.mode_set(mode='OBJECT')
+
+def cone_ray_cast(origin, direction, cone_angle, cone_length, num_rays):
+    scene = bpy.context.scene
+    ray_cast_results = []
+
+    for obj in bpy.data.objects:
+        if obj.type != 'MESH':
+            continue
+
+        mesh = obj.data
+        obj_matrix = obj.matrix_world
+
+        for i in range(num_rays):
+            # Calculate the cone direction for each ray
+            angle_offset = math.radians(cone_angle) * (i / (num_rays - 1) - 0.5)
+            cone_direction = direction.copy()
+            cone_direction.rotate(mathutils.Euler((angle_offset, 0, 0), 'XYZ'))
+
+            # Calculate the start and end points of the ray
+            start_point = obj_matrix.inverted() @ origin
+            end_point = obj_matrix.inverted() @ (origin + cone_direction.normalized() * cone_length)
+
+            _, hit_point, _, _ = obj.ray_cast(start_point, end_point - start_point)
+
+            if hit_point is not None:
+                # Transform the hit point to world coordinates
+                hit_point = obj_matrix.inverted() @ hit_point
+                ray_cast_results.append((obj, hit_point))
+
+    return ray_cast_results
+
