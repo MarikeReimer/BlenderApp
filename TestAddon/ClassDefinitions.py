@@ -124,13 +124,10 @@ class DiscSegmenter(bpy.types.Operator):
     bl_label = 'AutoSegmenter'        
   
     def execute(self, context):
+        #mesh_cleaner(self)
         spine_and_slicers = get_spines(self)
         spine_list = spine_and_slicers[0]
-        for spine in spine_list:
-            mesh_cleaner(spine)
         slicer_list = spine_and_slicers[1]
-        for slicer in slicer_list:
-            mesh_cleaner(slicer)
         faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
         spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
         spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
@@ -262,29 +259,29 @@ class ManualLength(bpy.types.Operator):
         return(overlapping_spine_index_list)
 
     #Use spine indices to color the overlapping spines in spine list
-    def color_overlapping_spines(self, overlapping_spine_index_list, spine_list):
-        spines_to_color = []
+    # def color_overlapping_spines(self, overlapping_spine_index_list, spine_list):
+    #     spines_to_color = []
 
-        for i in overlapping_spine_index_list:
-            spines_to_color.append(spine_list[i])
+    #     for i in overlapping_spine_index_list:
+    #         spines_to_color.append(spine_list[i])
 
-        for spine in spines_to_color:
-            spine.data.materials.clear()
-            spine.select_set(True)
-            spine.color = (1,1,0,1)        
-            mat = bpy.data.materials.new("Blue")
+    #     for spine in spines_to_color:
+    #         spine.data.materials.clear()
+    #         spine.select_set(True)
+    #         spine.color = (1,1,0,1)        
+    #         mat = bpy.data.materials.new("Blue")
 
-            # Activate its nodes
-            mat.use_nodes = True
+    #         # Activate its nodes
+    #         mat.use_nodes = True
 
-            # Get the principled BSDF (created by default)
-            principled = mat.node_tree.nodes['Principled BSDF']
+    #         # Get the principled BSDF (created by default)
+    #         principled = mat.node_tree.nodes['Principled BSDF']
 
-            # Assign the color
-            principled.inputs['Base Color'].default_value = (1,1,0,1)
-            # Assign the material to the object
-            spine.data.materials.append(mat)
-        return {'FINISHED'}
+    #         # Assign the color
+    #         principled.inputs['Base Color'].default_value = (1,1,0,1)
+    #         # Assign the material to the object
+    #         spine.data.materials.append(mat)
+    #     return {'FINISHED'}
 
     def execute(self, context):
         spine_list = self.get_spines()
@@ -886,21 +883,24 @@ def find_nearest_face(mesh_object, target_vector):
     # Return the nearest face
     return nearest_face
 
-def mesh_cleaner(mesh_object):
-    bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
-    # Switch to Edit Mode
-    bpy.context.view_layer.objects.active = mesh_object
-    bpy.ops.object.mode_set(mode='EDIT')
+# def mesh_cleaner(self):
+#     scene = bpy.context.scene
+#     print('cleaning meshes')
+#     # Iterate through the objects in the scene collection
+#     for obj in scene.collection.all_objects:
+#         if obj.type == 'MESH':
+#             print(obj.name)
+#             bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
+#             bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+#             # Switch to Edit Mode
+#             bpy.context.view_layer.objects.active
+#             bpy.ops.object.mode_set(mode='EDIT')
 
-    # Select all vertices
-    bpy.ops.mesh.select_all(action='SELECT')
-    bpy.ops.mesh.remove_doubles()
-    # Recalculate normals
-    bpy.ops.mesh.normals_make_consistent(inside=False)
-    # Triangulate faces
-    bpy.ops.mesh.quads_convert_to_tris(quad_method='BEAUTY', ngon_method='BEAUTY')
-    # Recalculate normals
-    bpy.ops.mesh.normals_make_consistent(inside=False)
+#             # Select all vertices
+#             bpy.ops.mesh.select_all(action='SELECT')
+#             #bpy.ops.mesh.remove_doubles()
+#             # Recalculate normals
+#             bpy.ops.mesh.normals_make_consistent(inside=False)
 
-    # Switch back to Object Mode
-    bpy.ops.object.mode_set(mode='OBJECT')
+#             # Switch back to Object Mode
+#             bpy.ops.object.mode_set(mode='OBJECT')
