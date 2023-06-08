@@ -128,6 +128,7 @@ class DiscSegmenter(bpy.types.Operator):
         spine_and_slicers = get_spines(self)
         spine_list = spine_and_slicers[0]
         slicer_list = spine_and_slicers[1]
+        match_spines_to_slicers(self, spine_list, slicer_list)
         faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
         spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
         spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
@@ -581,7 +582,7 @@ def get_spines(self):
 #Put spines into folders with their name
 def spines_to_collections(self, spine_and_slicer_dict):
     #Add spines to their own folders
-    for spine, slicer in spine_and_slicer_dict.items():
+    for spine in spine_and_slicer_dict.keys():
         spine = bpy.data.objects.get(spine)
         old_collection_name = spine.users_collection
         old_collection_name = old_collection_name[0]
@@ -591,6 +592,29 @@ def spines_to_collections(self, spine_and_slicer_dict):
         bpy.context.scene.collection.children.link(new_collection)
         new_collection.objects.link(spine)
     return {'FINISHED'}
+
+def match_spines_to_slicers(self, spine_list, slicer_list):
+    matched_spine_slicer_dict = {}
+    for spine in spine_list:
+        print('spine', spine.name, spine.location)
+        slicer_distance = {}
+        for slicer in slicer_list:
+            print("slicer", slicer.name, slicer.location)
+            #slicer = bpy.data.objects[slicer]
+            distance = slicer.location - spine.location
+            slicer_distance[slicer.name] = distance
+
+        shortest_distance = min(slicer_distance.items())
+
+        for slicer, distance in slicer_distance.items():
+            if distance == shortest_distance[1]:
+                closest_slicer = shortest_distance
+                break
+
+        print('closest_slicer',  closest_slicer)
+        matched_spine_slicer_dict[spine.name] = closest_slicer
+    return(matched_spine_slicer_dict)
+
 
 def find_overlapping_spine_faces(self, spine_list, slicer_list):
     spine_overlapping_indices_dict = {}
@@ -773,8 +797,6 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
 
 def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
         spine_tip_dict = {}
-        print(slicer_normal_dict.keys())
-        print(spine_base_dict.keys())
 
         for spine in spine_base_dict.keys():
             spine_length_dict = {}
