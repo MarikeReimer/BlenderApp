@@ -107,24 +107,19 @@ class ExplodingBits(bpy.types.Operator):
 
 
 
-#Discsegmenter as above, but for discs.  Uses verticies instead of polygons
-#Select dendrites
-#Get all other meshes and put them into a list
-#For each mesh in the list
-    #Turn it into a BVH Tree
-    #Find the indices of overlapping polygon faces
-    #Create a new mesh from the center of the polygons
-    #Create a vector called "Spine Base" at the center of the new mesh
-    #Measure the distance between Spine Base and all other vertices in the mesh
-    #Create Spine Tip at the maximum distance from Spine Base
-    #Create a collection named after the mesh, move the original mesh and the spine endpoints into it
+#Discsegmenter
+#Finds spines and slicers based on selected objects
+#Spines are named after their slicers and intersecting faces are found - not as reliably as it should
+#Spine base is defined as the center_point of all the face intersecting points
+#Spines are moved to folders, if they are missing their base, they are removed from folders
+#Normals for the slicer polygons are found at the closest point to the spine center of mass
+#Tips for stubby spines use the slicer normal to raycast from the spine base.  Tips for all other spines are created for the farthest vertex
 
 class DiscSegmenter(bpy.types.Operator): 
     bl_idname = 'object.discsegmenter' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'AutoSegmenter'        
   
     def execute(self, context):
-        #mesh_cleaner(self)
         spine_and_slicers = get_spines(self)
         spine_list = spine_and_slicers[0]
         slicer_list = spine_and_slicers[1]
@@ -139,22 +134,6 @@ class DiscSegmenter(bpy.types.Operator):
         create_base_and_tip(self, spine_base_dict, spine_tip_dict)
         return {'FINISHED'}
 
-#This class is used to make endpoints for spines that weren't automatically segmented
-    #Get selected vertex/verticies, find their center and turn them into a vector called "Spine Base"
-    #Compare Spine base with other vertices to find Spine Tip at the maximum distance from Spine Base
-    #Create Spine base and Tip in the collection of the original spine mesh
-
-class ManualLength(bpy.types.Operator):
-    bl_idname = 'object.individual_length_finder' #operators must follow the naming convention of object.lowercase_letters
-    bl_label = 'Manual Length'
-
-    def execute(self, context):
-        print("Executing")
-        vert_list = FindSelectedVerts(self)
-        spine_base = FindSpineBase(self, vert_list)
-        spine_tip = FindSpineTip(self, spine_base)
-        CreateEndpointMesh(self, spine_base, spine_tip)
-        return {'FINISHED'}
 
 #This class contains methods which extract data from the text-entry panel, meshes, and endpoints and the writes them to an NWB File
 class WriteNWB(bpy.types.Operator):
@@ -319,13 +298,6 @@ class WriteNWB(bpy.types.Operator):
         imaging_plane = holder[1]
         raw_data = holder[2]
         nwbfile_name = holder[3]
-        
-        #Empty variables which are collected during the loop
-        # length = ''
-        # center_of_mass = ''
-        # volume = ''
-        # surface_area = ''
-
         module = nwbfile.create_processing_module("SpineData", 'Contains processed neuromorphology data from Blender.')
         image_segmentation = ImageSegmentation()
         module.add(image_segmentation)
@@ -333,12 +305,6 @@ class WriteNWB(bpy.types.Operator):
         #This loop iterates through all collections and extracts data about the meshes.
        
         for collection in bpy.data.collections:
-            #Create processing module
-            #module = nwbfile.create_processing_module(collection.name, 'contains processed neuromorphology data from Blender')
-            #Create image segmentation
-            #image_segmentation = ImageSegmentation()
-            #Add the image segmentation to the module
-
             #Empty variables which are collected during the loop
             length = ''
             center_of_mass = ''
@@ -416,6 +382,7 @@ def get_spines(self):
 
     for obj in all_obs:
         if obj not in spine_list:
+            # #It feels like resizing the slicers, should fix the lack of intersecting faces, but it doesn't  
             # original_location = obj.location
             # # Get the mesh data
             # mesh = obj.data
@@ -509,11 +476,6 @@ def find_spine_bases(self, spine_overlapping_indices_dict, modified_spine_and_sl
             face_data = spine_bm.faces[face_index]          
             face_centers.append(face_data.calc_center_median())
 
-            #Mark the spot
-            #bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(face_data.calc_center_median()), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
-            # obj = bpy.context.object
-            # obj.name = spine.name + "intersecting face"
-
         face_center_mesh = bpy.data.meshes.new("face centers")  # add the new mesh
         face_center_mesh.from_pydata(face_centers, [], [])
         #Find the center of the overlapping polygons and store it in "Spine Base"
@@ -535,24 +497,17 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
     slicer_normal_dict = {}  
     for spine in spine_base_dict.keys():
         slicer = spine_and_slicer_dict[spine]
-        spine_base = spine_base_dict[spine] 
-
-        #Clean up mesh data
-        # Set the mesh object as active
         slicer = bpy.data.objects[slicer]
         spine = bpy.data.objects[spine]
-        slicer_mesh = slicer.data
         closest_face = find_nearest_face(slicer, spine.location)
         closest_face_index = closest_face.index
 
         slicer.select_set(True) #The origin_set operator only works on selected object
         bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
 
-
         slicer_face = slicer.data.polygons[closest_face_index]
         print(slicer.name)
         slicer_normal = slicer_face.normal
-
         slicer_normal =  slicer.matrix_world @ slicer_normal
         slicer_normal_dict[spine.name] = slicer_normal  
 
@@ -590,7 +545,7 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
 
             # tip_locations = []
 
-            #Check to see if it's a stubby spine and use the Raycast method to determine Length
+            #Check to see if it's a stubby spine and use a Raycast method to determine Length
             if spine.name.startswith("Stubby",0, 8): 
                 # #Cone Method Ray cast
                 # results = cone_ray_cast(spine_base, ray_direction, cone_angle, cone_length, num_rays)
@@ -604,8 +559,6 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
                 #     spine_length_dict[location] = length
                 # spine_tip = get_key_with_largest_value(spine_length_dict)
                 # spine_tip = spine.matrix_world @ spine_tip
-
-
 
                 ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, -ray_direction, distance = ray_max_distance)
                 spine_tip = ray_cast[1]
@@ -643,14 +596,13 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
 
         return(spine_tip_dict)
 
+#Create a mesh with spine_base and spine_tip
+
 def create_base_and_tip(self, spine_base_dict, spine_tip_dict): 
     bpy.ops.object.select_all(action='DESELECT')  
     for spine in spine_tip_dict.keys():
         spine_base = spine_base_dict[spine.name]
-        spine_tip = spine_tip_dict[spine]
-
-        #Create a mesh with spine_base and spine_tip
-        
+        spine_tip = spine_tip_dict[spine]        
         endpoint_mesh = bpy.data.meshes.new(spine.name)  # add the new mesh
         endpoint_mesh_name = "endpoints_" + str(spine.name)
         obj = bpy.data.objects.new(endpoint_mesh_name, endpoint_mesh)
@@ -670,7 +622,6 @@ def create_base_and_tip(self, spine_base_dict, spine_tip_dict):
 
 def find_slicer_center(slicer, spine_base):
     bpy.ops.object.mode_set(mode='EDIT')
-    #slicer_object = bpy.data.objects[slicer.name]
     me = slicer.data
     bm = bmesh.from_edit_mesh(me)
     bvhtree = BVHTree.FromBMesh(bm)
@@ -739,11 +690,26 @@ def get_key_with_largest_value(dictionary):
     return max(dictionary, key=lambda k: dictionary[k])
 
 
-#Methods for Manual Length
+#This class is used to make endpoints for spines that weren't automatically segmented
+    #Get selected vertex/verticies, find their center and turn them into a vector called "Spine Base"
+    #Compare Spine base with other vertices to find Spine Tip at the maximum distance from Spine Base
+    #Create Spine base and Tip in the collection of the original spine mesh
+
+class ManualLength(bpy.types.Operator):
+    bl_idname = 'object.individual_length_finder' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'Manual Length'
+
+    def execute(self, context):
+        print("Executing")
+        vert_list = FindSelectedVerts(self)
+        spine_type = find_spine_type(self)
+        spine_base = FindSpineBase(self, vert_list)
+        spine_tip = FindSpineTip(self, spine_base)
+        CreateEndpointMesh(self, spine_base, spine_tip)
+        return {'FINISHED'}
 
 #Get selected verticies
 def FindSelectedVerts(self):
-    print("Finding selected vertices")
     mode = bpy.context.active_object.mode
     bpy.ops.object.mode_set(mode='OBJECT')
     vert_list = []
@@ -753,12 +719,24 @@ def FindSelectedVerts(self):
         else:
             pass
     
-    print("Original vertex coords", vert_list[0])
     bpy.ops.object.mode_set(mode=mode)
     return(vert_list)
 
+#Find spine type:
+def find_spine_type(self):
+    spine_type = ''
+    obj = bpy.context.active_object
+    name = obj.name
+    if name.startswith('stubby'):
+        print(obj.name, "Found stubby")
+        spine_type = 'stubby'
+    else:
+        spine_type = 'other'
+    return(spine_type)
+
+
 #Given several selected verticies find the center
-def FindSpineBase(self,vert_list):
+def FindSpineBase(self,vert_list):  #TODO: rename to tip
     print("Finding spine base")
     x, y, z = [ sum( [v.co[i] for v in vert_list] ) for i in range(3)] #Tested this - it does need to be 3
     count = float(len(vert_list))
