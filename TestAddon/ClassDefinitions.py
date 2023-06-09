@@ -550,6 +550,7 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
 
 
         slicer_face = slicer.data.polygons[closest_face_index]
+        print(slicer.name)
         slicer_normal = slicer_face.normal
 
         slicer_normal =  slicer.matrix_world @ slicer_normal
@@ -558,7 +559,7 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
         #Mark the spot
         empty = bpy.data.objects.new(name=slicer.name + "normal start", object_data=None)
         empty_spot = slicer_face.center  
-        empty_spot =  slicer.matrix_world @ empty_spot        
+        #empty_spot =  slicer.matrix_world @ empty_spot        
         empty.location = empty_spot 
         # Link the empty object to the scene
         scene = bpy.context.scene
