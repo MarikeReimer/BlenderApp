@@ -128,7 +128,6 @@ class DiscSegmenter(bpy.types.Operator):
         spine_and_slicers = get_spines(self)
         spine_list = spine_and_slicers[0]
         slicer_list = spine_and_slicers[1]
-        match_spines_to_slicers(self, spine_list, slicer_list)
         faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
         spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
         spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
@@ -593,27 +592,28 @@ def spines_to_collections(self, spine_and_slicer_dict):
         new_collection.objects.link(spine)
     return {'FINISHED'}
 
-def match_spines_to_slicers(self, spine_list, slicer_list):
-    matched_spine_slicer_dict = {}
-    for spine in spine_list:
-        print('spine', spine.name, spine.location)
-        slicer_distance = {}
-        for slicer in slicer_list:
-            print("slicer", slicer.name, slicer.location)
-            #slicer = bpy.data.objects[slicer]
-            distance = slicer.location - spine.location
-            slicer_distance[slicer.name] = distance
+#An alternative to the bvh find overlap approach.  Good idea, but doesn't work yet
+# def match_spines_to_slicers(self, spine_list, slicer_list):
+#     matched_spine_slicer_dict = {}
+#     for spine in spine_list:
+#         print('spine', spine.name, spine.location)
+#         slicer_distance = {}
+#         for slicer in slicer_list:
+#             print("slicer", slicer.name, slicer.location)
+#             #slicer = bpy.data.objects[slicer]
+#             distance = slicer.location - spine.location
+#             slicer_distance[slicer.name] = distance
 
-        shortest_distance = min(slicer_distance.items())
+#         shortest_distance = min(slicer_distance.items())
 
-        for slicer, distance in slicer_distance.items():
-            if distance == shortest_distance[1]:
-                closest_slicer = shortest_distance
-                break
+#         for slicer, distance in slicer_distance.items():
+#             if distance == shortest_distance[1]:
+#                 closest_slicer = shortest_distance
+#                 break
 
-        print('closest_slicer',  closest_slicer)
-        matched_spine_slicer_dict[spine.name] = closest_slicer
-    return(matched_spine_slicer_dict)
+#         print('closest_slicer',  closest_slicer)
+#         matched_spine_slicer_dict[spine.name] = closest_slicer
+#     return(matched_spine_slicer_dict)
 
 
 def find_overlapping_spine_faces(self, spine_list, slicer_list):
@@ -797,9 +797,9 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
 
 def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
         spine_tip_dict = {}
-        cone_angle = 45
-        cone_length = 5
-        num_rays = 10
+        # cone_angle = 45
+        # cone_length = 5
+        # num_rays = 10
 
         for spine in spine_base_dict.keys():
             spine_length_dict = {}
@@ -807,32 +807,31 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
             spine_base = spine_base_dict[spine]
             depsgraph = bpy.context.evaluated_depsgraph_get()
             ray_direction = slicer_normal_dict[spine] 
+            ray_max_distance = 10
             spine = bpy.data.objects[spine]
 
-            tip_locations = []
+            # tip_locations = []
 
             #Check to see if it's a stubby spine and use the Raycast method to determine Length
             if spine.name.startswith("Stubby",0, 8): 
-                ray_max_distance = 100
                 # #Cone Method Ray cast
-                results = cone_ray_cast(spine_base, ray_direction, cone_angle, cone_length, num_rays)
-                for obj, hit_point in results:
-                    print(f"Object: {obj.name}, Hit Point: {hit_point}")
-                    tip_locations.append(hit_point)
+                # results = cone_ray_cast(spine_base, ray_direction, cone_angle, cone_length, num_rays)
+                # for obj, hit_point in results:
+                #     print(f"Object: {obj.name}, Hit Point: {hit_point}")
+                #     tip_locations.append(hit_point)
                 
-                for location in tip_locations:
-                    location.freeze()
-                    length = (location - spine_base).length
-                    spine_length_dict[location] = length
-                spine_tip = get_key_with_largest_value(spine_length_dict)
-                #spine_tip = spine.matrix_world.inverted() @ spine_tip
-                spine_tip = spine.matrix_world @ spine_tip
+                # for location in tip_locations:
+                #     location.freeze()
+                #     length = (location - spine_base).length
+                #     spine_length_dict[location] = length
+                # spine_tip = get_key_with_largest_value(spine_length_dict)
+                # spine_tip = spine.matrix_world @ spine_tip
 
 
 
-                #ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, -ray_direction, distance = ray_max_distance)
-                #spine_tip = ray_cast[1]
-                #spine_tip_location = spine.matrix_world @ spine_tip
+                ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, -ray_direction, distance = ray_max_distance)
+                spine_tip = ray_cast[1]
+                spine_tip_location = spine.matrix_world @ spine_tip
                  
                 spine_tip_dict[spine] = spine_tip
 
@@ -866,7 +865,8 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
 
         return(spine_tip_dict)
 
-def create_base_and_tip(self, spine_base_dict, spine_tip_dict):   
+def create_base_and_tip(self, spine_base_dict, spine_tip_dict): 
+    bpy.ops.object.select_all(action='DESELECT')  
     for spine in spine_tip_dict.keys():
         spine_base = spine_base_dict[spine.name]
         spine_tip = spine_tip_dict[spine]
@@ -887,6 +887,7 @@ def create_base_and_tip(self, spine_base_dict, spine_tip_dict):
         verts = [spine_base, spine_tip]
 
         endpoint_mesh.from_pydata(verts, [], [])
+        obj.select_set(True)
     return {'FINISHED'}          
 
 def find_slicer_center(slicer, spine_base):
