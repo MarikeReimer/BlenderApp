@@ -809,20 +809,31 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
             ray_direction = slicer_normal_dict[spine] 
             spine = bpy.data.objects[spine]
 
-            tip_length_dict = {}
+            tip_locations = []
 
             #Check to see if it's a stubby spine and use the Raycast method to determine Length
             if spine.name.startswith("Stubby",0, 8): 
                 ray_max_distance = 100
                 # #Cone Method Ray cast
-                # results = cone_ray_cast(spine_base, -ray_direction, cone_angle, cone_length, num_rays)
-                # for obj, hit_point in results:
-                #     print(f"Object: {obj.name}, Hit Point: {hit_point}")
-                ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, -ray_direction, distance = ray_max_distance)
-                spine_tip = ray_cast[1]
+                results = cone_ray_cast(spine_base, ray_direction, cone_angle, cone_length, num_rays)
+                for obj, hit_point in results:
+                    print(f"Object: {obj.name}, Hit Point: {hit_point}")
+                    tip_locations.append(hit_point)
                 
+                for location in tip_locations:
+                    location.freeze()
+                    length = (location - spine_base).length
+                    spine_length_dict[location] = length
+                spine_tip = get_key_with_largest_value(spine_length_dict)
+                #spine_tip = spine.matrix_world.inverted() @ spine_tip
+                spine_tip = spine.matrix_world @ spine_tip
 
-                #spine_tip_location = spine.matrix_world @ spine_tip 
+
+
+                #ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, -ray_direction, distance = ray_max_distance)
+                #spine_tip = ray_cast[1]
+                #spine_tip_location = spine.matrix_world @ spine_tip
+                 
                 spine_tip_dict[spine] = spine_tip
 
                 #Mark the spot
@@ -962,8 +973,10 @@ def cone_ray_cast(origin, direction, cone_angle, cone_length, num_rays):
 
             if hit_point is not None:
                 # Transform the hit point to world coordinates
-                hit_point = obj_matrix.inverted() @ hit_point
+                #hit_point = obj_matrix.inverted() @ hit_point
                 ray_cast_results.append((obj, hit_point))
 
     return ray_cast_results
 
+def get_key_with_largest_value(dictionary):
+    return max(dictionary, key=lambda k: dictionary[k])
