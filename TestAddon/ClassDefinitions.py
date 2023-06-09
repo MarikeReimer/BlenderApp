@@ -514,7 +514,7 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
         #Mark the spot
         empty = bpy.data.objects.new(name=slicer.name + "normal start", object_data=None)
         empty_spot = slicer_face.center  
-        #empty_spot =  slicer.matrix_world @ empty_spot        
+        empty_spot =  slicer.matrix_world @ empty_spot        
         empty.location = empty_spot 
         # Link the empty object to the scene
         scene = bpy.context.scene
@@ -704,7 +704,7 @@ class ManualLength(bpy.types.Operator):
         vert_list = FindSelectedVerts(self)
         spine_type = find_spine_type(self)
         spine_base = FindSpineBase(self, vert_list)
-        spine_tip = FindSpineTip(self, spine_base)
+        spine_tip = FindSpineTip(self, spine_base, spine_type)
         CreateEndpointMesh(self, spine_base, spine_tip)
         return {'FINISHED'}
 
@@ -727,8 +727,7 @@ def find_spine_type(self):
     spine_type = ''
     obj = bpy.context.active_object
     name = obj.name
-    if name.startswith('stubby'):
-        print(obj.name, "Found stubby")
+    if name.startswith('Stubby'):
         spine_type = 'stubby'
     else:
         spine_type = 'other'
@@ -737,7 +736,6 @@ def find_spine_type(self):
 
 #Given several selected verticies find the center
 def FindSpineBase(self,vert_list):  #TODO: rename to tip
-    print("Finding spine base")
     x, y, z = [ sum( [v.co[i] for v in vert_list] ) for i in range(3)] #Tested this - it does need to be 3
     count = float(len(vert_list))
     spine_base = Vector( (x, y, z ) ) / count        
@@ -745,21 +743,30 @@ def FindSpineBase(self,vert_list):  #TODO: rename to tip
     return(spine_base)
 
 #Compare the distance between the spine base and all other verices to find the farthest point
-def FindSpineTip(self, spine_base):
-    print("Finding spine tip")
+def FindSpineTip(self, spine_base, spine_type):
     spine_length_dict = {}
     spine_coordinates_dict = {}
-                                
-    for vert in bpy.context.active_object.data.vertices:
-        length = math.dist(vert.co, spine_base)         
-        spine_length_dict[vert.index] = length
-        spine_coordinates_dict[vert.index] = vert.co                
+    obj = bpy.context.active_object
 
-    spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
-    spine_tip = spine_coordinates_dict[spine_tip_index]
+    if spine_type == 'stubby':
+        obj = bpy.context.active_object
+        ray_direction = obj.location
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        ray_max_distance = 10
+        ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction, distance = ray_max_distance)
+        spine_tip = ray_cast[1]
+        #spine_tip = obj.matrix_world @ tip_location        
+        return(spine_tip)
+    
+    else:         
+        for vert in bpy.context.active_object.data.vertices:
+            length = math.dist(vert.co, spine_base)         
+            spine_length_dict[vert.index] = length
+            spine_coordinates_dict[vert.index] = vert.co                
 
-    print("spine_tip", spine_tip)
-    return(spine_tip)
+            spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
+            spine_tip = spine_coordinates_dict[spine_tip_index]
+        return(spine_tip)
 
 def CreateEndpointMesh(self, spine_base, spine_tip):
     #Use the spine base and spine tip coordinates to create points in active object's collection
