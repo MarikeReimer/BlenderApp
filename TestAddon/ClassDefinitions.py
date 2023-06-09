@@ -148,147 +148,12 @@ class ManualLength(bpy.types.Operator):
     bl_idname = 'object.individual_length_finder' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'Manual Length'
 
-    #Get selected verticies
-    def FindSelectedVerts(self):
-        print("Finding selected vertices")
-        mode = bpy.context.active_object.mode
-        bpy.ops.object.mode_set(mode='OBJECT')
-        vert_list = []
-        for v in bpy.context.active_object.data.vertices:
-            if v.select:
-                vert_list.append(v)
-            else:
-                pass
-        
-        print("Original vertex coords", vert_list[0])
-        bpy.ops.object.mode_set(mode=mode)
-        return(vert_list)
-    
-    #Given several selected verticies find the center
-    def FindSpineBase(self,vert_list):
-        print("Finding spine base")
-        x, y, z = [ sum( [v.co[i] for v in vert_list] ) for i in range(3)] #Tested this - it does need to be 3
-        count = float(len(vert_list))
-        spine_base = Vector( (x, y, z ) ) / count        
-
-        return(spine_base)
-
-    #Compare the distance between the spine base and all other verices to find the farthest point
-    def FindSpineTip(self, spine_base):
-        print("Finding spine tip")
-        spine_length_dict = {}
-        spine_coordinates_dict = {}
-                                    
-        for vert in bpy.context.active_object.data.vertices:
-            length = math.dist(vert.co, spine_base)         
-            spine_length_dict[vert.index] = length
-            spine_coordinates_dict[vert.index] = vert.co                
-
-        spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
-        spine_tip = spine_coordinates_dict[spine_tip_index]
-
-        print("spine_tip", spine_tip)
-        return(spine_tip)
-
-    def CreateEndpointMesh(self, spine_base, spine_tip):
-        #Use the spine base and spine tip coordinates to create points in active object's collection
-        #Get active object
-        obj = bpy.context.object
-        
-        #Make a mesh
-        edges = []
-        faces = []
-        verts = [spine_base, spine_tip]    
-        endpoint_mesh = bpy.data.meshes.new("endpoints_" + str(obj.name))  
-        endpoint_mesh.from_pydata(verts, edges, faces)
-
-        #Use the selected object's coordinates for reference frame
-        endpoint_mesh.transform(obj.matrix_world)
-
-        #Link to active object's collection
-        collection = obj.users_collection[0]        
-            
-        endpoints = bpy.data.objects.new(endpoint_mesh.name, endpoint_mesh)
-        
-        collection.objects.link(endpoints)
-        return {'FINISHED'}
-    
     def execute(self, context):
         print("Executing")
-        vert_list = self.FindSelectedVerts()
-        spine_base = self.FindSpineBase(vert_list)
-        spine_tip = self.FindSpineTip(spine_base)
-        self.CreateEndpointMesh(spine_base, spine_tip)
-        return {'FINISHED'}
-
-#This class was created to deal with spines composed of multiple meshes, by turning them yellow, so that they can be manually joined
-#Get selected spines and store them in spine_list
-#Make BVH trees of the spines and store them spine_BVHtree_list
-#Iterate over spine_BVHtree_list to find the indices of overlapping spines
-#Use spine indices to color the overlapping spines in spine list
-
-
-    
-    #Make BVH trees of the spines and store them spine_BVHtree_list
-    def spine_bvh_trees(self, spine_list):
-        spine_BVHtree_list = []
-
-        for spine in spine_list:            
-            spine_mesh = bmesh.new()
-            spine_mesh.from_mesh(bpy.context.scene.objects[spine.name].data)
-            spine_mesh.transform(spine.matrix_world)
-            spine_BVHtree = BVHTree.FromBMesh(spine_mesh)
-            spine_BVHtree_list.append(spine_BVHtree)
-
-        return(spine_BVHtree_list)
-        
-    #Iterate over spine_BVHtree_list to find the indices of overlapping spines
-    def find_overlapping_spines(self, spine_BVHtree_list):
-        overlapping_spine_index_list = []
-        print("spine_BVHtree_list in find overlapping", spine_BVHtree_list)
-        counter = 0
-
-        for bvh_tree in spine_BVHtree_list:            
-            current_spine_tree = spine_BVHtree_list[counter]
-            if counter == spine_BVHtree_list.index(bvh_tree): #Spines will always overlap themselves...
-                continue
-            elif current_spine_tree.overlap(bvh_tree):
-                overlapping_spine_index_list.append(spine_BVHtree_list.index(bvh_tree))
-            counter += 1
-        print("overlapping_spine_index_list", overlapping_spine_index_list)
-        return(overlapping_spine_index_list)
-
-    #Use spine indices to color the overlapping spines in spine list
-    # def color_overlapping_spines(self, overlapping_spine_index_list, spine_list):
-    #     spines_to_color = []
-
-    #     for i in overlapping_spine_index_list:
-    #         spines_to_color.append(spine_list[i])
-
-    #     for spine in spines_to_color:
-    #         spine.data.materials.clear()
-    #         spine.select_set(True)
-    #         spine.color = (1,1,0,1)        
-    #         mat = bpy.data.materials.new("Blue")
-
-    #         # Activate its nodes
-    #         mat.use_nodes = True
-
-    #         # Get the principled BSDF (created by default)
-    #         principled = mat.node_tree.nodes['Principled BSDF']
-
-    #         # Assign the color
-    #         principled.inputs['Base Color'].default_value = (1,1,0,1)
-    #         # Assign the material to the object
-    #         spine.data.materials.append(mat)
-    #     return {'FINISHED'}
-
-    def execute(self, context):
-        spine_list = self.get_spines()
-        spine_BVHtree_list = self.spine_bvh_trees(spine_list)
-        overlapping_spine_index_list = self.find_overlapping_spines(spine_BVHtree_list)
-        self.color_overlapping_spines(overlapping_spine_index_list, spine_list)
-    
+        vert_list = FindSelectedVerts(self)
+        spine_base = FindSpineBase(self, vert_list)
+        spine_tip = FindSpineTip(self, spine_base)
+        CreateEndpointMesh(self, spine_base, spine_tip)
         return {'FINISHED'}
 
 #This class contains methods which extract data from the text-entry panel, meshes, and endpoints and the writes them to an NWB File
@@ -541,21 +406,6 @@ class WriteNWB(bpy.types.Operator):
 
         return {'FINISHED'}
 
-
-def find_nearest_point(mesh, reference_point):
-    kd = mathutils.kdtree.KDTree(len(mesh.vertices))
-
-    # Add mesh vertices to the kd-tree
-    for i, vert in enumerate(mesh.vertices):
-        kd.insert(vert.co, i)
-
-    kd.balance()  # Balance the kd-tree
-
-    # Find the nearest vertex to the reference point
-    nearest_vertex, index, distance = kd.find(reference_point)
-
-    return nearest_vertex, index, distance
-
 #DiscSegmentor
 #Put the selected meshes into spine list.  Put unselected objects into slicer list  
 def get_spines(self):  
@@ -591,30 +441,6 @@ def spines_to_collections(self, spine_and_slicer_dict):
         bpy.context.scene.collection.children.link(new_collection)
         new_collection.objects.link(spine)
     return {'FINISHED'}
-
-#An alternative to the bvh find overlap approach.  Good idea, but doesn't work yet
-# def match_spines_to_slicers(self, spine_list, slicer_list):
-#     matched_spine_slicer_dict = {}
-#     for spine in spine_list:
-#         print('spine', spine.name, spine.location)
-#         slicer_distance = {}
-#         for slicer in slicer_list:
-#             print("slicer", slicer.name, slicer.location)
-#             #slicer = bpy.data.objects[slicer]
-#             distance = slicer.location - spine.location
-#             slicer_distance[slicer.name] = distance
-
-#         shortest_distance = min(slicer_distance.items())
-
-#         for slicer, distance in slicer_distance.items():
-#             if distance == shortest_distance[1]:
-#                 closest_slicer = shortest_distance
-#                 break
-
-#         print('closest_slicer',  closest_slicer)
-#         matched_spine_slicer_dict[spine.name] = closest_slicer
-#     return(matched_spine_slicer_dict)
-
 
 def find_overlapping_spine_faces(self, spine_list, slicer_list):
     spine_overlapping_indices_dict = {}
@@ -656,55 +482,6 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
     spine_bm.free()
     slicer_bm.free()
     return(spine_overlapping_indices_dict, spine_and_slicer_dict)
-
-# def find_overlapping_spine_faces(self, spine_list, slicer_list):
-#     spine_overlapping_indices_dict = {}
-#     spine_and_slicer_dict = {}
-#     spines_without_bases = []
-#     for spine in spine_list:
-#         slicer_overlapping_indices= []
-#         mesh1 = spine.data
-#         for slicer in slicer_list:
-#             mesh2 = slicer.data
-
-#             # Create sets of face indices for faster lookup
-#             face_indices1 = set(range(len(mesh1.polygons)))
-#             face_indices2 = set(range(len(mesh2.polygons)))
-
-#             # Iterate over the faces of the first icosphere
-#             for face_index1 in face_indices1:
-#                 face1 = mesh1.polygons[face_index1]
-#                 vertices1 = [spine.matrix_world @ mesh1.vertices[index].co for index in face1.vertices]
-
-#                 # Iterate over the faces of the second icosphere
-#                 for face_index2 in face_indices2:
-#                     face2 = mesh2.polygons[face_index2]
-#                     vertices2 = [slicer.matrix_world @ mesh2.vertices[index].co for index in face2.vertices]
-
-#                     # Perform face-face intersection test
-#                     intersection = False
-#                     for v1 in vertices1:
-#                         for v2 in vertices2:
-#                             if (v1 - v2).length < 1:  # Adjust the threshold as needed
-#                                 intersection = True
-#                                 slicer_overlapping_indices.append(face_index2)
-#                                 break
-#                         if intersection:
-#                             break
-
-# def paint_spines(self, modified_spine_and_slicer_dict):
-#     for spine, slicer in modified_spine_and_slicer_dict.items():
-#         slicer = bpy.data.objects.get(slicer)
-#         spine = bpy.data.objects.get(spine)
-
-#         if slicer and spine:
-#             if slicer.data.materials:
-#                 slicer_color = slicer.data.materials[0]
-
-#                 if spine.data.materials:
-#                     spine.data.materials[0] = slicer_color
-#                 else:
-#                     spine.data.materials.append(slicer_color)  
 
 #Check each spine to find its intersecting slicer.  
 #Find the spine faces that intersect with the slicer and the normal vector of the slicer which is currently borked     
@@ -927,28 +704,6 @@ def find_nearest_face(mesh_object, target_vector):
     # Return the nearest face
     return nearest_face
 
-# def mesh_cleaner(self):
-#     scene = bpy.context.scene
-#     print('cleaning meshes')
-#     # Iterate through the objects in the scene collection
-#     for obj in scene.collection.all_objects:
-#         if obj.type == 'MESH':
-#             print(obj.name)
-#             bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
-#             bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-#             # Switch to Edit Mode
-#             bpy.context.view_layer.objects.active
-#             bpy.ops.object.mode_set(mode='EDIT')
-
-#             # Select all vertices
-#             bpy.ops.mesh.select_all(action='SELECT')
-#             #bpy.ops.mesh.remove_doubles()
-#             # Recalculate normals
-#             bpy.ops.mesh.normals_make_consistent(inside=False)
-
-#             # Switch back to Object Mode
-#             bpy.ops.object.mode_set(mode='OBJECT')
-
 def cone_ray_cast(origin, direction, cone_angle, cone_length, num_rays):
     scene = bpy.context.scene
     ray_cast_results = []
@@ -981,3 +736,182 @@ def cone_ray_cast(origin, direction, cone_angle, cone_length, num_rays):
 
 def get_key_with_largest_value(dictionary):
     return max(dictionary, key=lambda k: dictionary[k])
+
+
+#Methods for Manual Length
+
+#Get selected verticies
+def FindSelectedVerts(self):
+    print("Finding selected vertices")
+    mode = bpy.context.active_object.mode
+    bpy.ops.object.mode_set(mode='OBJECT')
+    vert_list = []
+    for v in bpy.context.active_object.data.vertices:
+        if v.select:
+            vert_list.append(v)
+        else:
+            pass
+    
+    print("Original vertex coords", vert_list[0])
+    bpy.ops.object.mode_set(mode=mode)
+    return(vert_list)
+
+#Given several selected verticies find the center
+def FindSpineBase(self,vert_list):
+    print("Finding spine base")
+    x, y, z = [ sum( [v.co[i] for v in vert_list] ) for i in range(3)] #Tested this - it does need to be 3
+    count = float(len(vert_list))
+    spine_base = Vector( (x, y, z ) ) / count        
+
+    return(spine_base)
+
+#Compare the distance between the spine base and all other verices to find the farthest point
+def FindSpineTip(self, spine_base):
+    print("Finding spine tip")
+    spine_length_dict = {}
+    spine_coordinates_dict = {}
+                                
+    for vert in bpy.context.active_object.data.vertices:
+        length = math.dist(vert.co, spine_base)         
+        spine_length_dict[vert.index] = length
+        spine_coordinates_dict[vert.index] = vert.co                
+
+    spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
+    spine_tip = spine_coordinates_dict[spine_tip_index]
+
+    print("spine_tip", spine_tip)
+    return(spine_tip)
+
+def CreateEndpointMesh(self, spine_base, spine_tip):
+    #Use the spine base and spine tip coordinates to create points in active object's collection
+    #Get active object
+    obj = bpy.context.object
+    
+    #Make a mesh
+    edges = []
+    faces = []
+    verts = [spine_base, spine_tip]    
+    endpoint_mesh = bpy.data.meshes.new("endpoints_" + str(obj.name))  
+    endpoint_mesh.from_pydata(verts, edges, faces)
+
+    #Use the selected object's coordinates for reference frame
+    endpoint_mesh.transform(obj.matrix_world)
+
+    #Link to active object's collection
+    collection = obj.users_collection[0]        
+        
+    endpoints = bpy.data.objects.new(endpoint_mesh.name, endpoint_mesh)
+    
+    collection.objects.link(endpoints)
+    return {'FINISHED'}
+
+#Might be useful later
+
+# def paint_spines(self, modified_spine_and_slicer_dict):
+#     for spine, slicer in modified_spine_and_slicer_dict.items():
+#         slicer = bpy.data.objects.get(slicer)
+#         spine = bpy.data.objects.get(spine)
+
+#         if slicer and spine:
+#             if slicer.data.materials:
+#                 slicer_color = slicer.data.materials[0]
+
+#                 if spine.data.materials:
+#                     spine.data.materials[0] = slicer_color
+#                 else:
+#                     spine.data.materials.append(slicer_color)  
+
+# def mesh_cleaner(self):
+#     scene = bpy.context.scene
+#     print('cleaning meshes')
+#     # Iterate through the objects in the scene collection
+#     for obj in scene.collection.all_objects:
+#         if obj.type == 'MESH':
+#             print(obj.name)
+#             bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
+#             bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
+#             # Switch to Edit Mode
+#             bpy.context.view_layer.objects.active
+#             bpy.ops.object.mode_set(mode='EDIT')
+
+#             # Select all vertices
+#             bpy.ops.mesh.select_all(action='SELECT')
+#             #bpy.ops.mesh.remove_doubles()
+#             # Recalculate normals
+#             bpy.ops.mesh.normals_make_consistent(inside=False)
+
+#             # Switch back to Object Mode
+#             bpy.ops.object.mode_set(mode='OBJECT')
+
+# More accurate approach, doesn't work yet
+# def find_overlapping_spine_faces(self, spine_list, slicer_list):
+#     spine_overlapping_indices_dict = {}
+#     spine_and_slicer_dict = {}
+#     spines_without_bases = []
+#     for spine in spine_list:
+#         slicer_overlapping_indices= []
+#         mesh1 = spine.data
+#         for slicer in slicer_list:
+#             mesh2 = slicer.data
+
+#             # Create sets of face indices for faster lookup
+#             face_indices1 = set(range(len(mesh1.polygons)))
+#             face_indices2 = set(range(len(mesh2.polygons)))
+
+#             # Iterate over the faces of the first icosphere
+#             for face_index1 in face_indices1:
+#                 face1 = mesh1.polygons[face_index1]
+#                 vertices1 = [spine.matrix_world @ mesh1.vertices[index].co for index in face1.vertices]
+
+#                 # Iterate over the faces of the second icosphere
+#                 for face_index2 in face_indices2:
+#                     face2 = mesh2.polygons[face_index2]
+#                     vertices2 = [slicer.matrix_world @ mesh2.vertices[index].co for index in face2.vertices]
+
+#                     # Perform face-face intersection test
+#                     intersection = False
+#                     for v1 in vertices1:
+#                         for v2 in vertices2:
+#                             if (v1 - v2).length < 1:  # Adjust the threshold as needed
+#                                 intersection = True
+#                                 slicer_overlapping_indices.append(face_index2)
+#                                 break
+#                         if intersection:
+#                             break
+
+#An alternative to the bvh find overlap approach.  Good idea, but doesn't work yet
+# def match_spines_to_slicers(self, spine_list, slicer_list):
+#     matched_spine_slicer_dict = {}
+#     for spine in spine_list:
+#         print('spine', spine.name, spine.location)
+#         slicer_distance = {}
+#         for slicer in slicer_list:
+#             print("slicer", slicer.name, slicer.location)
+#             #slicer = bpy.data.objects[slicer]
+#             distance = slicer.location - spine.location
+#             slicer_distance[slicer.name] = distance
+
+#         shortest_distance = min(slicer_distance.items())
+
+#         for slicer, distance in slicer_distance.items():
+#             if distance == shortest_distance[1]:
+#                 closest_slicer = shortest_distance
+#                 break
+
+#         print('closest_slicer',  closest_slicer)
+#         matched_spine_slicer_dict[spine.name] = closest_slicer
+#     return(matched_spine_slicer_dict)
+
+# def find_nearest_point(mesh, reference_point):
+#     kd = mathutils.kdtree.KDTree(len(mesh.vertices))
+
+#     # Add mesh vertices to the kd-tree
+#     for i, vert in enumerate(mesh.vertices):
+#         kd.insert(vert.co, i)
+
+#     kd.balance()  # Balance the kd-tree
+
+#     # Find the nearest vertex to the reference point
+#     nearest_vertex, index, distance = kd.find(reference_point)
+
+#     return nearest_vertex, index, distance
