@@ -123,6 +123,7 @@ class DiscSegmenter(bpy.types.Operator):
         spine_and_slicers = get_spines(self)
         spine_list = spine_and_slicers[0]
         slicer_list = spine_and_slicers[1]
+        matched_spine_and_slicer_dict = match_spines_to_slicers(self, spine_list, slicer_list)
         faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
         spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
         spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
@@ -751,11 +752,9 @@ def FindSpineTip(self, spine_base, spine_type):
     if spine_type == 'stubby':
         obj = bpy.context.active_object
         ray_direction = obj.location
-        depsgraph = bpy.context.evaluated_depsgraph_get()
         ray_max_distance = 10
-        ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction, distance = ray_max_distance)
-        spine_tip = ray_cast[1]
-        #spine_tip = obj.matrix_world @ tip_location        
+        hit, location, normal, face_index = obj.ray_cast(spine_base, ray_direction, distance = ray_max_distance)
+        spine_tip = location
         return(spine_tip)
     
     else:         
@@ -864,29 +863,44 @@ def CreateEndpointMesh(self, spine_base, spine_tip):
 #                                 break
 #                         if intersection:
 #                             break
+#         if len(slicer_overlapping_indices) > 0:
+#             spine.name = slicer.name[6:]
+#             spine_and_slicer_dict[spine.name] = slicer.name
+#     print(spine_and_slicer_dict)                    
+#     return(spine_and_slicer_dict)
 
 #An alternative to the bvh find overlap approach.  Good idea, but doesn't work yet
-# def match_spines_to_slicers(self, spine_list, slicer_list):
-#     matched_spine_slicer_dict = {}
-#     for spine in spine_list:
-#         print('spine', spine.name, spine.location)
-#         slicer_distance = {}
-#         for slicer in slicer_list:
-#             print("slicer", slicer.name, slicer.location)
-#             #slicer = bpy.data.objects[slicer]
-#             distance = slicer.location - spine.location
-#             slicer_distance[slicer.name] = distance
+def match_spines_to_slicers(self, spine_list, slicer_list):
+    matched_spine_slicer_dict = {}
+    for spine in spine_list:
+        slicer_distance = {}
+        spine_world_matrix = spine.matrix_world
+        spine_world_location = spine_world_matrix.translation 
 
-#         shortest_distance = min(slicer_distance.items())
+        for slicer in slicer_list:
+            print('spine',spine.name, 'slicer', slicer.name)
+            # Get the object's world matrix
+            world_matrix = slicer.matrix_world
 
-#         for slicer, distance in slicer_distance.items():
-#             if distance == shortest_distance[1]:
-#                 closest_slicer = shortest_distance
-#                 break
+            # Extract the translation component from the world matrix
+            slicer_world_location = world_matrix.translation
+            #slicer = bpy.data.objects[slicer]
+            distance = (slicer_world_location - spine_world_location).length
+            slicer_distance[slicer.name] = distance
 
-#         print('closest_slicer',  closest_slicer)
-#         matched_spine_slicer_dict[spine.name] = closest_slicer
-#     return(matched_spine_slicer_dict)
+        #shortest_distance = min(slicer_distance.items())
+        smallest_value_key = min(slicer_distance, key=slicer_distance.get)
+        print(smallest_value_key)
+        # for slicer, distance in slicer_distance.items():
+        #     if distance == shortest_distance:
+        #         print('slicer', slicer)
+        #         spine.name = slicer
+        spine.name = smallest_value_key[6:]
+        matched_spine_slicer_dict[spine.name] = smallest_value_key
+        slicer_distance = {}
+
+    print(matched_spine_slicer_dict)
+    return(matched_spine_slicer_dict)
 
 # def find_nearest_point(mesh, reference_point):
 #     kd = mathutils.kdtree.KDTree(len(mesh.vertices))
