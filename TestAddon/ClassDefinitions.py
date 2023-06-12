@@ -411,46 +411,46 @@ def spines_to_collections(self, spine_and_slicer_dict):
         new_collection.objects.link(spine)
     return {'FINISHED'}
 
-def find_overlapping_spine_faces(self, spine_list, slicer_list):
-    spine_overlapping_indices_dict = {}
-    spine_and_slicer_dict = {}
-    spines_without_bases = []
+# def find_overlapping_spine_faces(self, spine_list, slicer_list):
+#     spine_overlapping_indices_dict = {}
+#     spine_and_slicer_dict = {}
+#     spines_without_bases = []
 
-    for spine in spine_list:
-        intersects = False
-        spine_bm = bmesh.new()
-        spine_bm.from_mesh(bpy.context.scene.objects[spine.name].data) 
-        spine_bm.transform(spine.matrix_world)
-        spine_bm.faces.ensure_lookup_table() 
-        spine_bvh = BVHTree.FromBMesh(spine_bm)     
-        for slicer in slicer_list:
-            slicer_bm = bmesh.new()
-            slicer_bm.from_mesh(bpy.context.scene.objects[slicer.name].data) 
-            slicer_bm.transform(slicer.matrix_world)
-            slicer_bm.faces.ensure_lookup_table() 
-            slicer_bvh = BVHTree.FromBMesh(slicer_bm)
-            #overlap is list containing pairs of polygon indices, the first index is a vertex from the slicer mesh tree the second is from the spine mesh tree
-            overlap = slicer_bvh.overlap(spine_bvh)
+#     for spine in spine_list:
+#         intersects = False
+#         spine_bm = bmesh.new()
+#         spine_bm.from_mesh(bpy.context.scene.objects[spine.name].data) 
+#         spine_bm.transform(spine.matrix_world)
+#         spine_bm.faces.ensure_lookup_table() 
+#         spine_bvh = BVHTree.FromBMesh(spine_bm)     
+#         for slicer in slicer_list:
+#             slicer_bm = bmesh.new()
+#             slicer_bm.from_mesh(bpy.context.scene.objects[slicer.name].data) 
+#             slicer_bm.transform(slicer.matrix_world)
+#             slicer_bm.faces.ensure_lookup_table() 
+#             slicer_bvh = BVHTree.FromBMesh(slicer_bm)
+#             #overlap is list containing pairs of polygon indices, the first index is a vertex from the slicer mesh tree the second is from the spine mesh tree
+#             overlap = slicer_bvh.overlap(spine_bvh)
 
-            if len(overlap) >= 1:
-                intersects = True
-                spine.name = slicer.name[6:]
-                spine_overlapping_indices_dict[spine.name] = overlap
-                spine_and_slicer_dict[spine.name] = slicer.name
-                break 
+#             if len(overlap) >= 1:
+#                 intersects = True
+#                 spine.name = slicer.name[6:]
+#                 spine_overlapping_indices_dict[spine.name] = overlap
+#                 spine_and_slicer_dict[spine.name] = slicer.name
+#                 break 
 
-        if intersects == False:
-            spines_without_bases.append(spine.name)
-            for collection in spine.users_collection:
-                collection.objects.unlink(spine)
-                bpy.data.collections.remove(collection)
-                bpy.context.scene.collection.objects.link(spine)
+#         if intersects == False:
+#             spines_without_bases.append(spine.name)
+#             for collection in spine.users_collection:
+#                 collection.objects.unlink(spine)
+#                 bpy.data.collections.remove(collection)
+#                 bpy.context.scene.collection.objects.link(spine)
     
     
-    print("spines without bases", spines_without_bases)
-    spine_bm.free()
-    slicer_bm.free()
-    return(spine_overlapping_indices_dict, spine_and_slicer_dict)
+#     print("spines without bases", spines_without_bases)
+#     spine_bm.free()
+#     slicer_bm.free()
+#     return(spine_overlapping_indices_dict, spine_and_slicer_dict)
 
 #Check each spine to find its intersecting slicer.  
 #Find the spine faces that intersect with the slicer and the normal vector of the slicer which is currently borked     
@@ -527,7 +527,7 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
 
         bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(slicer_normal), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
         obj = bpy.context.object
-        obj.name = slicer.name + "SpineBase"
+        obj.name = slicer.name + "Normal"
     return(slicer_normal_dict)
 
 def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
@@ -832,17 +832,18 @@ def CreateEndpointMesh(self, spine_base, spine_tip):
 # More accurate approach, doesn't work yet
 def find_overlapping_spine_faces(self, matched_spine_slicer_dict):
     spine_and_base_dict = {}
+    
     for spine, slicer in matched_spine_slicer_dict.items():
         slicer = bpy.data.objects.get(slicer)
         spine = bpy.data.objects.get(spine)
-        slicer_overlapping_indices = []
-        mesh1 = spine.data
-        mesh2 = slicer.data
+        spine_overlapping_indices = []
+        mesh2 = spine.data
+        mesh1 = slicer.data
         # Create sets of face indices for faster lookup
         face_indices1 = set(range(len(mesh1.polygons)))
         face_indices2 = set(range(len(mesh2.polygons)))
 
-        # Iterate over the faces of the first icosphere
+        # Iterate over the faces of the first mesh
         for face_index1 in face_indices1:
             face1 = mesh1.polygons[face_index1]
             vertices1 = [spine.matrix_world @ mesh1.vertices[index].co for index in face1.vertices]
@@ -856,28 +857,43 @@ def find_overlapping_spine_faces(self, matched_spine_slicer_dict):
                 intersection = False
                 for v1 in vertices1:
                     for v2 in vertices2:
-                        if (v1 - v2).length < 1:  # Adjust the threshold as needed
+                        if (v1 - v2).length < 0.8:  # Adjust the threshold as needed
                             intersection = True
-                            slicer_overlapping_indices.append(face_index2)
+                            spine_overlapping_indices.append(face_index2)
+                            
                             break
                     if intersection:
                         break
 
         center_point = Vector((0, 0, 0))
+        if intersection:
+            # Iterate over the indices and accumulate their vertex positions
+            for index in spine_overlapping_indices:
+                vertex = spine.matrix_world @ spine.data.polygons[index].center
+                
+                # #Mark the spot
+                # empty = bpy.data.objects.new(name=slicer.name + "normal start", object_data=None)
+                # empty_spot = vertex 
+                # empty_spot =  slicer.matrix_world @ empty_spot        
+                # empty.location = empty_spot 
+                # # Link the empty object to the scene
+                # scene = bpy.context.scene
+                # scene.collection.objects.link(empty)        
+                # # Select the empty object
+                # empty.select_set(True)
+                # scene.view_layers.update()
+                
 
-        # Iterate over the indices and accumulate their vertex positions
-        for index in slicer_overlapping_indices:
-            vertex = slicer.matrix_world @ slicer.data.vertices[index].co
-            center_point += vertex
+                center_point += vertex
 
-        # Divide by the number of indices to get the average
-        center_point /= len(slicer_overlapping_indices)
-        spine_base = center_point
-        spine_and_base_dict[spine.name] = spine_base
+            # Divide by the number of indices to get the average
+            center_point /= len(spine_overlapping_indices)
+            spine_base = center_point
+            spine_and_base_dict[spine.name] = spine_base
 
         bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_base), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
         obj = bpy.context.object
-        obj.name = slicer.name + "NormalVector"
+        obj.name = slicer.name + "Base"
                 
     return(spine_and_base_dict)
 
