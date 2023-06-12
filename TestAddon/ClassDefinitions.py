@@ -124,15 +124,16 @@ class DiscSegmenter(bpy.types.Operator):
         spine_list = spine_and_slicers[0]
         slicer_list = spine_and_slicers[1]
         matched_spine_and_slicer_dict = match_spines_to_slicers(self, spine_list, slicer_list)
-        faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
-        spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
-        spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
-        spines_to_collections(self, spine_and_slicer_dict)
+        spine_and_base_dict = find_overlapping_spine_faces(self, matched_spine_and_slicer_dict)
+        #faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
+        # spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
+        # spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
+        spines_to_collections(self, matched_spine_and_slicer_dict)
         #paint_spines(self, spine_and_slicer_dict)
-        spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict)
-        slicer_normal_dict = find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict)
-        spine_tip_dict = find_spine_tip(self, spine_base_dict, slicer_normal_dict)
-        create_base_and_tip(self, spine_base_dict, spine_tip_dict)
+        #spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict)
+        slicer_normal_dict = find_normal_vectors(self, spine_and_base_dict, matched_spine_and_slicer_dict)
+        spine_tip_dict = find_spine_tip(self, spine_and_base_dict, slicer_normal_dict)
+        create_base_and_tip(self, spine_and_base_dict, spine_tip_dict)
         return {'FINISHED'}
 
 
@@ -526,7 +527,7 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
 
         bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(slicer_normal), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
         obj = bpy.context.object
-        obj.name = slicer.name + "NormalVector"
+        obj.name = slicer.name + "SpineBase"
     return(slicer_normal_dict)
 
 def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
@@ -829,78 +830,79 @@ def CreateEndpointMesh(self, spine_base, spine_tip):
 #             bpy.ops.object.mode_set(mode='OBJECT')
 
 # More accurate approach, doesn't work yet
-# def find_overlapping_spine_faces(self, spine_list, slicer_list):
-#     spine_overlapping_indices_dict = {}
-#     spine_and_slicer_dict = {}
-#     spines_without_bases = []
-#     for spine in spine_list:
-#         slicer_overlapping_indices= []
-#         mesh1 = spine.data
-#         for slicer in slicer_list:
-#             mesh2 = slicer.data
+def find_overlapping_spine_faces(self, matched_spine_slicer_dict):
+    spine_and_base_dict = {}
+    for spine, slicer in matched_spine_slicer_dict.items():
+        slicer = bpy.data.objects.get(slicer)
+        spine = bpy.data.objects.get(spine)
+        slicer_overlapping_indices = []
+        mesh1 = spine.data
+        mesh2 = slicer.data
+        # Create sets of face indices for faster lookup
+        face_indices1 = set(range(len(mesh1.polygons)))
+        face_indices2 = set(range(len(mesh2.polygons)))
 
-#             # Create sets of face indices for faster lookup
-#             face_indices1 = set(range(len(mesh1.polygons)))
-#             face_indices2 = set(range(len(mesh2.polygons)))
+        # Iterate over the faces of the first icosphere
+        for face_index1 in face_indices1:
+            face1 = mesh1.polygons[face_index1]
+            vertices1 = [spine.matrix_world @ mesh1.vertices[index].co for index in face1.vertices]
 
-#             # Iterate over the faces of the first icosphere
-#             for face_index1 in face_indices1:
-#                 face1 = mesh1.polygons[face_index1]
-#                 vertices1 = [spine.matrix_world @ mesh1.vertices[index].co for index in face1.vertices]
+            # Iterate over the faces of the second icosphere
+            for face_index2 in face_indices2:
+                face2 = mesh2.polygons[face_index2]
+                vertices2 = [slicer.matrix_world @ mesh2.vertices[index].co for index in face2.vertices]
 
-#                 # Iterate over the faces of the second icosphere
-#                 for face_index2 in face_indices2:
-#                     face2 = mesh2.polygons[face_index2]
-#                     vertices2 = [slicer.matrix_world @ mesh2.vertices[index].co for index in face2.vertices]
+                # Perform face-face intersection test
+                intersection = False
+                for v1 in vertices1:
+                    for v2 in vertices2:
+                        if (v1 - v2).length < 1:  # Adjust the threshold as needed
+                            intersection = True
+                            slicer_overlapping_indices.append(face_index2)
+                            break
+                    if intersection:
+                        break
 
-#                     # Perform face-face intersection test
-#                     intersection = False
-#                     for v1 in vertices1:
-#                         for v2 in vertices2:
-#                             if (v1 - v2).length < 1:  # Adjust the threshold as needed
-#                                 intersection = True
-#                                 slicer_overlapping_indices.append(face_index2)
-#                                 break
-#                         if intersection:
-#                             break
-#         if len(slicer_overlapping_indices) > 0:
-#             spine.name = slicer.name[6:]
-#             spine_and_slicer_dict[spine.name] = slicer.name
-#     print(spine_and_slicer_dict)                    
-#     return(spine_and_slicer_dict)
+        center_point = Vector((0, 0, 0))
+
+        # Iterate over the indices and accumulate their vertex positions
+        for index in slicer_overlapping_indices:
+            vertex = slicer.matrix_world @ slicer.data.vertices[index].co
+            center_point += vertex
+
+        # Divide by the number of indices to get the average
+        center_point /= len(slicer_overlapping_indices)
+        spine_base = center_point
+        spine_and_base_dict[spine.name] = spine_base
+
+        bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_base), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
+        obj = bpy.context.object
+        obj.name = slicer.name + "NormalVector"
+                
+    return(spine_and_base_dict)
 
 #An alternative to the bvh find overlap approach.  Good idea, but doesn't work yet
 def match_spines_to_slicers(self, spine_list, slicer_list):
-    matched_spine_slicer_dict = {}
+    matched_spine_and_slicer_dict = {}
     for spine in spine_list:
         slicer_distance = {}
         spine_world_matrix = spine.matrix_world
         spine_world_location = spine_world_matrix.translation 
 
         for slicer in slicer_list:
-            print('spine',spine.name, 'slicer', slicer.name)
             # Get the object's world matrix
             world_matrix = slicer.matrix_world
 
             # Extract the translation component from the world matrix
             slicer_world_location = world_matrix.translation
-            #slicer = bpy.data.objects[slicer]
             distance = (slicer_world_location - spine_world_location).length
             slicer_distance[slicer.name] = distance
 
-        #shortest_distance = min(slicer_distance.items())
         smallest_value_key = min(slicer_distance, key=slicer_distance.get)
-        print(smallest_value_key)
-        # for slicer, distance in slicer_distance.items():
-        #     if distance == shortest_distance:
-        #         print('slicer', slicer)
-        #         spine.name = slicer
         spine.name = smallest_value_key[6:]
-        matched_spine_slicer_dict[spine.name] = smallest_value_key
+        matched_spine_and_slicer_dict[spine.name] = smallest_value_key
         slicer_distance = {}
-
-    print(matched_spine_slicer_dict)
-    return(matched_spine_slicer_dict)
+    return(matched_spine_and_slicer_dict)
 
 # def find_nearest_point(mesh, reference_point):
 #     kd = mathutils.kdtree.KDTree(len(mesh.vertices))
