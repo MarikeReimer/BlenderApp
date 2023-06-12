@@ -753,9 +753,13 @@ def FindSpineTip(self, spine_base, spine_type):
         ray_direction = obj.location
         depsgraph = bpy.context.evaluated_depsgraph_get()
         ray_max_distance = 10
-        ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction, distance = ray_max_distance)
-        spine_tip = ray_cast[1]
-        #spine_tip = obj.matrix_world @ tip_location        
+        #ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction, distance = ray_max_distance)
+        scene = bpy.context.scene
+        #hit, location, normal, index, object, matrix = scene.ray_cast(depsgraph, spine_base, -ray_direction)
+        hit, location, normal, face_index = obj.ray_cast(spine_base, ray_direction, distance = ray_max_distance)
+        #spine_tip = ray_cast[1]
+        spine_tip = location
+        #spine_tip = obj.matrix_world @ spine_tip        
         return(spine_tip)
     
     else:         
