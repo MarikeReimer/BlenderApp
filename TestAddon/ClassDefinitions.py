@@ -739,16 +739,45 @@ def FindSpineTip(self, spine_base):
 
 
     if obj.name[:6]== 'Stubby':
-        ray_direction = obj.location
-        depsgraph = bpy.context.evaluated_depsgraph_get()
-        ray_max_distance = 10
-        #ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction, distance = ray_max_distance)
-        scene = bpy.context.scene
-        #hit, location, normal, index, object, matrix = scene.ray_cast(depsgraph, spine_base, -ray_direction)
-        hit, location, normal, face_index = obj.ray_cast(spine_base, ray_direction, distance = ray_max_distance)
-        #spine_tip = ray_cast[1]
-        spine_tip = location
-        #spine_tip = obj.matrix_world @ spine_tip        
+        direction = spine_base - obj.location
+        cone_angle = 45
+        cone_length = 5
+        num_rays = 10
+
+        ray_cast_results = []
+
+        obj_matrix = obj.matrix_world
+
+        for i in range(num_rays):
+            # Calculate the cone direction for each ray
+            angle_offset = math.radians(cone_angle) * (i / (num_rays - 1) - 0.5)
+            cone_direction = mathutils.Vector(direction)
+            cone_direction.rotate(mathutils.Euler((angle_offset, 0, 0), 'XYZ'))
+
+            # Calculate the start and end points of the ray
+            start_point = obj_matrix.inverted() @ spine_base
+            end_point = obj_matrix.inverted() @ (spine_base + cone_direction.normalized() * cone_length)
+
+            _, hit_point, _, _ = obj.ray_cast(start_point, end_point - start_point)
+
+            if hit_point is not None:
+                # Transform the hit point to world coordinates
+                #hit_point = obj_matrix.inverted() @ hit_point
+                ray_cast_results.append((obj, hit_point))
+        
+        # ray_direction = obj.location
+        # depsgraph = bpy.context.evaluated_depsgraph_get()
+        # ray_max_distance = 10
+        # #ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction, distance = ray_max_distance)
+        # scene = bpy.context.scene
+        # #hit, location, normal, index, object, matrix = scene.ray_cast(depsgraph, spine_base, -ray_direction)
+        # hit, location, normal, face_index = obj.ray_cast(spine_base, ray_direction, distance = ray_max_distance)
+        # #spine_tip = ray_cast[1]
+        # spine_tip = location
+        # #spine_tip = obj.matrix_world @ spine_tip        
+        print("hits", len(ray_cast_results), "tip", max(ray_cast_results))
+        spine_tip = max(ray_cast_results)[1]
+        
         return(spine_tip)
     
     else:         
