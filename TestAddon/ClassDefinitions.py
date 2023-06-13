@@ -836,64 +836,86 @@ def find_overlapping_spine_faces(self, matched_spine_slicer_dict):
     for spine, slicer in matched_spine_slicer_dict.items():
         slicer = bpy.data.objects.get(slicer)
         spine = bpy.data.objects.get(spine)
-        spine_overlapping_indices = []
+        spine_overlapping_vertices = []
         mesh2 = spine.data
         mesh1 = slicer.data
+
         # Create sets of face indices for faster lookup
-        face_indices1 = set(range(len(mesh1.polygons)))
-        face_indices2 = set(range(len(mesh2.polygons)))
+        vert_indices1 = set(range(len(mesh1.vertices)))
+        vert_indices2 = set(range(len(mesh2.vertices)))
 
-        # Iterate over the faces of the first mesh
-        for face_index1 in face_indices1:
-            face1 = mesh1.polygons[face_index1]
-            vertices1 = [spine.matrix_world @ mesh1.vertices[index].co for index in face1.vertices]
+        # Iterate over vertices of the first mesh
+        for vertex1 in vert_indices1:
+            # Get the vertex position in world space
+            vertex1_world = slicer.matrix_world @ slicer.data.vertices[vertex1].co
+            # Iterate over vertices of the second mesh
+            for vertex2 in vert_indices2:
+                # Get the vertex position in world space
+                vertex2_world = spine.matrix_world @ spine.data.vertices[vertex2].co
 
-            # Iterate over the faces of the second icosphere
-            for face_index2 in face_indices2:
-                face2 = mesh2.polygons[face_index2]
-                vertices2 = [slicer.matrix_world @ mesh2.vertices[index].co for index in face2.vertices]
+                # Calculate the distance between the vertices
+                distance = (vertex1_world - vertex2_world).length
+                if distance < 0.5:
+                    spine_overlapping_vertices.append(vertex2)
 
-                # Perform face-face intersection test
-                intersection = False
-                for v1 in vertices1:
-                    for v2 in vertices2:
-                        if (v1 - v2).length < 0.8:  # Adjust the threshold as needed
-                            intersection = True
-                            spine_overlapping_indices.append(face_index2)
+            # Update the closest vertex if the distance is smaller
+        # # Create sets of face indices for faster lookup
+        # vert_indices1 = set(range(len(mesh1.polygons)))
+        # vert_indices2 = set(range(len(mesh2.polygons)))
+
+        # # Iterate over the faces of the first mesh
+        # for face_index1 in vert_indices1:
+        #     face1 = mesh1.polygons[face_index1]
+        #     vertices1 = [spine.matrix_world @ mesh1.vertices[index].co for index in face1.vertices]
+
+        #     # Iterate over the faces of the second icosphere
+        #     for face_index2 in vert_indices2:
+        #         face2 = mesh2.polygons[face_index2]
+        #         vertices2 = [slicer.matrix_world @ mesh2.vertices[index].co for index in face2.vertices]
+
+        #         # Perform face-face intersection test
+        #         intersection = False
+        #         for v1 in vertices1:
+        #             for v2 in vertices2:
+        #                 if (v1 - v2).length < 1:  # Adjust the threshold as needed
+        #                     intersection = True
+        #                     spine_overlapping_indices.append(face_index2)
                             
-                            break
-                    if intersection:
-                        break
+        #                     break
+        #             if intersection:
+        #                 break
 
         center_point = Vector((0, 0, 0))
-        if intersection:
-            # Iterate over the indices and accumulate their vertex positions
-            for index in spine_overlapping_indices:
-                vertex = spine.matrix_world @ spine.data.polygons[index].center
-                
-                # #Mark the spot
-                # empty = bpy.data.objects.new(name=slicer.name + "normal start", object_data=None)
-                # empty_spot = vertex 
-                # empty_spot =  slicer.matrix_world @ empty_spot        
-                # empty.location = empty_spot 
-                # # Link the empty object to the scene
-                # scene = bpy.context.scene
-                # scene.collection.objects.link(empty)        
-                # # Select the empty object
-                # empty.select_set(True)
-                # scene.view_layers.update()
-                
+        print("spine", spine.name, "verts found", len(spine_overlapping_vertices))
+        # Iterate over the indices and accumulate their vertex positions
+        for vert in spine_overlapping_vertices:
+            vertex = spine.matrix_world @ spine.data.vertices[vert].co
+            center_point += vertex
+            
+            # #Mark the spot
+            # empty = bpy.data.objects.new(name=slicer.name + "normal start", object_data=None)
+            # empty_spot = vertex 
+            # empty_spot =  slicer.matrix_world @ empty_spot        
+            # empty.location = empty_spot 
+            # # Link the empty object to the scene
+            # scene = bpy.context.scene
+            # scene.collection.objects.link(empty)        
+            # # Select the empty object
+            # empty.select_set(True)
+            # scene.view_layers.update()
+            
 
-                center_point += vertex
+        
 
-            # Divide by the number of indices to get the average
-            center_point /= len(spine_overlapping_indices)
+        # Divide by the number of indices to get the average
+        if len(spine_overlapping_vertices) > 0:
+            center_point /= len(spine_overlapping_vertices)
             spine_base = center_point
             spine_and_base_dict[spine.name] = spine_base
 
-        bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_base), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
-        obj = bpy.context.object
-        obj.name = slicer.name + "Base"
+            bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_base), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
+            obj = bpy.context.object
+            obj.name = slicer.name + "Base"
                 
     return(spine_and_base_dict)
 
