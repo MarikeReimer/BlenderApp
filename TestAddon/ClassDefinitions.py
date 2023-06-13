@@ -701,11 +701,12 @@ class ManualLength(bpy.types.Operator):
     bl_label = 'Manual Length'
 
     def execute(self, context):
-        name_spine_after_slicer(self)
+        spine_name = name_spine_after_slicer(self)
         vert_list = FindSelectedVerts(self)
         spine_base = FindSpineBase(self, vert_list)
         spine_tip = FindSpineTip(self, spine_base)
-        CreateEndpointMesh(self, spine_base, spine_tip)
+        spine_to_collection(self)
+        CreateEndpointMesh(self, spine_base, spine_tip, spine_name)
         return {'FINISHED'}
 
 #Get selected verticies
@@ -760,10 +761,10 @@ def FindSpineTip(self, spine_base):
             spine_tip = spine_coordinates_dict[spine_tip_index]
         return(spine_tip)
 
-def CreateEndpointMesh(self, spine_base, spine_tip):
+def CreateEndpointMesh(self, spine_base, spine_tip, spine_name):
     #Use the spine base and spine tip coordinates to create points in active object's collection
     #Get active object
-    obj = bpy.context.object
+    obj = bpy.data.objects.get(spine_name)
     
     #Make a mesh
     edges = []
@@ -807,8 +808,19 @@ def name_spine_after_slicer(self):
                 closest_distance = distance
                 closest_mesh = obj
     selected_obj.name = closest_mesh.name[6:]
-    return {'FINISHED'}
+    return(selected_obj.name)
 
+
+def spine_to_collection(self):    
+    spine = bpy.context.object
+    old_collection_name = spine.users_collection
+    old_collection_name = old_collection_name[0]
+    old_collection_name.objects.unlink(spine)
+    new_collection_name = spine.name
+    new_collection = bpy.data.collections.new(new_collection_name)
+    bpy.context.scene.collection.children.link(new_collection)
+    new_collection.objects.link(spine)
+    return {'FINISHED'}
 
 #Might be useful later
 
