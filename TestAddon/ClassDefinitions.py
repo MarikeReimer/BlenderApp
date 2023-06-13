@@ -691,6 +691,7 @@ def get_key_with_largest_value(dictionary):
 
 
 #This class is used to make endpoints for spines that weren't automatically segmented
+    #Assumes a single selected spine in edit mode with one/some verts selected
     #Get selected vertex/verticies, find their center and turn them into a vector called "Spine Base"
     #Compare Spine base with other vertices to find Spine Tip at the maximum distance from Spine Base
     #Create Spine base and Tip in the collection of the original spine mesh
@@ -700,9 +701,9 @@ class ManualLength(bpy.types.Operator):
     bl_label = 'Manual Length'
 
     def execute(self, context):
-        print("Executing")
+        slicer_name = find_closest_slicer(self)
+        spine_type = slicer_name[6:]
         vert_list = FindSelectedVerts(self)
-        spine_type = find_spine_type(self)
         spine_base = FindSpineBase(self, vert_list)
         spine_tip = FindSpineTip(self, spine_base, spine_type)
         CreateEndpointMesh(self, spine_base, spine_tip)
@@ -795,6 +796,32 @@ def CreateEndpointMesh(self, spine_base, spine_tip):
     collection.objects.link(endpoints)
     return {'FINISHED'}
 
+def find_closest_slicer(self):
+    # Get the selected object
+    selected_obj = bpy.context.object
+
+    # Initialize variables for tracking the closest mesh
+    closest_distance = float('inf')
+    closest_mesh = None
+
+    # Iterate over all objects in the scene
+    for obj in bpy.context.scene.objects:
+        # Check if the object is a mesh and not the selected object
+        if obj.type == 'MESH' and obj != selected_obj:
+            # Get the world space positions of the objects
+            selected_obj_world = selected_obj.matrix_world.translation
+            obj_world = obj.matrix_world.translation
+
+            # Calculate the distance between the objects
+            distance = (selected_obj_world - obj_world).length
+
+            # Update the closest mesh if the distance is smaller
+            if distance < closest_distance:
+                closest_distance = distance
+                closest_mesh = obj
+    print(closest_mesh.name)
+    return(closest_mesh.name)
+
 #Might be useful later
 
 # def paint_spines(self, modified_spine_and_slicer_dict):
@@ -833,75 +860,3 @@ def CreateEndpointMesh(self, spine_base, spine_tip):
 #             # Switch back to Object Mode
 #             bpy.ops.object.mode_set(mode='OBJECT')
 
-# More accurate approach, doesn't work yet
-# def find_overlapping_spine_faces(self, spine_list, slicer_list):
-#     spine_overlapping_indices_dict = {}
-#     spine_and_slicer_dict = {}
-#     spines_without_bases = []
-#     for spine in spine_list:
-#         slicer_overlapping_indices= []
-#         mesh1 = spine.data
-#         for slicer in slicer_list:
-#             mesh2 = slicer.data
-
-#             # Create sets of face indices for faster lookup
-#             face_indices1 = set(range(len(mesh1.polygons)))
-#             face_indices2 = set(range(len(mesh2.polygons)))
-
-#             # Iterate over the faces of the first icosphere
-#             for face_index1 in face_indices1:
-#                 face1 = mesh1.polygons[face_index1]
-#                 vertices1 = [spine.matrix_world @ mesh1.vertices[index].co for index in face1.vertices]
-
-#                 # Iterate over the faces of the second icosphere
-#                 for face_index2 in face_indices2:
-#                     face2 = mesh2.polygons[face_index2]
-#                     vertices2 = [slicer.matrix_world @ mesh2.vertices[index].co for index in face2.vertices]
-
-#                     # Perform face-face intersection test
-#                     intersection = False
-#                     for v1 in vertices1:
-#                         for v2 in vertices2:
-#                             if (v1 - v2).length < 1:  # Adjust the threshold as needed
-#                                 intersection = True
-#                                 slicer_overlapping_indices.append(face_index2)
-#                                 break
-#                         if intersection:
-#                             break
-
-#An alternative to the bvh find overlap approach.  Good idea, but doesn't work yet
-# def match_spines_to_slicers(self, spine_list, slicer_list):
-#     matched_spine_slicer_dict = {}
-#     for spine in spine_list:
-#         print('spine', spine.name, spine.location)
-#         slicer_distance = {}
-#         for slicer in slicer_list:
-#             print("slicer", slicer.name, slicer.location)
-#             #slicer = bpy.data.objects[slicer]
-#             distance = slicer.location - spine.location
-#             slicer_distance[slicer.name] = distance
-
-#         shortest_distance = min(slicer_distance.items())
-
-#         for slicer, distance in slicer_distance.items():
-#             if distance == shortest_distance[1]:
-#                 closest_slicer = shortest_distance
-#                 break
-
-#         print('closest_slicer',  closest_slicer)
-#         matched_spine_slicer_dict[spine.name] = closest_slicer
-#     return(matched_spine_slicer_dict)
-
-# def find_nearest_point(mesh, reference_point):
-#     kd = mathutils.kdtree.KDTree(len(mesh.vertices))
-
-#     # Add mesh vertices to the kd-tree
-#     for i, vert in enumerate(mesh.vertices):
-#         kd.insert(vert.co, i)
-
-#     kd.balance()  # Balance the kd-tree
-
-#     # Find the nearest vertex to the reference point
-#     nearest_vertex, index, distance = kd.find(reference_point)
-
-#     return nearest_vertex, index, distance
