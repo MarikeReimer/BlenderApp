@@ -129,8 +129,7 @@ class DiscSegmenter(bpy.types.Operator):
         spines_to_collections(self, spine_and_slicer_dict)
         #paint_spines(self, spine_and_slicer_dict)
         spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict)
-        slicer_normal_dict = find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict)
-        spine_tip_dict = find_spine_tip(self, spine_base_dict, slicer_normal_dict)
+        spine_tip_dict = find_spine_tip(self, spine_base_dict)
         create_base_and_tip(self, spine_base_dict, spine_tip_dict)
         return {'FINISHED'}
 
@@ -493,83 +492,28 @@ def find_spine_bases(self, spine_overlapping_indices_dict, modified_spine_and_sl
         slicer_bm.free()
     return(spine_base_dict)
 
-def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
-    slicer_normal_dict = {}  
-    for spine in spine_base_dict.keys():
-        slicer = spine_and_slicer_dict[spine]
-        slicer = bpy.data.objects[slicer]
-        spine = bpy.data.objects[spine]
-        closest_face = find_nearest_face(slicer, spine.location)
-        closest_face_index = closest_face.index
-
-        slicer.select_set(True) #The origin_set operator only works on selected object
-        bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
-
-        slicer_face = slicer.data.polygons[closest_face_index]
-        print(slicer.name)
-        slicer_normal = slicer_face.normal
-        slicer_normal =  slicer.matrix_world @ slicer_normal
-        slicer_normal_dict[spine.name] = slicer_normal  
-
-        #Mark the spot
-        empty = bpy.data.objects.new(name=slicer.name + "normal start", object_data=None)
-        empty_spot = slicer_face.center  
-        empty_spot =  slicer.matrix_world @ empty_spot        
-        empty.location = empty_spot 
-        # Link the empty object to the scene
-        scene = bpy.context.scene
-        scene.collection.objects.link(empty)        
-        # Select the empty object
-        empty.select_set(True)
-        scene.view_layers.update()
-
-        bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(slicer_normal), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
-        obj = bpy.context.object
-        obj.name = slicer.name + "NormalVector"
-    return(slicer_normal_dict)
-
-def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
+def find_spine_tip(self, spine_base_dict):
         spine_tip_dict = {}
-        # cone_angle = 45
-        # cone_length = 5
-        # num_rays = 10
-
         for spine in spine_base_dict.keys():
             spine_length_dict = {}
             spine_coordinates_dict = {}
             spine_base = spine_base_dict[spine]
-            depsgraph = bpy.context.evaluated_depsgraph_get()
-            ray_direction = slicer_normal_dict[spine] 
-            ray_max_distance = 10
             spine = bpy.data.objects[spine]
-
-            # tip_locations = []
 
             #Check to see if it's a stubby spine and use a Raycast method to determine Length
             if spine.name.startswith("Stubby",0, 8): 
-                # #Cone Method Ray cast
-                # results = cone_ray_cast(spine_base, ray_direction, cone_angle, cone_length, num_rays)
-                # for obj, hit_point in results:
-                #     print(f"Object: {obj.name}, Hit Point: {hit_point}")
-                #     tip_locations.append(hit_point)
-                
-                # for location in tip_locations:
-                #     location.freeze()
-                #     length = (location - spine_base).length
-                #     spine_length_dict[location] = length
-                # spine_tip = get_key_with_largest_value(spine_length_dict)
-                # spine_tip = spine.matrix_world @ spine_tip
+                tip_locations = {}
+                results = cone_raycast(self, spine_base, spine)
+                for location in results:
+                    distance = spine.location - location
+                    index =  results.index(location)
+                    tip_locations[index] = distance
+                farthest_location_index = get_key_with_largest_value(tip_locations)
+                spine_tip = results[farthest_location_index]
 
-                ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, -ray_direction, distance = ray_max_distance)
-                spine_tip = ray_cast[1]
-                spine_tip_location = spine.matrix_world @ spine_tip
+                spine_tip = spine.matrix_world @ spine_tip
                  
                 spine_tip_dict[spine] = spine_tip
-
-                #Mark the spot
-                bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_tip), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0))
-                obj = bpy.context.object
-                obj.name = spine.name + "stubby tip"
 
             else:
                 #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"   
@@ -597,7 +541,6 @@ def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
         return(spine_tip_dict)
 
 #Create a mesh with spine_base and spine_tip
-
 def create_base_and_tip(self, spine_base_dict, spine_tip_dict): 
     bpy.ops.object.select_all(action='DESELECT')  
     for spine in spine_tip_dict.keys():
@@ -620,43 +563,43 @@ def create_base_and_tip(self, spine_base_dict, spine_tip_dict):
         obj.select_set(True)
     return {'FINISHED'}          
 
-def find_slicer_center(slicer, spine_base):
-    bpy.ops.object.mode_set(mode='EDIT')
-    me = slicer.data
-    bm = bmesh.from_edit_mesh(me)
-    bvhtree = BVHTree.FromBMesh(bm)
-    slicer_closest_spot, norm, idx, d = bvhtree.find_nearest(spine_base)
-    bpy.ops.object.mode_set(mode='OBJECT')
-    return(slicer_closest_spot)
+# def find_slicer_center(slicer, spine_base):
+#     bpy.ops.object.mode_set(mode='EDIT')
+#     me = slicer.data
+#     bm = bmesh.from_edit_mesh(me)
+#     bvhtree = BVHTree.FromBMesh(bm)
+#     slicer_closest_spot, norm, idx, d = bvhtree.find_nearest(spine_base)
+#     bpy.ops.object.mode_set(mode='OBJECT')
+#     return(slicer_closest_spot)
 
-def find_nearest_face(mesh_object, target_vector):
-    mesh = mesh_object.data
-    matrix = mesh_object.matrix_world
+# def find_nearest_face(mesh_object, target_vector):
+#     mesh = mesh_object.data
+#     matrix = mesh_object.matrix_world
     
-    # Convert the target vector to the object's local coordinate space
-    local_target_vector = matrix.inverted() @ target_vector
+#     # Convert the target vector to the object's local coordinate space
+#     local_target_vector = matrix.inverted() @ target_vector
     
-    # Initialize variables for tracking the nearest face
-    nearest_distance = float('inf')
-    nearest_face = None
+#     # Initialize variables for tracking the nearest face
+#     nearest_distance = float('inf')
+#     nearest_face = None
     
-    # Iterate over all faces in the mesh
-    for face in mesh.polygons:
-        # Calculate the center of the face in local coordinates
-        center = matrix @ face.center
+#     # Iterate over all faces in the mesh
+#     for face in mesh.polygons:
+#         # Calculate the center of the face in local coordinates
+#         center = matrix @ face.center
         
-        # Calculate the distance between the center and the target vector
-        distance = (center - local_target_vector).length
+#         # Calculate the distance between the center and the target vector
+#         distance = (center - local_target_vector).length
         
-        # Check if this face is closer than the previous closest face
-        if distance < nearest_distance:
-            nearest_distance = distance
-            nearest_face = face
+#         # Check if this face is closer than the previous closest face
+#         if distance < nearest_distance:
+#             nearest_distance = distance
+#             nearest_face = face
     
-    # Return the nearest face
-    return nearest_face
+#     # Return the nearest face
+#     return nearest_face
 
-def cone_ray_cast(origin, direction, cone_angle, cone_length, num_rays):
+# def cone_ray_cast(origin, direction, cone_angle, cone_length, num_rays):
     scene = bpy.context.scene
     ray_cast_results = []
 
@@ -740,15 +683,9 @@ def FindSpineTip(self, spine_base):
 
     if obj.name[:6]== 'Stubby':
         ray_direction = obj.location
-        depsgraph = bpy.context.evaluated_depsgraph_get()
         ray_max_distance = 10
-        #ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction, distance = ray_max_distance)
-        scene = bpy.context.scene
-        #hit, location, normal, index, object, matrix = scene.ray_cast(depsgraph, spine_base, -ray_direction)
         hit, location, normal, face_index = obj.ray_cast(spine_base, ray_direction, distance = ray_max_distance)
-        #spine_tip = ray_cast[1]
-        spine_tip = location
-        #spine_tip = obj.matrix_world @ spine_tip        
+        spine_tip = location   
         return(spine_tip)
     
     else:         
@@ -822,6 +759,34 @@ def spine_to_collection(self):
     new_collection.objects.link(spine)
     return {'FINISHED'}
 
+def cone_raycast(self, spine_base, obj):
+    direction = obj.location - spine_base 
+    cone_angle = 45
+    cone_length = 5
+    num_rays = 10
+    
+    ray_cast_results = []
+
+    obj_matrix = obj.matrix_world
+
+    for i in range(num_rays):
+        # Calculate the cone direction for each ray
+        angle_offset = math.radians(cone_angle) * (i / (num_rays - 1) - 0.5)
+        cone_direction = mathutils.Vector(direction)
+        cone_direction.rotate(mathutils.Euler((angle_offset, 0, 0), 'XYZ'))
+
+        # Calculate the start and end points of the ray
+        start_point = obj_matrix.inverted() @ spine_base
+        end_point = obj_matrix.inverted() @ (spine_base + cone_direction.normalized() * cone_length)
+
+        _, hit_point, _, _ = obj.ray_cast(start_point, end_point - start_point)
+
+        if hit_point is not None:
+            # Transform the hit point to world coordinates
+            #hit_point = obj_matrix.inverted() @ hit_point
+            ray_cast_results.append((hit_point))
+    return(ray_cast_results)
+
 #Might be useful later
 
 # def paint_spines(self, modified_spine_and_slicer_dict):
@@ -859,4 +824,3 @@ def spine_to_collection(self):
 
 #             # Switch back to Object Mode
 #             bpy.ops.object.mode_set(mode='OBJECT')
-
