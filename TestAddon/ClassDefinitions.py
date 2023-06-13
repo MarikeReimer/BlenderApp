@@ -530,39 +530,27 @@ def find_normal_vectors(self, spine_base_dict, spine_and_slicer_dict):
 
 def find_spine_tip(self, spine_base_dict, slicer_normal_dict):
         spine_tip_dict = {}
-        # cone_angle = 45
-        # cone_length = 5
-        # num_rays = 10
-
         for spine in spine_base_dict.keys():
             spine_length_dict = {}
             spine_coordinates_dict = {}
             spine_base = spine_base_dict[spine]
-            depsgraph = bpy.context.evaluated_depsgraph_get()
             ray_direction = slicer_normal_dict[spine] 
-            ray_max_distance = 10
             spine = bpy.data.objects[spine]
-
-            # tip_locations = []
 
             #Check to see if it's a stubby spine and use a Raycast method to determine Length
             if spine.name.startswith("Stubby",0, 8): 
-                # #Cone Method Ray cast
-                # results = cone_ray_cast(spine_base, ray_direction, cone_angle, cone_length, num_rays)
-                # for obj, hit_point in results:
-                #     print(f"Object: {obj.name}, Hit Point: {hit_point}")
-                #     tip_locations.append(hit_point)
+                tip_locations = {}
+                results = cone_raycast(self, spine_base, spine)
+                for location in results:
+                    distance = spine.location - location
+                    index =  results.index(location)
+                    tip_locations[index] = distance
+                farthest_location_index = get_key_with_largest_value(tip_locations)
+                spine_tip = results[farthest_location_index]
                 
-                # for location in tip_locations:
-                #     location.freeze()
-                #     length = (location - spine_base).length
-                #     spine_length_dict[location] = length
-                # spine_tip = get_key_with_largest_value(spine_length_dict)
-                # spine_tip = spine.matrix_world @ spine_tip
-
-                ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, -ray_direction, distance = ray_max_distance)
-                spine_tip = ray_cast[1]
-                spine_tip_location = spine.matrix_world @ spine_tip
+                # ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, -ray_direction, distance = ray_max_distance)
+                # spine_tip = ray_cast[1]
+                spine_tip = spine.matrix_world @ spine_tip
                  
                 spine_tip_dict[spine] = spine_tip
 
@@ -739,17 +727,10 @@ def FindSpineTip(self, spine_base):
 
 
     if obj.name[:6]== 'Stubby':
-        
         ray_direction = obj.location
-        depsgraph = bpy.context.evaluated_depsgraph_get()
         ray_max_distance = 10
-        #ray_cast = bpy.context.scene.ray_cast(depsgraph, spine_base, ray_direction, distance = ray_max_distance)
-        scene = bpy.context.scene
-        #hit, location, normal, index, object, matrix = scene.ray_cast(depsgraph, spine_base, -ray_direction)
         hit, location, normal, face_index = obj.ray_cast(spine_base, ray_direction, distance = ray_max_distance)
-        #spine_tip = ray_cast[1]
-        spine_tip = location
-        #spine_tip = obj.matrix_world @ spine_tip        
+        spine_tip = location   
         return(spine_tip)
     
     else:         
@@ -861,3 +842,30 @@ def spine_to_collection(self):
 #             # Switch back to Object Mode
 #             bpy.ops.object.mode_set(mode='OBJECT')
 
+def cone_raycast(self, spine_base, obj):
+    direction = obj.location - spine_base 
+    cone_angle = 45
+    cone_length = 5
+    num_rays = 10
+    
+    ray_cast_results = []
+
+    obj_matrix = obj.matrix_world
+
+    for i in range(num_rays):
+        # Calculate the cone direction for each ray
+        angle_offset = math.radians(cone_angle) * (i / (num_rays - 1) - 0.5)
+        cone_direction = mathutils.Vector(direction)
+        cone_direction.rotate(mathutils.Euler((angle_offset, 0, 0), 'XYZ'))
+
+        # Calculate the start and end points of the ray
+        start_point = obj_matrix.inverted() @ spine_base
+        end_point = obj_matrix.inverted() @ (spine_base + cone_direction.normalized() * cone_length)
+
+        _, hit_point, _, _ = obj.ray_cast(start_point, end_point - start_point)
+
+        if hit_point is not None:
+            # Transform the hit point to world coordinates
+            #hit_point = obj_matrix.inverted() @ hit_point
+            ray_cast_results.append((hit_point))
+    return(ray_cast_results)
