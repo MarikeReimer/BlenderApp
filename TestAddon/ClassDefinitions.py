@@ -701,11 +701,10 @@ class ManualLength(bpy.types.Operator):
     bl_label = 'Manual Length'
 
     def execute(self, context):
-        slicer_name = find_closest_slicer(self)
-        spine_type = slicer_name[6:]
+        name_spine_after_slicer(self)
         vert_list = FindSelectedVerts(self)
         spine_base = FindSpineBase(self, vert_list)
-        spine_tip = FindSpineTip(self, spine_base, spine_type)
+        spine_tip = FindSpineTip(self, spine_base)
         CreateEndpointMesh(self, spine_base, spine_tip)
         return {'FINISHED'}
 
@@ -723,18 +722,6 @@ def FindSelectedVerts(self):
     bpy.ops.object.mode_set(mode=mode)
     return(vert_list)
 
-#Find spine type:
-def find_spine_type(self):
-    spine_type = ''
-    obj = bpy.context.active_object
-    name = obj.name
-    if name.startswith('Stubby'):
-        spine_type = 'stubby'
-    else:
-        spine_type = 'other'
-    return(spine_type)
-
-
 #Given several selected verticies find the center
 def FindSpineBase(self,vert_list):  #TODO: rename to tip
     x, y, z = [ sum( [v.co[i] for v in vert_list] ) for i in range(3)] #Tested this - it does need to be 3
@@ -744,13 +731,13 @@ def FindSpineBase(self,vert_list):  #TODO: rename to tip
     return(spine_base)
 
 #Compare the distance between the spine base and all other verices to find the farthest point
-def FindSpineTip(self, spine_base, spine_type):
+def FindSpineTip(self, spine_base):
     spine_length_dict = {}
     spine_coordinates_dict = {}
     obj = bpy.context.active_object
 
-    if spine_type == 'stubby':
-        obj = bpy.context.active_object
+
+    if obj.name[:6]== 'Stubby':
         ray_direction = obj.location
         depsgraph = bpy.context.evaluated_depsgraph_get()
         ray_max_distance = 10
@@ -796,7 +783,7 @@ def CreateEndpointMesh(self, spine_base, spine_tip):
     collection.objects.link(endpoints)
     return {'FINISHED'}
 
-def find_closest_slicer(self):
+def name_spine_after_slicer(self):
     # Get the selected object
     selected_obj = bpy.context.object
 
@@ -819,8 +806,9 @@ def find_closest_slicer(self):
             if distance < closest_distance:
                 closest_distance = distance
                 closest_mesh = obj
-    print(closest_mesh.name)
-    return(closest_mesh.name)
+    selected_obj.name = closest_mesh.name[6:]
+    return {'FINISHED'}
+
 
 #Might be useful later
 
