@@ -696,7 +696,7 @@ def spine_to_collection(self):
 
 def cone_raycast(self, spine_base, obj):
     direction = obj.location - spine_base 
-    cone_angle = 45
+    cone_angle = 15
     cone_length = 5
     num_rays = 10
     
