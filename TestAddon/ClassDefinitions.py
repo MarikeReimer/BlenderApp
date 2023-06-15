@@ -509,41 +509,64 @@ def find_spine_tip(self, spine_base_dict):
                     index =  results.index(location)
                     tip_locations[index] = distance
                 farthest_location_index = get_key_with_largest_value(tip_locations)
-                spine_tip = results[farthest_location_index]
+                spine_tip_location = results[farthest_location_index]
 
-                spine_tip = spine.matrix_world @ spine_tip
+                spine_tip = spine.matrix_world @ spine_tip_location
                  
                 spine_tip_dict[spine] = spine_tip
                 
-                #Mark the tip
-                bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_tip), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0)) 
-                obj = bpy.context.object
-                obj.name = spine.name + "tip"
-
+                #Mark the spot
+                empty = bpy.data.objects.new(name=spine.name + "tip", object_data=None)
+                empty_spot = spine_tip  
+                #empty_spot =  spine.matrix_world @ empty_spot        
+                empty.location = empty_spot 
+                # Link the empty object to the scene
+                scene = bpy.context.scene
+                scene.collection.objects.link(empty)        
+                # Select the empty object
+                empty.select_set(True)
+                scene.view_layers.update()
+                
             else:
-                #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"   
-                spine_length_dict = {}
-                spine_coordinates_dict = {}
+                # #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"   
+                # spine_length_dict = {}
+                # spine_coordinates_dict = {}
                                         
-                for vert in spine.data.vertices:
-                #for vert in spine_mesh.verts:
-                    length = math.dist(vert.co, spine_base)         
-                    spine_length_dict[vert.index] = length
-                    spine_coordinates_dict[vert.index] = vert.co                
+                # for vert in spine.data.vertices:
+                #     length = math.dist(vert.co, spine_base)         
+                #     spine_length_dict[vert.index] = length
+                #     spine_coordinates_dict[vert.index] = vert.co                
 
-                spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
-                spine_tip = spine_coordinates_dict[spine_tip_index]
-                spine_tip_location = spine.matrix_world @ spine_tip
+                # spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
+                # spine_tip = spine_coordinates_dict[spine_tip_index]
+                # spine_tip_location = spine.matrix_world @ spine_tip
 
-                #Mark the tip
-                bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_tip_location), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0)) 
-                obj = bpy.context.object
-                obj.name = spine.name + "tip"
+                # #Clear dictionary between loops    
+                # spine_length_dict = {}
+                # spine_coordinates_dict = {}
+                vertices = [spine.matrix_world @ v.co for v in spine.data.vertices]            
 
-                #Clear dictionary between loops    
-                spine_length_dict = {}
-                spine_coordinates_dict = {}            
-                spine_tip_dict[spine] = spine_tip_location
+                # Initialize the farthest distance to zero
+                farthest_distance = 0.0
+
+                # Loop through all vertices and compare distances
+                for index, vertex in enumerate(vertices):
+                    dist = (spine_base - vertex).length
+                    if dist > farthest_distance:
+                        farthest_distance = dist
+                        spine_tip = vertex
+                spine_tip_dict[spine] = spine_tip
+                # #Mark the spot
+                # empty = bpy.data.objects.new(name=spine.name + "tip", object_data=None)
+                # empty_spot = spine_tip_location  
+                # #empty_spot =  spine.matrix_world @ empty_spot        
+                # empty.location = empty_spot 
+                # # Link the empty object to the scene
+                # scene = bpy.context.scene
+                # scene.collection.objects.link(empty)        
+                # # Select the empty object
+                # empty.select_set(True)
+                # scene.view_layers.update()
 
         return(spine_tip_dict)
 
@@ -684,7 +707,7 @@ def name_spine_after_slicer(self):
     # Iterate over all objects in the scene
     for obj in bpy.context.scene.objects:
         # Check if the object is a mesh and not the selected object
-        if obj.type == 'MESH' and obj != selected_obj:
+        if obj.type == 'MESH' and obj != selected_obj and obj.name != "Object":
             # Get the world space positions of the objects
             selected_obj_world = selected_obj.matrix_world.translation
             obj_world = obj.matrix_world.translation
