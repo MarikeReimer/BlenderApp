@@ -514,6 +514,11 @@ def find_spine_tip(self, spine_base_dict):
                 spine_tip = spine.matrix_world @ spine_tip
                  
                 spine_tip_dict[spine] = spine_tip
+                
+                #Mark the tip
+                bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_tip), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0)) 
+                obj = bpy.context.object
+                obj.name = spine.name + "tip"
 
             else:
                 #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"   
@@ -529,6 +534,8 @@ def find_spine_tip(self, spine_base_dict):
                 spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
                 spine_tip = spine_coordinates_dict[spine_tip_index]
                 spine_tip_location = spine.matrix_world @ spine_tip
+
+                #Mark the tip
                 bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_tip_location), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0)) 
                 obj = bpy.context.object
                 obj.name = spine.name + "tip"
@@ -560,6 +567,8 @@ def create_base_and_tip(self, spine_base_dict, spine_tip_dict):
         verts = [spine_base, spine_tip]
 
         endpoint_mesh.from_pydata(verts, [], [])
+        bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
+        bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
         obj.select_set(True)
     return {'FINISHED'}          
 
@@ -621,8 +630,12 @@ def FindSpineTip(self, spine_base):
         ray_max_distance = 10
         hit, location, normal, face_index = obj.ray_cast(spine_base, ray_direction, distance = ray_max_distance)
         spine_tip = location   
-        return(spine_tip)
+
     
+        #Mark the tip
+        bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_tip), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0)) 
+        return(spine_tip)
+
     else:         
         for vert in bpy.context.active_object.data.vertices:
             length = math.dist(vert.co, spine_base)         
@@ -631,12 +644,17 @@ def FindSpineTip(self, spine_base):
 
             spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
             spine_tip = spine_coordinates_dict[spine_tip_index]
+
+        #Mark the tip
+        bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_tip), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0)) 
+
         return(spine_tip)
 
 def CreateEndpointMesh(self, spine_base, spine_tip, spine_name):
     #Use the spine base and spine tip coordinates to create points in active object's collection
     #Get active object
-    obj = bpy.data.objects.get(spine_name)
+    #obj = bpy.data.objects.get(spine_name)
+    obj = bpy.data.objects[spine_name]
     
     #Make a mesh
     edges = []
@@ -659,7 +677,6 @@ def CreateEndpointMesh(self, spine_base, spine_tip, spine_name):
 def name_spine_after_slicer(self):
     # Get the selected object
     selected_obj = bpy.context.object
-
     # Initialize variables for tracking the closest mesh
     closest_distance = float('inf')
     closest_mesh = None
@@ -680,7 +697,8 @@ def name_spine_after_slicer(self):
                 closest_distance = distance
                 closest_mesh = obj
     selected_obj.name = closest_mesh.name[6:]
-    return(selected_obj.name)
+    spine_name = selected_obj.name 
+    return(spine_name)
 
 
 def spine_to_collection(self):    
