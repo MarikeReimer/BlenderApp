@@ -557,16 +557,16 @@ def find_spine_tip(self, spine_base_dict):
                         spine_tip = vertex
                 spine_tip_dict[spine] = spine_tip
                 # #Mark the spot
-                # empty = bpy.data.objects.new(name=spine.name + "tip", object_data=None)
-                # empty_spot = spine_tip_location  
-                # #empty_spot =  spine.matrix_world @ empty_spot        
-                # empty.location = empty_spot 
-                # # Link the empty object to the scene
-                # scene = bpy.context.scene
-                # scene.collection.objects.link(empty)        
-                # # Select the empty object
-                # empty.select_set(True)
-                # scene.view_layers.update()
+                empty = bpy.data.objects.new(name=spine.name + "tip", object_data=None)
+                empty_spot = spine_tip_location  
+                #empty_spot =  spine.matrix_world @ empty_spot        
+                empty.location = empty_spot 
+                # Link the empty object to the scene
+                scene = bpy.context.scene
+                scene.collection.objects.link(empty)        
+                # Select the empty object
+                empty.select_set(True)
+                scene.view_layers.update()
 
         return(spine_tip_dict)
 
