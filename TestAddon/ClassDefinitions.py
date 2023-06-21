@@ -81,7 +81,7 @@ class NeuronAnalysis(bpy.types.Panel):
 
         #Add button that separates meshes        
         row = layout.row()
-        row.operator('object.check_booleans', text = 'Check Slicer Booleans')
+        row.operator('object.check_booleans', text = 'Apply Slicers')
         
         #Add button that moves spines to folders and adds a spine base and tip
         row = layout.row()
@@ -131,7 +131,6 @@ class CheckBooleans(bpy.types.Operator):
 
             # Run the script to apply Boolean operations
             try:
-                print("trying", obj.name)
                 bpy.ops.object.modifier_apply(modifier="Boolean")
             except Exception as e:
                 print("Error occurred while applying Boolean operation to the original mesh:", str(e))
@@ -144,6 +143,7 @@ class CheckBooleans(bpy.types.Operator):
         #     bpy.data.meshes.remove(obj.data)
 
         # original_mesh.modifiers.remove(original_mesh.modifiers["Boolean"])
+        bpy.ops.mesh.separate(type='LOOSE')
         bpy.ops.object.select_all(action='DESELECT')
         return {'FINISHED'}
 
