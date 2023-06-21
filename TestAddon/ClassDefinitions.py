@@ -78,6 +78,10 @@ class NeuronAnalysis(bpy.types.Panel):
         #Add button that separates meshes        
         row = layout.row()
         row.operator('object.exploding_bits', text = 'Separate Meshes')
+
+        #Add button that separates meshes        
+        row = layout.row()
+        row.operator('object.check_booleans', text = 'Check Slicer Booleans')
         
         #Add button that moves spines to folders and adds a spine base and tip
         row = layout.row()
@@ -103,6 +107,44 @@ class ExplodingBits(bpy.types.Operator):
         object = bpy.context.active_object
         #Split it into pieces
         bpy.ops.mesh.separate(type='LOOSE')
+        return {'FINISHED'}
+
+#Row operator that applies "separate by loose parts" to mesh    
+class CheckBooleans(bpy.types.Operator):
+    bl_idname = 'object.check_booleans' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'Check Booleans'
+    
+    def execute(self, context):
+        object = bpy.context.active_object
+        original_mesh_name = object.name
+        a=bpy.context.view_layer.active_layer_collection.collection
+        collection_name = a.name
+
+        # Get references to the original mesh and the collection
+        original_mesh = bpy.data.objects[original_mesh_name]
+        original_mesh.select_set(True)
+        bpy.context.view_layer.objects.active = original_mesh
+        boolean_meshes_collection = bpy.data.collections[collection_name]
+
+        for obj in boolean_meshes_collection.objects:
+            obj.select_set(True)
+
+            # Run the script to apply Boolean operations
+            try:
+                print("trying", obj.name)
+                bpy.ops.object.modifier_apply(modifier="Boolean")
+            except Exception as e:
+                print("Error occurred while applying Boolean operation to the original mesh:", str(e))
+                bpy.ops.object.select_all(action='DESELECT')
+                exit()
+
+        # # Remove the applied modifiers and clean up mesh data
+        # for obj in boolean_meshes_collection.objects:
+        #     boolean_meshes_collection.objects.unlink(obj)
+        #     bpy.data.meshes.remove(obj.data)
+
+        # original_mesh.modifiers.remove(original_mesh.modifiers["Boolean"])
+        bpy.ops.object.select_all(action='DESELECT')
         return {'FINISHED'}
 
 

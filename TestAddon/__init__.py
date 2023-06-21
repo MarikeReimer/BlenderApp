@@ -8,6 +8,8 @@ from . ClassDefinitions import ExplodingBits
 from . ClassDefinitions import DiscSegmenter
 from . ClassDefinitions import ManualLength
 from . ClassDefinitions import WriteNWB
+from . ClassDefinitions import CheckBooleans
+
 
 #Information about the Addon created by the Blender Development VSCode Extension
 bl_info = {
@@ -26,6 +28,7 @@ def register():
     bpy.utils.register_class(NeuronAnalysis)
     #operators
     bpy.utils.register_class(ExplodingBits)
+    bpy.utils.register_class(CheckBooleans)
     bpy.utils.register_class(DiscSegmenter)
     bpy.utils.register_class(ManualLength)
     bpy.utils.register_class(WriteNWB)
@@ -108,6 +111,7 @@ def unregister():
 
     #operators
     bpy.utils.unregister_class(ExplodingBits)
+    bpy.utils.unregister_class(CheckBooleans)
     bpy.utils.unregister_class(DiscSegmenter)
     bpy.utils.unregister_class(ManualLength)
     bpy.utils.unregister_class(WriteNWB)
