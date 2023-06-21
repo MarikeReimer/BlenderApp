@@ -115,36 +115,108 @@ class CheckBooleans(bpy.types.Operator):
     bl_label = 'Check Booleans'
     
     def execute(self, context):
+        # Get the active object and its name
         object = bpy.context.active_object
         original_mesh_name = object.name
-        a=bpy.context.view_layer.active_layer_collection.collection
-        collection_name = a.name
+
+        # Get the active collection and its name
+        collection = bpy.context.collection
+        collection_name = collection.name
 
         # Get references to the original mesh and the collection
         original_mesh = bpy.data.objects[original_mesh_name]
         original_mesh.select_set(True)
         bpy.context.view_layer.objects.active = original_mesh
         boolean_meshes_collection = bpy.data.collections[collection_name]
+        mesh_collection = []
 
         for obj in boolean_meshes_collection.objects:
+            mesh_collection.append(obj)
+
+        for obj in mesh_collection:
             obj.select_set(True)
+            boolean_meshes_collection.objects.unlink(obj)
+            collection.objects.link(obj)
+            obj.select_set(False)
 
-            # Run the script to apply Boolean operations
-            try:
-                bpy.ops.object.modifier_apply(modifier="Boolean")
-            except Exception as e:
-                print("Error occurred while applying Boolean operation to the original mesh:", str(e))
-                bpy.ops.object.select_all(action='DESELECT')
-                exit()
+        # Run the script to apply Boolean operations
+        try:
+            bpy.ops.object.modifier_apply(modifier="Boolean")
+        except Exception as e:
+            print("Error occurred while applying Boolean operation to the original mesh:", str(e))
+            bpy.ops.object.select_all(action='DESELECT')
+            exit()
 
-        # # Remove the applied modifiers and clean up mesh data
-        # for obj in boolean_meshes_collection.objects:
-        #     boolean_meshes_collection.objects.unlink(obj)
-        #     bpy.data.meshes.remove(obj.data)
-
-        # original_mesh.modifiers.remove(original_mesh.modifiers["Boolean"])
         bpy.ops.mesh.separate(type='LOOSE')
         bpy.ops.object.select_all(action='DESELECT')
+        bpy.context.view_layer.update()
+
+        # # Get the active object and its name
+        # object = bpy.context.active_object
+        # original_mesh_name = object.name
+
+        # # Get the active collection and its name
+        # collection = bpy.context.collection
+        # collection_name = collection.name
+
+        # # Get references to the original mesh and the collection
+        # original_mesh = bpy.data.objects[original_mesh_name]
+        # original_mesh.select_set(True)
+        # bpy.context.view_layer.objects.active = original_mesh
+        # boolean_meshes_collection = bpy.data.collections[collection_name]
+        # mesh_collection = []
+
+        # for obj in boolean_meshes_collection.objects:
+        #     mesh_collection.append(obj)
+
+        # for obj in mesh_collection:
+        #     obj.select_set(True)
+        #     boolean_meshes_collection.objects.unlink(obj)
+        #     collection.objects.link(obj)
+
+        # # Run the script to apply Boolean operations
+        # try:
+        #     bpy.ops.object.modifier_apply(modifier="Boolean")
+        # except Exception as e:
+        #     print("Error occurred while applying Boolean operation to the original mesh:", str(e))
+        #     bpy.ops.object.select_all(action='DESELECT')
+        #     exit()
+
+        # bpy.ops.mesh.separate(type='LOOSE')
+        # bpy.ops.object.select_all(action='DESELECT')
+        # bpy.context.view_layer.update()
+        # # object = bpy.context.active_object
+        # # original_mesh_name = object.name
+        # # collection =bpy.context.view_layer.active_layer_collection.collection
+        # # collection_name = collection.name
+
+        # # # Get references to the original mesh and the collection
+        # # original_mesh = bpy.data.objects[original_mesh_name]
+        # # original_mesh.select_set(True)
+        # # bpy.context.view_layer.objects.active = original_mesh
+        # # boolean_meshes_collection = bpy.data.collections[collection_name]
+        # # mesh_collection = []
+
+        # # for obj in boolean_meshes_collection.objects:
+        # #     mesh_collection.append(obj)
+
+        # # for obj in mesh_collection:
+        # #     obj.select_set(True)
+        # #     collection.objects.unlink(obj)
+        # #     bpy.context.collection.objects.link(obj)
+
+        # # # Run the script to apply Boolean operations
+        # # try:
+        # #     bpy.ops.object.modifier_apply(modifier="Boolean")
+
+        # # except Exception as e:
+        # #     print("Error occurred while applying Boolean operation to the original mesh:", str(e))
+        # #     bpy.ops.object.select_all(action='DESELECT')
+        # #     exit()
+
+        # # bpy.ops.mesh.separate(type='LOOSE')
+        # # bpy.ops.object.select_all(action='DESELECT')
+        # # bpy.context.view_layer.update()
         return {'FINISHED'}
 
 
