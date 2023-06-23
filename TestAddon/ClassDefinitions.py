@@ -148,8 +148,9 @@ class CheckBooleans(bpy.types.Operator):
 
             if len(bpy.data.objects) == number_objects:
                 obj.name = obj.name + "needs inspection"
-            # else:
-            #     number_objects = len(bpy.data.objects)
+                #print(obj.name, len(bpy.data.objects), "if loop")
+            else:
+                number_objects = len(bpy.data.objects)
 
         bpy.context.view_layer.update()
         return {'FINISHED'}
