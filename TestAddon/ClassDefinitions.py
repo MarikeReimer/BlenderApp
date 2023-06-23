@@ -109,7 +109,8 @@ class ExplodingBits(bpy.types.Operator):
         bpy.ops.mesh.separate(type='LOOSE')
         return {'FINISHED'}
 
-#Row operator that applies "separate by loose parts" to mesh    
+#Row operator that applies "separate by loose parts" to mesh  
+#For our use original_mesh_name means dendrite, booleans refers to cylinders/slicers  
 class CheckBooleans(bpy.types.Operator):
     bl_idname = 'object.check_booleans' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'Check Booleans'
@@ -123,6 +124,8 @@ class CheckBooleans(bpy.types.Operator):
         collection = bpy.context.collection
         collection_name = collection.name
 
+        number_objects = len(bpy.data.objects)
+
         # Get references to the original mesh and the collection
         original_mesh = bpy.data.objects[original_mesh_name]
         original_mesh.select_set(True)
@@ -130,26 +133,24 @@ class CheckBooleans(bpy.types.Operator):
         boolean_meshes_collection = bpy.data.collections[collection_name]
         mesh_collection = []
 
-        bool = original_mesh.modifiers.new(name='booly', type='BOOLEAN')
-
         for obj in boolean_meshes_collection.objects:
             mesh_collection.append(obj)
 
         for obj in mesh_collection:
-            #obj.select_set(True)
+            bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
+            bool_modifier.operation = 'DIFFERENCE'
+            bool_modifier.object = obj
+            bool_modifier.show_viewport = False
+            bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
+            print(obj.name, len(bpy.data.objects), "pre separate")
+            bpy.ops.mesh.separate(type='LOOSE')
+            print(obj.name, len(bpy.data.objects), "post separate")
 
-            bool.object = obj
-            print(obj.name)
-            bool.operation = 'DIFFERENCE'
-            #bpy.ops.object.modifier_apply(modifier = 'BOOLEAN', report = True)
-            # boolean_meshes_collection.objects.unlink(obj)
-            # collection.objects.link(obj)
-            #obj.select_set(False)
-            #bpy.ops.mesh.separate(type='LOOSE')
+            if len(bpy.data.objects) == number_objects:
+                obj.name = obj.name + "needs inspection"
+            # else:
+            #     number_objects = len(bpy.data.objects)
 
-        bpy.ops.object.modifier_apply(modifier = 'BOOLEAN', report = True)
-        bpy.ops.mesh.separate(type='LOOSE')
-        #bpy.ops.object.select_all(action='DESELECT')
         bpy.context.view_layer.update()
         return {'FINISHED'}
 
