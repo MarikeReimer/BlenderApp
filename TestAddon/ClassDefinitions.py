@@ -119,6 +119,7 @@ class CheckBooleans(bpy.types.Operator):
         # Get the active object and its name
         object = bpy.context.active_object
         original_mesh_name = object.name
+        original_mesh_collection = object.users_collection[0]
 
         # Get the active collection and its name
         collection = bpy.context.collection
@@ -137,6 +138,7 @@ class CheckBooleans(bpy.types.Operator):
             mesh_collection.append(obj)
 
         for obj in mesh_collection:
+            self.report({'INFO'}, f"Processing {obj} is SLOW")
             bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
             bool_modifier.operation = 'DIFFERENCE'
             bool_modifier.object = obj
@@ -148,8 +150,15 @@ class CheckBooleans(bpy.types.Operator):
 
             if len(bpy.data.objects) == number_objects:
                 obj.name = obj.name + "needs inspection"
-            # else:
-            #     number_objects = len(bpy.data.objects)
+                collection.objects.unlink(obj)
+                original_mesh_collection.objects.link(obj)
+                bpy.context.view_layer.update()
+                break
+                #print(obj.name, len(bpy.data.objects), "if loop")
+            else:
+                number_objects = len(bpy.data.objects)
+                collection.objects.unlink(obj)
+                original_mesh_collection.objects.link(obj)
 
         bpy.context.view_layer.update()
         return {'FINISHED'}
