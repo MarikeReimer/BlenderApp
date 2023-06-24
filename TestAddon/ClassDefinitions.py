@@ -472,6 +472,7 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
     spines_without_bases = []
 
     for spine in spine_list:
+        print("spine", spine.name)
         intersects = False
         spine_bm = bmesh.new()
         spine_bm.from_mesh(bpy.context.scene.objects[spine.name].data) 
@@ -479,6 +480,7 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
         spine_bm.faces.ensure_lookup_table() 
         spine_bvh = BVHTree.FromBMesh(spine_bm)     
         for slicer in slicer_list:
+            print("slicer", slicer.name)
             slicer_bm = bmesh.new()
             slicer_bm.from_mesh(bpy.context.scene.objects[slicer.name].data) 
             slicer_bm.transform(slicer.matrix_world)
@@ -616,7 +618,7 @@ def find_spine_tip(self, spine_base_dict):
                 spine_tip_dict[spine] = spine_tip
                 # #Mark the spot
                 empty = bpy.data.objects.new(name=spine.name + "tip", object_data=None)
-                empty_spot = spine_tip_location  
+                empty_spot = spine_tip
                 #empty_spot =  spine.matrix_world @ empty_spot        
                 empty.location = empty_spot 
                 # Link the empty object to the scene
