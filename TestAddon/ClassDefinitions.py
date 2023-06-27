@@ -135,6 +135,8 @@ class CheckBooleans(bpy.types.Operator):
         boolean_meshes_collection = bpy.data.collections[collection_name]
         mesh_collection = []
 
+        vert_threshold = 1000
+
         for obj in boolean_meshes_collection.objects:
             mesh_collection.append(obj)
             bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
@@ -144,7 +146,7 @@ class CheckBooleans(bpy.types.Operator):
             bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
             print(obj.name, len(original_mesh.data.vertices), "post bool")
 
-            if len(original_mesh.data.vertices) < 1000:
+            if len(original_mesh.data.vertices) < vert_threshold:
                 print(obj.name, len(original_mesh.data.vertices), "deleted")
                 obj.name = obj.name + "failed"
                 collection.objects.unlink(obj)
