@@ -447,20 +447,9 @@ def get_spines(self):
     # Get the active collection and its name
     all_obs = bpy.context.collection
     
-    #all_obs = [ mesh for mesh in bpy.data.objects]
     slicer_list = []
 
     for obj in all_obs.all_objects:
-        #if obj not in spine_list:
-            # #It feels like resizing the slicers, should fix the lack of intersecting faces, but it doesn't  
-            # original_location = obj.location
-            # # Get the mesh data
-            # mesh = obj.data
-            # # Resize the mesh
-            # scale_factor = 1.1  # Adjust the scale factor as desired
-            # for vertex in mesh.vertices:
-            #     vertex.co *= scale_factor
-            # obj.location = original_location
         slicer_list.append(obj)
 
     return(spine_list, slicer_list)
@@ -484,11 +473,7 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
     spine_and_slicer_dict = {}
     spines_without_bases = []
 
-    if_counter = 0
-    slicer_counter = 0
-
     for spine in spine_list:
-        print("spine", spine.name)
         intersects = False
         spine_bm = bmesh.new()
         spine_bm.from_mesh(bpy.context.scene.objects[spine.name].data) 
@@ -496,9 +481,6 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
         spine_bm.faces.ensure_lookup_table() 
         spine_bvh = BVHTree.FromBMesh(spine_bm)     
         for slicer in slicer_list:
-            print("slicer", slicer.name)
-            slicer_counter += 1
-            print("slicer_counter", slicer_counter)
             slicer_bm = bmesh.new()
             slicer_bm.from_mesh(bpy.context.scene.objects[slicer.name].data) 
             slicer_bm.transform(slicer.matrix_world)
@@ -508,11 +490,8 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
             overlap = slicer_bvh.overlap(spine_bvh)
 
             if len(overlap) >= 1:
-                if_counter += 1
-                print("if counter", slicer.name[6:], if_counter)
                 intersects = True
                 spine.name = slicer.name[6:]
-                print("spine renamed", spine.name)
                 spine_overlapping_indices_dict[spine.name] = overlap
                 spine_and_slicer_dict[spine.name] = slicer.name
                 break 
