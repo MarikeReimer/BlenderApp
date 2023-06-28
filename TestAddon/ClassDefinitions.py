@@ -109,6 +109,7 @@ class ExplodingBits(bpy.types.Operator):
         bpy.ops.mesh.separate(type='LOOSE')
         return {'FINISHED'}
 
+
 #Row operator that applies "separate by loose parts" to mesh  
 #For our use original_mesh_name means dendrite, booleans refers to cylinders/slicers  
 class CheckBooleans(bpy.types.Operator):
@@ -125,43 +126,52 @@ class CheckBooleans(bpy.types.Operator):
         collection = bpy.context.collection
         collection_name = collection.name
 
-        number_objects = len(bpy.data.objects)
-
         # Get references to the original mesh and the collection
         original_mesh = bpy.data.objects[original_mesh_name]
         original_mesh.select_set(True)
         original_mesh = bpy.context.view_layer.objects.active
+        original_mesh_verts = len(original_mesh.data.vertices)
+        print(original_mesh_verts)
         boolean_meshes_collection = bpy.data.collections[collection_name]
         mesh_collection = []
 
+        vert_threshold = 1000
+
         for obj in boolean_meshes_collection.objects:
             mesh_collection.append(obj)
-
-        for obj in mesh_collection:
-            self.report({'INFO'}, f"Processing {obj} is SLOW")
             bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
             bool_modifier.operation = 'DIFFERENCE'
             bool_modifier.object = obj
-            bool_modifier.show_viewport = False
+            print(obj.name, len(original_mesh.data.vertices), "pre bool")
             bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
-            print(obj.name, len(bpy.data.objects), "pre separate")
-            bpy.ops.mesh.separate(type='LOOSE')
-            print(obj.name, len(bpy.data.objects), "post separate")
+            print(obj.name, len(original_mesh.data.vertices), "post bool")
 
-            if len(bpy.data.objects) == number_objects:
-                obj.name = obj.name + "needs inspection"
+            if len(original_mesh.data.vertices) < vert_threshold:
+                print(obj.name, len(original_mesh.data.vertices), "deleted")
+                obj.name = obj.name + "failed"
                 collection.objects.unlink(obj)
                 original_mesh_collection.objects.link(obj)
                 bpy.context.view_layer.update()
                 break
-                #print(obj.name, len(bpy.data.objects), "if loop")
+
+            elif original_mesh_verts == len(original_mesh.data.vertices):
+                print(obj.name, len(original_mesh.data.vertices), "failure")
+                obj.name = obj.name + "needs inspection"
+                collection.objects.unlink(obj)
+                original_mesh_collection.objects.link(obj)
+                bpy.context.view_layer.update()
+
             else:
-                number_objects = len(bpy.data.objects)
+                print(obj.name, len(original_mesh.data.vertices), "success")
+                original_mesh_verts = len(original_mesh.data.vertices)
                 collection.objects.unlink(obj)
                 original_mesh_collection.objects.link(obj)
 
+        bpy.ops.mesh.separate(type='LOOSE')
         bpy.context.view_layer.update()
         return {'FINISHED'}
+
+
 
 
 
@@ -618,7 +628,7 @@ def find_spine_tip(self, spine_base_dict):
                 spine_tip_dict[spine] = spine_tip
                 # #Mark the spot
                 empty = bpy.data.objects.new(name=spine.name + "tip", object_data=None)
-                empty_spot = spine_tip
+                empty_spot = spine_tip 
                 #empty_spot =  spine.matrix_world @ empty_spot        
                 empty.location = empty_spot 
                 # Link the empty object to the scene
@@ -797,7 +807,7 @@ def spine_to_collection(self):
 
 def cone_raycast(self, spine_base, obj):
     direction = obj.location - spine_base 
-    cone_angle = 15
+    cone_angle = 5
     cone_length = 5
     num_rays = 10
     
