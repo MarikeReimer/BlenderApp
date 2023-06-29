@@ -146,20 +146,13 @@ class CheckBooleans(bpy.types.Operator):
             bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
             print(obj.name, len(original_mesh.data.vertices), "post bool")
 
-            if len(original_mesh.data.vertices) < vert_threshold:
+            if original_mesh_verts - len(original_mesh.data.vertices) > vert_threshold:
                 print(obj.name, len(original_mesh.data.vertices), "deleted")
                 obj.name = obj.name + "failed"
                 collection.objects.unlink(obj)
                 original_mesh_collection.objects.link(obj)
                 bpy.context.view_layer.update()
                 break
-
-            elif original_mesh_verts == len(original_mesh.data.vertices):
-                print(obj.name, len(original_mesh.data.vertices), "failure")
-                obj.name = obj.name + "needs inspection"
-                collection.objects.unlink(obj)
-                original_mesh_collection.objects.link(obj)
-                bpy.context.view_layer.update()
 
             else:
                 print(obj.name, len(original_mesh.data.vertices), "success")
@@ -494,6 +487,10 @@ def find_overlapping_spine_faces(self, spine_list, slicer_list):
                 spine.name = slicer.name[6:]
                 spine_overlapping_indices_dict[spine.name] = overlap
                 spine_and_slicer_dict[spine.name] = slicer.name
+                for collection in spine.users_collection:
+                    collection.objects.unlink(spine)
+                    bpy.data.collections.remove(collection)
+                    bpy.context.scene.collection.objects.link(spine)
                 break 
 
         if intersects == False:
