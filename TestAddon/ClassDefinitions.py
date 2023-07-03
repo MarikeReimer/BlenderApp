@@ -114,59 +114,89 @@ class ExplodingBits(bpy.types.Operator):
 #For our use original_mesh_name means dendrite, booleans refers to cylinders/slicers  
 class CheckBooleans(bpy.types.Operator):
     bl_idname = 'object.check_booleans' #operators must follow the naming convention of object.lowercase_letters
-    bl_label = 'Check Booleans'
-    
+    bl_label = 'Check Booleans'   
+
     def execute(self, context):
-        # Get the active object and its name
-        object = bpy.context.active_object
-        original_mesh_name = object.name
-        original_mesh_collection = object.users_collection[0]
-
-        # Get the active collection and its name
-        collection = bpy.context.collection
-        collection_name = collection.name
-
-        # Get references to the original mesh and the collection
-        original_mesh = bpy.data.objects[original_mesh_name]
-        original_mesh.select_set(True)
-        original_mesh = bpy.context.view_layer.objects.active
-        original_mesh_verts = len(original_mesh.data.vertices)
-        print(original_mesh_verts)
-        boolean_meshes_collection = bpy.data.collections[collection_name]
-        mesh_collection = []
-
+        
         vert_threshold = 1000
 
-        for obj in boolean_meshes_collection.objects:
-            mesh_collection.append(obj)
-            bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
-            bool_modifier.operation = 'DIFFERENCE'
-            bool_modifier.object = obj
-            print(obj.name, len(original_mesh.data.vertices), "pre bool")
-            bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
-            print(obj.name, len(original_mesh.data.vertices), "post bool")
+        #Get objects to perform Boolean on/with
+        boolean_objects = get_objects_for_boolean(self, context)
+        original_mesh = boolean_objects[0]
+        original_mesh_collection = boolean_objects[1]
+        boolean_meshes_collection = boolean_objects[2]
 
-            if original_mesh_verts - len(original_mesh.data.vertices) > vert_threshold:
-                print(obj.name, len(original_mesh.data.vertices), "deleted")
-                obj.name = obj.name + "failed"
-                collection.objects.unlink(obj)
-                original_mesh_collection.objects.link(obj)
-                bpy.context.view_layer.update()
-                break
+        try_booleans(self, boolean_meshes_collection, original_mesh_collection, vert_threshold, original_mesh)
 
-            else:
-                print(obj.name, len(original_mesh.data.vertices), "success")
-                original_mesh_verts = len(original_mesh.data.vertices)
-                collection.objects.unlink(obj)
-                original_mesh_collection.objects.link(obj)
-
+        #Separate successful booleans 
         bpy.ops.mesh.separate(type='LOOSE')
-        bpy.context.view_layer.update()
         return {'FINISHED'}
 
+def get_objects_for_boolean(self, context):
+    # Get the active object and its name
+    object = bpy.context.active_object
+    original_mesh_collection = object.users_collection[0]
 
+    # Get the active collection and its name
+    collection = bpy.context.collection
+    collection_name = collection.name
 
+    # Get references to the original mesh and the collection
+    original_mesh = bpy.data.objects[object.name]
+    original_mesh = bpy.context.view_layer.objects.active
+    boolean_meshes_collection = bpy.data.collections[collection_name]
+    original_mesh.select_set(True)
 
+    return(original_mesh, original_mesh_collection, boolean_meshes_collection)
+
+def try_booleans(self, boolean_meshes_collection, original_mesh_collection, vert_threshold, original_mesh):
+    for obj in boolean_meshes_collection.objects:
+
+        # Store the original mesh data
+        original_mesh_copy = bpy.data.objects[original_mesh.name].data.copy()
+        original_mesh_copy = bpy.data.meshes.new_from_object(original_mesh)
+        original_mesh_copy = original_mesh.copy()
+        original_mesh_copy.data = original_mesh.data.copy()
+        original_mesh_verts = len(original_mesh.data.vertices)
+
+        # Create the boolean modifier 
+        bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
+        bool_modifier.operation = 'DIFFERENCE'
+        bool_modifier.object = obj
+
+        # Apply the boolean modifier
+        print(obj.name, len(original_mesh.data.vertices), "pre bool", 'copy:', len(original_mesh_copy.data.vertices))
+
+        bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
+        
+        print(obj.name, len(original_mesh.data.vertices), "post bool")
+
+        #Check to see how well the Boolean worked and apply error handling
+        #Use the difference in vertices to determine if the original mesh was deleted
+        if original_mesh_verts - len(original_mesh.data.vertices) > vert_threshold:
+            print(obj.name, len(original_mesh.data.vertices), "has issues", 'copy:', len(original_mesh_copy.data.vertices))
+            #Deselect derped mesh
+            original_mesh.select_set(False)
+
+            #Retreive mesh data from copy
+            original_mesh = original_mesh_copy.copy()
+            original_mesh.data = original_mesh_copy.data.copy()
+            original_mesh_collection.objects.link(original_mesh_copy)
+            
+            # Add the copied mesh object to the view layer so that you can select/Boolean it
+            view_layer = bpy.context.view_layer
+            view_layer.active_layer_collection.collection.objects.link(original_mesh)
+            original_mesh.select_set(True)
+
+            obj.name = obj.name + "needs inspection"
+
+        else:
+            print(obj.name, len(original_mesh.data.vertices), "success")
+            original_mesh_verts = len(original_mesh.data.vertices)
+
+    return {'FINISHED'}
+
+# ////
 
 #Discsegmenter
 #Finds spines and slicers based on selected objects
