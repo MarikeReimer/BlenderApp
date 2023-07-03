@@ -123,19 +123,19 @@ class CheckBooleans(bpy.types.Operator):
         #Get objects to perform Boolean on/with
         boolean_objects = get_objects_for_boolean(self, context)
         original_mesh = boolean_objects[0]
-        original_mesh_collection = boolean_objects[1]
-        boolean_meshes_collection = boolean_objects[2]
+        boolean_meshes_collection = boolean_objects[1]
+        original_mesh_copy = boolean_objects[2]
+        original_mesh_verts = boolean_objects[3]
 
-        try_booleans(self, boolean_meshes_collection, original_mesh_collection, vert_threshold, original_mesh)
+        try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, original_mesh_verts)
 
         #Separate successful booleans 
-        bpy.ops.mesh.separate(type='LOOSE')
+        #bpy.ops.mesh.separate(type='LOOSE')
         return {'FINISHED'}
 
 def get_objects_for_boolean(self, context):
     # Get the active object and its name
     object = bpy.context.active_object
-    original_mesh_collection = object.users_collection[0]
 
     # Get the active collection and its name
     collection = bpy.context.collection
@@ -147,17 +147,17 @@ def get_objects_for_boolean(self, context):
     boolean_meshes_collection = bpy.data.collections[collection_name]
     original_mesh.select_set(True)
 
-    return(original_mesh, original_mesh_collection, boolean_meshes_collection)
+    # Store the original mesh data
+    original_mesh_copy = original_mesh.copy()
+    original_mesh_copy.data = original_mesh.data.copy()
+    original_mesh_verts = len(original_mesh.data.vertices)
+    print("1st original_mesh_copy", original_mesh_copy.name)
 
-def try_booleans(self, boolean_meshes_collection, original_mesh_collection, vert_threshold, original_mesh):
+    return(original_mesh, boolean_meshes_collection, original_mesh_copy, original_mesh_verts)
+
+def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, original_mesh_verts):
+
     for obj in boolean_meshes_collection.objects:
-
-        # Store the original mesh data
-        original_mesh_copy = bpy.data.objects[original_mesh.name].data.copy()
-        original_mesh_copy = bpy.data.meshes.new_from_object(original_mesh)
-        original_mesh_copy = original_mesh.copy()
-        original_mesh_copy.data = original_mesh.data.copy()
-        original_mesh_verts = len(original_mesh.data.vertices)
 
         # Create the boolean modifier 
         bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
@@ -176,17 +176,29 @@ def try_booleans(self, boolean_meshes_collection, original_mesh_collection, vert
         if original_mesh_verts - len(original_mesh.data.vertices) > vert_threshold:
             print(obj.name, len(original_mesh.data.vertices), "has issues", 'copy:', len(original_mesh_copy.data.vertices))
             #Deselect derped mesh
-            original_mesh.select_set(False)
+            #original_mesh.select_set(False)
+
+            # Delete derped mesh
+            # bpy.ops.object.select_all(action='DESELECT')
+            # original_mesh.select_set(True)
+            # bpy.ops.object.delete() 
+
+            #bpy.data.objects.remove(original_mesh, do_unlink=True)
 
             #Retreive mesh data from copy
             original_mesh = original_mesh_copy.copy()
             original_mesh.data = original_mesh_copy.data.copy()
-            original_mesh_collection.objects.link(original_mesh_copy)
-            
-            # Add the copied mesh object to the view layer so that you can select/Boolean it
-            view_layer = bpy.context.view_layer
-            view_layer.active_layer_collection.collection.objects.link(original_mesh)
-            original_mesh.select_set(True)
+            #original_mesh_collection.objects.link(original_mesh_copy)  
+            print("copy of original_mesh_copy", original_mesh.name)
+
+            # #Add copy to scene
+            # scene = bpy.context.scene
+            # scene.collection.objects.link(original_mesh)
+
+            # # Add the copied mesh object to the view layer so that you can select/Boolean it
+            # view_layer = bpy.context.view_layer
+            # view_layer.active_layer_collection.collection.objects.link(original_mesh)
+            # original_mesh.select_set(True)
 
             obj.name = obj.name + "needs inspection"
 
