@@ -182,7 +182,29 @@ def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh,
 
         # Check to see how well the Boolean worked and apply error handling
         # Use the difference in vertices to determine if the original mesh was deleted
-        if original_mesh_verts - len(original_mesh.data.vertices) > vert_threshold:
+        if original_mesh_verts < len(original_mesh.data.vertices):
+            print(obj.name, len(original_mesh.data.vertices), "bigger")
+            # Unlink the previous original_mesh from the scene collection
+            bpy.context.scene.collection.objects.unlink(original_mesh)
+
+            # Create a new original_mesh object from the original_mesh_copy
+            original_mesh = original_mesh_copy.copy()
+            original_mesh.data = original_mesh_copy.data.copy()
+
+            # Link the new original_mesh to the scene collection
+            bpy.context.scene.collection.objects.link(original_mesh)
+            original_mesh.select_set(True)
+
+            # Update the boolean modifier object reference
+            bool_modifier.object = obj
+            obj.name = obj.name + "dendrite bigger"
+
+        elif original_mesh_verts == len(original_mesh.data.vertices):
+            print(obj.name, len(original_mesh.data.vertices), "same")
+            obj.name = obj.name + "dendrite unchanged"
+            original_mesh_verts = len(original_mesh.data.vertices)
+
+        elif original_mesh_verts - len(original_mesh.data.vertices) > vert_threshold:
             print(obj.name, len(original_mesh.data.vertices), "has issues", 'copy:', len(original_mesh_copy.data.vertices))
 
             # Unlink the previous original_mesh from the scene collection
