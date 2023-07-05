@@ -128,6 +128,12 @@ class CheckBooleans(bpy.types.Operator):
         original_mesh_verts = boolean_objects[3]
 
         try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, original_mesh_verts)
+        bpy.data.objects.remove(original_mesh, do_unlink=True)
+        bpy.data.objects.remove(original_mesh_copy, do_unlink=True)
+
+        # Call the function to delete hidden objects
+        delete_hidden_objects()
+
         return {'FINISHED'}
 
 def get_objects_for_boolean(self, context):
@@ -155,128 +161,129 @@ def get_objects_for_boolean(self, context):
 def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, original_mesh_verts):
     for obj in boolean_meshes_collection.objects:
         print("modifying object", original_mesh.name)
-        
-        # Create the boolean modifier 
-        bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
-        bool_modifier.operation = 'DIFFERENCE'
-        bool_modifier.object = obj
 
-        # Check if original_mesh is in the scene collection before unlinking
-        if original_mesh.name in bpy.context.scene.collection.objects:
-            bpy.context.scene.collection.objects.unlink(original_mesh)
+        # Create a BMesh object from the target mesh
+        target_bm = bmesh.new()
+        target_bm.from_mesh(original_mesh.data)
 
-        # Link the modified original_mesh to the scene collection
-        bpy.context.scene.collection.objects.link(original_mesh)
-        original_mesh.select_set(True)
+        # Create a BMesh object from the cutting mesh
+        cutting_bm = bmesh.new()
+        cutting_bm.from_mesh(obj.data)
 
-        # Apply the boolean modifier
-        print(obj.name, len(original_mesh.data.vertices), "pre bool", 'copy:', len(original_mesh_copy.data.vertices))
+        # Perform the difference operation
+        bmesh.ops.difference(target_bm, cutting_bm, target_bm)
 
-        # Set the active object to original_mesh
-        bpy.context.view_layer.objects.active = original_mesh
+        # Update the target mesh with the modified BMesh
+        target_bm.to_mesh(original_mesh.data)
+        original_mesh.data.update()
 
-        # Apply the modifier to the active object
-        bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
-
-        print(obj.name, len(original_mesh.data.vertices), "post bool")
+        # Free the BMesh objects
+        target_bm.free()
+        cutting_bm.free()
 
         # Check to see how well the Boolean worked and apply error handling
         # Use the difference in vertices to determine if the original mesh was deleted
-        if original_mesh_verts < len(original_mesh.data.vertices):
-            print(obj.name, len(original_mesh.data.vertices), "bigger")
-            # Unlink the previous original_mesh from the scene collection
-            bpy.context.scene.collection.objects.unlink(original_mesh)
-
-            # Create a new original_mesh object from the original_mesh_copy
-            original_mesh = original_mesh_copy.copy()
-            original_mesh.data = original_mesh_copy.data.copy()
-
-            # Link the new original_mesh to the scene collection
-            bpy.context.scene.collection.objects.link(original_mesh)
-            original_mesh.select_set(True)
-
-            # Update the boolean modifier object reference
-            bool_modifier.object = obj
-            obj.name = obj.name + "dendrite bigger"
-
-        elif original_mesh_verts == len(original_mesh.data.vertices):
-            print(obj.name, len(original_mesh.data.vertices), "same")
-            obj.name = obj.name + "dendrite unchanged"
-            original_mesh_verts = len(original_mesh.data.vertices)
-
-        elif original_mesh_verts - len(original_mesh.data.vertices) > vert_threshold:
+        if original_mesh_verts - len(original_mesh.data.vertices) > vert_threshold:
             print(obj.name, len(original_mesh.data.vertices), "has issues", 'copy:', len(original_mesh_copy.data.vertices))
 
-            # Unlink the previous original_mesh from the scene collection
-            bpy.context.scene.collection.objects.unlink(original_mesh)
-
             # Create a new original_mesh object from the original_mesh_copy
             original_mesh = original_mesh_copy.copy()
             original_mesh.data = original_mesh_copy.data.copy()
-
-            # Link the new original_mesh to the scene collection
-            bpy.context.scene.collection.objects.link(original_mesh)
-            original_mesh.select_set(True)
-
-            # Update the boolean modifier object reference
-            bool_modifier.object = obj
 
             obj.name = obj.name + " needs inspection"
 
         else:
             print(obj.name, len(original_mesh.data.vertices), "success")
             original_mesh_verts = len(original_mesh.data.vertices)
+    return {'FINISHED'}
 
-
-    # for obj in boolean_meshes_collection.objects:
-    #     print("modifying object", original_mesh.name)
-    #     # Create the boolean modifier 
-    #     bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
-    #     bool_modifier.operation = 'DIFFERENCE'
-    #     bool_modifier.object = obj
-
-    #     # # Check if the object exists in the scene collection
-    #     # object_exists = original_mesh.name in scene.collection.objects
-
-    #     # if not object_exists:
-    #     #     print(original_mesh.name, "from if not statement")
-    #     #     bpy.context.view_layer.objects.active = original_mesh
-    #     #     # Link the mesh object to the scene collection
-    #     #     scene.collection.objects.link(original_mesh)
-
-    #     #     # Set the view layer to the active layer
-    #     #     bpy.context.view_layer.objects.active = original_mesh
-
-    #     # Update the view layer
-    #     #bpy.context.view_layer.update()
-
-    #     bpy.context.view_layer.active_layer_collection.collection.objects.link(original_mesh)
-    #     original_mesh.select_set(True)
-    #     #Apply the boolean modifier
-    #     print(obj.name, len(original_mesh.data.vertices), "pre bool", 'copy:', len(original_mesh_copy.data.vertices))
-
-    #     bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
+# def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, original_mesh_verts):
+#     for obj in boolean_meshes_collection.objects:
+#         print("modifying object", original_mesh.name)
         
-    #     print(obj.name, len(original_mesh.data.vertices), "post bool")
+#         # Create the boolean modifier 
+#         bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
+#         bool_modifier.operation = 'DIFFERENCE'
+#         bool_modifier.object = obj
 
-    #     #Check to see how well the Boolean worked and apply error handling
-    #     #Use the difference in vertices to determine if the original mesh was deleted
-    #     if original_mesh_verts - len(original_mesh.data.vertices) > vert_threshold:
-    #         print(obj.name, len(original_mesh.data.vertices), "has issues", 'copy:', len(original_mesh_copy.data.vertices))
+#         # Check if original_mesh is in the scene collection before unlinking
+#         if original_mesh.name in bpy.context.scene.collection.objects:
+#             bpy.context.scene.collection.objects.unlink(original_mesh)
 
-    #         #Retreive mesh data from copy
-    #         original_mesh = original_mesh_copy.copy()
-    #         original_mesh.data = original_mesh_copy.data.copy()
-    #         #original_mesh_collection.objects.link(original_mesh_copy)  
-    #         print("copy of original_mesh_copy from if statement", original_mesh.name)
+#         # Link the modified original_mesh to the scene collection
+#         bpy.context.scene.collection.objects.link(original_mesh)
+#         original_mesh.select_set(True)
 
-    #         obj.name = obj.name + "needs inspection"
+#         # Apply the boolean modifier
+#         print(obj.name, len(original_mesh.data.vertices), "pre bool", 'copy:', len(original_mesh_copy.data.vertices))
 
-    #     else:
-    #         print(obj.name, len(original_mesh.data.vertices), "success")
-    #         original_mesh_verts = len(original_mesh.data.vertices)
+#         # Set the active object to original_mesh
+#         bpy.context.view_layer.objects.active = original_mesh
 
-    # return {'FINISHED'}
+#         # Apply the modifier to the active object
+#         bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
+
+#         print(obj.name, len(original_mesh.data.vertices), "post bool")
+
+#         # Check to see how well the Boolean worked and apply error handling
+#         # Use the difference in vertices to determine if the original mesh was deleted
+#         if original_mesh_verts < len(original_mesh.data.vertices):
+#             print(obj.name, len(original_mesh.data.vertices), "bigger")
+#             # Unlink the previous original_mesh from the scene collection
+#             bpy.context.scene.collection.objects.unlink(original_mesh)
+
+#             # Create a new original_mesh object from the original_mesh_copy
+#             original_mesh = original_mesh_copy.copy()
+#             original_mesh.data = original_mesh_copy.data.copy()
+
+#             # Link the new original_mesh to the scene collection
+#             bpy.context.scene.collection.objects.link(original_mesh)
+#             original_mesh.select_set(True)
+
+#             # Update the boolean modifier object reference
+#             bool_modifier.object = obj
+#             obj.name = obj.name + "dendrite bigger"
+
+#         elif original_mesh_verts == len(original_mesh.data.vertices):
+#             print(obj.name, len(original_mesh.data.vertices), "same")
+#             obj.name = obj.name + "dendrite unchanged"
+#             original_mesh_verts = len(original_mesh.data.vertices)
+
+#         elif original_mesh_verts - len(original_mesh.data.vertices) > vert_threshold:
+#             print(obj.name, len(original_mesh.data.vertices), "has issues", 'copy:', len(original_mesh_copy.data.vertices))
+
+#             # Unlink the previous original_mesh from the scene collection
+#             bpy.context.scene.collection.objects.unlink(original_mesh)
+
+#             # Create a new original_mesh object from the original_mesh_copy
+#             original_mesh = original_mesh_copy.copy()
+#             original_mesh.data = original_mesh_copy.data.copy()
+
+#             # Link the new original_mesh to the scene collection
+#             bpy.context.scene.collection.objects.link(original_mesh)
+#             original_mesh.select_set(True)
+
+#             # Update the boolean modifier object reference
+#             bool_modifier.object = obj
+
+#             obj.name = obj.name + " needs inspection"
+
+#         else:
+#             print(obj.name, len(original_mesh.data.vertices), "success")
+#             original_mesh_verts = len(original_mesh.data.vertices)
+#     return {'FINISHED'}
+    
+def delete_hidden_objects():
+    # Get all objects in the scene
+    objects = bpy.context.scene.objects
+
+    # Iterate over the objects
+    for obj in objects:
+        # Check if the object is visible in the viewport
+        if obj.visible_get() == False:
+            # Delete the object
+            bpy.data.objects.remove(obj, do_unlink=True)
+
 
 # ////
 
