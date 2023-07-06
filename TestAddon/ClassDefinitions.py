@@ -79,7 +79,11 @@ class NeuronAnalysis(bpy.types.Panel):
         row = layout.row()
         row.operator('object.exploding_bits', text = 'Separate Meshes')
 
-        #Add button that separates meshes        
+        #Add button that generates spheres for Check Boolean error handling        
+        row = layout.row()
+        row.operator('object.add_spheres', text = 'Add Sphere Markers')
+
+        #Add button that evaluates Booleans        
         row = layout.row()
         row.operator('object.check_booleans', text = 'Check Slicers')
         
@@ -126,13 +130,12 @@ class CheckBooleans(bpy.types.Operator):
         boolean_meshes_collection = boolean_objects[1]
         original_mesh_copy = boolean_objects[2]
         original_mesh_verts = boolean_objects[3]
+        sphere1 = boolean_objects[4]
+        sphere2 = boolean_objects[5]
 
-        try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, original_mesh_verts)
+        try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, original_mesh_verts, sphere1, sphere2)
         bpy.data.objects.remove(original_mesh, do_unlink=True)
         bpy.data.objects.remove(original_mesh_copy, do_unlink=True)
-
-        # Call the function to delete hidden objects
-        delete_hidden_objects()
 
         return {'FINISHED'}
 
@@ -154,50 +157,63 @@ def get_objects_for_boolean(self, context):
     original_mesh_copy = original_mesh.copy()
     original_mesh_copy.data = original_mesh.data.copy()
     original_mesh_verts = len(original_mesh.data.vertices)
-    print("1st original_mesh_copy", original_mesh_copy.name)
 
-    return(original_mesh, boolean_meshes_collection, original_mesh_copy, original_mesh_verts)
+    sphere1 = bpy.context.scene.objects.get("BoolSphere1")
+    sphere2 = bpy.context.scene.objects.get("BoolSphere2")
 
-def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, original_mesh_verts):
+    if not sphere1:
+        print("Sphere1 does not exist.")
+
+    return(original_mesh, boolean_meshes_collection, original_mesh_copy, original_mesh_verts, sphere1,sphere2)
+
+def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, original_mesh_verts, sphere1, sphere2):
     for obj in boolean_meshes_collection.objects:
-        print("modifying object", original_mesh.name)
+        
+        # Create the boolean modifier 
+        bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
+        bool_modifier.operation = 'DIFFERENCE'
+        bool_modifier.object = obj
 
-        # Create a BMesh object from the target mesh
-        target_bm = bmesh.new()
-        target_bm.from_mesh(original_mesh.data)
+        # Check if original_mesh is in the scene collection before unlinking
+        # if original_mesh.name in bpy.context.collection.objects:
+        #     bpy.context.collection.objects.unlink(original_mesh)
 
-        # Create a BMesh object from the cutting mesh
-        cutting_bm = bmesh.new()
-        cutting_bm.from_mesh(obj.data)
+        # # Link the modified original_mesh to the scene collection
+        # bpy.context.collection.objects.link(original_mesh)
+        original_mesh.select_set(True)
 
-        # Perform the difference operation
-        bmesh.ops.difference(target_bm, cutting_bm, target_bm)
+        # Apply the modifier to the active object
+        bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
+        
+        # Run the raycast between the two spheres
+        hit = CheckBoolsRayCast(sphere1, sphere2)
+        
+        if hit:
+            print("Dendrite detected. Good to go!")
+            print(obj.name, len(original_mesh.data.vertices), "success")
+            original_mesh_verts = len(original_mesh.data.vertices)
 
-        # Update the target mesh with the modified BMesh
-        target_bm.to_mesh(original_mesh.data)
-        original_mesh.data.update()
-
-        # Free the BMesh objects
-        target_bm.free()
-        cutting_bm.free()
-
-        # Check to see how well the Boolean worked and apply error handling
-        # Use the difference in vertices to determine if the original mesh was deleted
-        if original_mesh_verts - len(original_mesh.data.vertices) > vert_threshold:
+        if not hit:
             print(obj.name, len(original_mesh.data.vertices), "has issues", 'copy:', len(original_mesh_copy.data.vertices))
+
+            # Unlink the previous original_mesh from the scene collection
+            bpy.context.scene.collection.objects.unlink(original_mesh)
 
             # Create a new original_mesh object from the original_mesh_copy
             original_mesh = original_mesh_copy.copy()
             original_mesh.data = original_mesh_copy.data.copy()
 
-            obj.name = obj.name + " needs inspection"
+            # Link the new original_mesh to the scene collection
+            bpy.context.scene.collection.objects.link(original_mesh)
+            original_mesh.select_set(True)
 
-        else:
-            print(obj.name, len(original_mesh.data.vertices), "success")
-            original_mesh_verts = len(original_mesh.data.vertices)
+            # Update the boolean modifier object reference
+            bool_modifier.object = obj
+
+            obj.name = obj.name + " needs inspection"
     return {'FINISHED'}
 
-# def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, original_mesh_verts):
+# def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, original_mesh_verts,sphere1,sphere2):
 #     for obj in boolean_meshes_collection.objects:
 #         print("modifying object", original_mesh.name)
         
@@ -214,42 +230,23 @@ def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh,
 #         bpy.context.scene.collection.objects.link(original_mesh)
 #         original_mesh.select_set(True)
 
-#         # Apply the boolean modifier
-#         print(obj.name, len(original_mesh.data.vertices), "pre bool", 'copy:', len(original_mesh_copy.data.vertices))
-
 #         # Set the active object to original_mesh
 #         bpy.context.view_layer.objects.active = original_mesh
 
 #         # Apply the modifier to the active object
 #         bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
+        
+#         #Run a raycast between two spheres a fixed distance apart, on either side of the dendrite
+#         hit, location, normal, face_index = CheckBoolsRayCast(self, sphere1, sphere2)
+#         if hit:
+#             print("Dendrite detected, gtg")
 
-#         print(obj.name, len(original_mesh.data.vertices), "post bool")
+#         #If it hits the target spere, fail.  (The dendrite should be blocking)
 
 #         # Check to see how well the Boolean worked and apply error handling
 #         # Use the difference in vertices to determine if the original mesh was deleted
-#         if original_mesh_verts < len(original_mesh.data.vertices):
-#             print(obj.name, len(original_mesh.data.vertices), "bigger")
-#             # Unlink the previous original_mesh from the scene collection
-#             bpy.context.scene.collection.objects.unlink(original_mesh)
 
-#             # Create a new original_mesh object from the original_mesh_copy
-#             original_mesh = original_mesh_copy.copy()
-#             original_mesh.data = original_mesh_copy.data.copy()
-
-#             # Link the new original_mesh to the scene collection
-#             bpy.context.scene.collection.objects.link(original_mesh)
-#             original_mesh.select_set(True)
-
-#             # Update the boolean modifier object reference
-#             bool_modifier.object = obj
-#             obj.name = obj.name + "dendrite bigger"
-
-#         elif original_mesh_verts == len(original_mesh.data.vertices):
-#             print(obj.name, len(original_mesh.data.vertices), "same")
-#             obj.name = obj.name + "dendrite unchanged"
-#             original_mesh_verts = len(original_mesh.data.vertices)
-
-#         elif original_mesh_verts - len(original_mesh.data.vertices) > vert_threshold:
+#         if original_mesh_verts - len(original_mesh.data.vertices) > vert_threshold:
 #             print(obj.name, len(original_mesh.data.vertices), "has issues", 'copy:', len(original_mesh_copy.data.vertices))
 
 #             # Unlink the previous original_mesh from the scene collection
@@ -272,18 +269,60 @@ def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh,
 #             print(obj.name, len(original_mesh.data.vertices), "success")
 #             original_mesh_verts = len(original_mesh.data.vertices)
 #     return {'FINISHED'}
+
+def CheckBoolsRayCast(sphere1, sphere2):    
+    # Define the start and end points for the raycast
+    start_point = sphere1.location
+    end_point = sphere2.location
+
+    # Perform the raycast
+    direction = end_point - start_point
+    ray_length = direction.length
+    direction.normalize()
+
+    # Check for intersections with objects
+    found_intersection = False
+    for obj in bpy.context.scene.objects:
+        if obj != sphere1 and obj != sphere2:
+            hit, location, normal, face_index = obj.ray_cast(start_point, direction)
+            if hit:
+                found_intersection = True
+                break
+
+    # Check if an object was found between the spheres
+    if found_intersection:
+        print("There is an object between the spheres.")
+    else:
+        print("There is no object between the spheres.")
     
-def delete_hidden_objects():
-    # Get all objects in the scene
-    objects = bpy.context.scene.objects
+    return hit
 
-    # Iterate over the objects
-    for obj in objects:
-        # Check if the object is visible in the viewport
-        if obj.visible_get() == False:
-            # Delete the object
-            bpy.data.objects.remove(obj, do_unlink=True)
+# def CheckBoolsRayCast(self, sphere1, sphere2):    
+#     # Define the start and end points for the raycast
+#     start_point = sphere1.location
+#     end_point = sphere2.location
 
+#     # Perform the raycast
+#     direction = end_point - start_point
+#     ray_length = direction.length
+#     direction.normalize()
+
+#     # Check for intersections with objects
+#     found_intersection = False
+#     for obj in bpy.context.scene.objects:
+#         if obj != sphere1 and obj != sphere2:
+#             hit, location, normal, face_index = obj.ray_cast(start_point, direction)
+#             if hit:
+#                 found_intersection = True
+#                 break
+
+#     # Check if an object was found between the spheres
+#     if found_intersection:
+#         print("There is an object between the spheres.")
+#     else:
+#         print("There is no object between the spheres.")
+    
+#     return(hit)
 
 # ////
 
@@ -939,6 +978,28 @@ def cone_raycast(self, spine_base, obj):
             ray_cast_results.append((hit_point))
     return(ray_cast_results)
 
+#Add spheres for Check Booleans
+class AddSpheres(bpy.types.Operator):
+    bl_idname = 'object.add_spheres' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'Add Spheres'
+    
+    def execute(self, context):
+        # Create two icospheres
+        bpy.ops.mesh.primitive_ico_sphere_add(location=(0, 0, 0))
+        sphere1 = bpy.context.object
+        bpy.ops.mesh.primitive_ico_sphere_add(location=(3, 0, 0))
+        sphere2 = bpy.context.object
+
+        # Rename the icospheres
+        sphere1.name = "BoolSphere1"
+        sphere2.name = "BoolSphere2"
+
+        # Print the new names
+        print("Renamed sphere 1 to:", sphere1.name)
+        print("Renamed sphere 2 to:", sphere2.name)
+        return {'FINISHED'}
+
+
 #Might be useful later
 
 # def paint_spines(self, modified_spine_and_slicer_dict):
@@ -976,3 +1037,5 @@ def cone_raycast(self, spine_base, obj):
 
 #             # Switch back to Object Mode
 #             bpy.ops.object.mode_set(mode='OBJECT')
+
+

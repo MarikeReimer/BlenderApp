@@ -9,6 +9,7 @@ from . ClassDefinitions import DiscSegmenter
 from . ClassDefinitions import ManualLength
 from . ClassDefinitions import WriteNWB
 from . ClassDefinitions import CheckBooleans
+from . ClassDefinitions import AddSpheres
 
 
 #Information about the Addon created by the Blender Development VSCode Extension
@@ -32,6 +33,7 @@ def register():
     bpy.utils.register_class(DiscSegmenter)
     bpy.utils.register_class(ManualLength)
     bpy.utils.register_class(WriteNWB)
+    bpy.utils.register_class(AddSpheres)
   
         
     #Subject Table fields
@@ -115,6 +117,7 @@ def unregister():
     bpy.utils.unregister_class(DiscSegmenter)
     bpy.utils.unregister_class(ManualLength)
     bpy.utils.unregister_class(WriteNWB)
+    bpy.utils.unregister_class(AddSpheres)
 
     #Subject fields
     bpy.types.Scene.subject_id
