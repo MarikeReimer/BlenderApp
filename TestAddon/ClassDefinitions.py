@@ -6,6 +6,8 @@ import numpy as np
 from datetime import datetime
 import math
 from collections import defaultdict
+import time
+
 
 #The new way of adding python libraries
 import sys
@@ -121,6 +123,7 @@ class CheckBooleans(bpy.types.Operator):
     bl_label = 'Check Booleans'   
 
     def execute(self, context):
+        start_time = time.time()
         
         vert_threshold = 1000
 
@@ -137,6 +140,10 @@ class CheckBooleans(bpy.types.Operator):
         try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy,  sphere1, sphere2, object_collection)
         bpy.data.objects.remove(original_mesh, do_unlink=True)
         bpy.data.objects.remove(original_mesh_copy, do_unlink=True)
+
+        end_time = time.time()
+        elapsed_time = end_time - start_time
+        print("Elapsed time:", elapsed_time, "seconds")
 
         return {'FINISHED'}
 
