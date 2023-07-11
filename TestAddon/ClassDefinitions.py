@@ -187,13 +187,9 @@ def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh,
 
         # Run the raycast between the two spheres
         hit = CheckBoolsRayCast(sphere1, sphere2)
+        print("hit", hit)
         
         if hit:
-            print("Dendrite detected. Good to go!")
-            print(obj.name, len(original_mesh.data.vertices), "success")
-            original_mesh_verts = len(original_mesh.data.vertices)
-
-        if not hit:
             print(obj.name, len(original_mesh.data.vertices), "has issues", 'copy:', len(original_mesh_copy.data.vertices))
 
             # Create a new original_mesh object from the original_mesh_copy
@@ -216,6 +212,13 @@ def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh,
             # bool_modifier.object = obj
 
             obj.name = obj.name + " needs inspection"
+
+        if not hit:
+            #Absence of hit means object is between spheres
+            print("Dendrite detected. Good to go!")
+            print(obj.name, len(original_mesh.data.vertices), "success")
+            original_mesh_verts = len(original_mesh.data.vertices)
+
 
     return {'FINISHED'}
 
