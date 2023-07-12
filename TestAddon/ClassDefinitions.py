@@ -88,6 +88,10 @@ class NeuronAnalysis(bpy.types.Panel):
         #Add button that evaluates Booleans        
         row = layout.row()
         row.operator('object.check_booleans', text = 'Check Slicers')
+
+        #Add button that evaluates Booleans        
+        row = layout.row()
+        row.operator('object.slice_spines', text = 'Slice Spines')
         
         #Add button that moves spines to folders and adds a spine base and tip
         row = layout.row()
@@ -115,8 +119,78 @@ class ExplodingBits(bpy.types.Operator):
         bpy.ops.mesh.separate(type='LOOSE')
         return {'FINISHED'}
 
+#Slice off Spines
+class SpineSlicer(bpy.types.Operator):
+    bl_idname = 'object.slice_spines' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'Slice Spines' 
 
-#Row operator that applies "separate by loose parts" to mesh  
+    def execute(self, context):
+        start_time = time.time()
+        #Select active object
+        object = bpy.context.active_object
+        #Split it into pieces
+        bpy.ops.mesh.separate(type='LOOSE')
+        spine_list = [obj for obj in bpy.context.selected_objects]
+        #Find the largest mesh and remove it from the list
+        max_verts = 0
+        dendrite = ""
+        for o in spine_list:
+            if len(o.data.vertices) > max_verts:
+                max_verts = len(o.data.vertices)
+                dendrite = o.name
+        dendrite = bpy.data.objects[dendrite]
+        spine_list.remove(dendrite)
+
+        # Get the active collection, its name, and put its contents into slicer list
+        collection = bpy.context.collection
+        collection_name = collection.name
+        boolean_meshes_collection = bpy.data.collections[collection_name]
+        slicer_list = [obj for obj in boolean_meshes_collection.objects]
+
+        faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
+        spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
+        spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
+        spines_to_collections(self, spine_and_slicer_dict)
+        #paint_spines(self, spine_and_slicer_dict)
+        spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict)
+        spine_tip_dict = find_spine_tip(self, spine_base_dict)
+        create_base_and_tip(self, spine_base_dict, spine_tip_dict)
+
+
+        return {'FINISHED'}
+
+
+
+
+# def match_spine_to_slicer(self, selected_object_names):
+#     # Get the active collection and its name
+#     collection = bpy.context.collection
+#     collection_name = collection.name
+#     boolean_meshes_collection = bpy.data.collections[collection_name]
+#     boolean_meshes = [obj for obj in boolean_meshes_collection.objects]
+#     spine_and_slicer_dict = {}
+
+#     for spine in selected_object_names:
+#         spine = bpy.data.objects[spine]
+
+#         # Initialize variables to store closest mesh and distance
+#         closest_mesh = None
+#         closest_distance = float('inf')
+
+#         # Iterate through all mesh objects
+#         for mesh_obj in boolean_meshes:
+#             # Calculate the distance between the selected object and the current mesh object
+#             distance = (spine.location - mesh_obj.location).length
+            
+#             # Update closest_mesh and closest_distance if a closer mesh is found
+#             if distance < closest_distance:
+#                 closest_mesh = mesh_obj
+#                 closest_distance = distance
+#             slicer = closest_mesh.name
+#             spine_and_slicer_dict[spine.name] = slicer 
+#     print(len(spine_and_slicer_dict), "dict length")
+#     return(spine_and_slicer_dict)
+ 
 #For our use original_mesh_name means dendrite, booleans refers to cylinders/slicers  
 class CheckBooleans(bpy.types.Operator):
     bl_idname = 'object.check_booleans' #operators must follow the naming convention of object.lowercase_letters
@@ -187,7 +261,7 @@ def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh,
 
         # Run the raycast between the two spheres
         hit = CheckBoolsRayCast(sphere1, sphere2)
-        print("hit", hit)
+        print("hit?", hit)
         
         if hit:
             print(obj.name, len(original_mesh.data.vertices), "has issues", 'copy:', len(original_mesh_copy.data.vertices))
