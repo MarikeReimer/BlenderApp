@@ -161,16 +161,11 @@ class SpineSlicer(bpy.types.Operator):
         return {'FINISHED'}
 
 def create_surface_area_mesh(self, spine_and_slicer_dict):
+    surface_spine_and_slicer_dict = {}
+    # Iterate over the spine and slicer dictionary
     for spine, slicer in spine_and_slicer_dict.items():
-        print(spine, 'spine', slicer, 'slicer')
         spine = bpy.data.objects[spine]
         slicer = bpy.data.objects[slicer]
-        
-        # Set the desired overlap value
-        overlap = 0.01
-
-        # Set the z dimension of the slicer object
-        slicer.dimensions.z = overlap
 
         # Create a copy of the spine, add surface area to its name
         duplicate_spine = spine.copy()
@@ -197,7 +192,12 @@ def create_surface_area_mesh(self, spine_and_slicer_dict):
 
         # Deselect the duplicate spine
         duplicate_spine.select_set(False)
-    return {'FINISHED'}    
+
+        # Store the relationship between the duplicate spine and slicer in the dictionary
+        surface_spine_and_slicer_dict[duplicate_spine.name] = slicer
+
+    print(surface_spine_and_slicer_dict) 
+    return(surface_spine_and_slicer_dict)
     # for spine, slicer in spine_and_slicer_dict.items():
     #     print(spine, 'spine', slicer, 'slicer')
     #     spine = bpy.data.objects[spine]
