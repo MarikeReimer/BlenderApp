@@ -209,99 +209,49 @@ def create_surface_area_mesh(self, spine_and_slicer_dict):
 def slice_surface_spines(self, surface_spine_and_slicer_dict):
     for surface_spine, slicer in surface_spine_and_slicer_dict.items():
         print(surface_spine.name, 'spine', slicer.name, 'slicer')
-        slicer.select_set(True)
-        slicer.scale *= 2
-        bpy.ops.object.transform_apply(scale=True)
 
+        # Apply the boolean difference modifier
         bpy.ops.object.select_all(action='DESELECT')
-
-        # Select the surface spine
         surface_spine.select_set(True)
-
-
-        # Create the Boolean modifier
-        bool_modifier = surface_spine.modifiers.new(name="Boolean", type='BOOLEAN')
+        slicer.select_set(True)
+        bpy.context.view_layer.objects.active = surface_spine
+        bpy.ops.object.modifier_add(type='BOOLEAN')
+        bool_modifier = surface_spine.modifiers[-1]
         bool_modifier.operation = 'DIFFERENCE'
-
-        # Set the target object for the Boolean modifier
         bool_modifier.object = slicer
-
-        # Apply the Boolean modifier
         bpy.ops.object.modifier_apply({"object": surface_spine}, modifier=bool_modifier.name)
-
-        # Deselect the surface spine
-        surface_spine.select_set(False)
+        bpy.ops.object.select_all(action='DESELECT')
 
     return {'FINISHED'}
 
-# # def create_surface_area_mesh(self, spine_and_slicer_dict):
-# #     surface_spine_and_slicer_dict = {}
-# #     # Iterate over the spine and slicer dictionary
-# #     for spine, slicer in spine_and_slicer_dict.items():
-# #         spine = bpy.data.objects[spine]
-# #         slicer = bpy.data.objects[slicer]
 
-# #         # Create a copy of the spine, add surface area to its name
-# #         duplicate_spine = spine.copy()
-# #         duplicate_spine.data = spine.data.copy()
-# #         duplicate_spine.name = "surface_" + spine.name
+# def slice_surface_spines(self, surface_spine_and_slicer_dict):
+#     for surface_spine, slicer in surface_spine_and_slicer_dict.items():
+#         print(surface_spine.name, 'spine', slicer.name, 'slicer')
+#         slicer.select_set(True)
+#         slicer.scale *= 2
+#         bpy.ops.object.transform_apply(scale=True)
 
-# #         # Link the duplicate spine to the same collection as the original spine
-# #         spine_collection = spine.users_collection[0]
-# #         spine_collection.objects.link(duplicate_spine)
+#         bpy.ops.object.select_all(action='DESELECT')
 
-# #         # Deselect all objects
-# #         bpy.ops.object.select_all(action='DESELECT')
+#         # Select the surface spine
+#         surface_spine.select_set(True)
 
-# #         # Select the duplicate spine and make it the active object
-# #         duplicate_spine.select_set(True)
-# #         bpy.context.view_layer.objects.active = duplicate_spine
 
-# #         # Create the Solidify modifier
-# #         solidify_modifier = duplicate_spine.modifiers.new(name="Solidify", type='SOLIDIFY')
-# #         solidify_modifier.thickness = 0.01  # Adjust the thickness value as desired
+#         # Create the Boolean modifier
+#         bool_modifier = surface_spine.modifiers.new(name="Boolean", type='BOOLEAN')
+#         bool_modifier.operation = 'DIFFERENCE'
 
-# #         # Apply the Solidify modifier
-# #         bpy.ops.object.modifier_apply({"object": duplicate_spine}, modifier=solidify_modifier.name)
+#         # Set the target object for the Boolean modifier
+#         bool_modifier.object = slicer
 
-# #         # Deselect the duplicate spine
-# #         duplicate_spine.select_set(False)
+#         # Apply the Boolean modifier
+#         bpy.ops.object.modifier_apply({"object": surface_spine}, modifier=bool_modifier.name)
 
-# #         # Store the relationship between the duplicate spine and slicer in the dictionary
-# #         surface_spine_and_slicer_dict[duplicate_spine.name] = slicer
+#         # Deselect the surface spine
+#         surface_spine.select_set(False)
 
-# #     print(surface_spine_and_slicer_dict) 
-# #     return(surface_spine_and_slicer_dict)
-
-# # def slice_surface_spines(self, surface_spine_and_slicer_dict):
-# #     for surface_spine, slicer in surface_spine_and_slicer_dict.items():
-# #         print(surface_spine, 'spine', slicer.name, 'slicer')
-# #         surface_spine = bpy.data.objects[surface_spine]
-# #         slicer = bpy.data.objects[slicer.name]        
-
-# #         bpy.ops.object.select_all(action='DESELECT')
-       
-# #         # Scale the cylinder along its local Z-axis by a factor of 2
-# #         slicer.scale.x *= 2
-# #         slicer.scale.y *= 2
-# #         slicer.scale.z *= 2
-
-# #         # Select the duplicate spine and make it the active object
-# #         surface_spine.select_set(True)
-# #         bpy.context.view_layer.objects.active = surface_spine
-# #         # Create the Boolean modifier
-# #         bool_modifier = surface_spine.modifiers.new(name="Boolean", type='BOOLEAN')
-# #         bool_modifier.operation = 'DIFFERENCE'
-
-# #         # Set the target object for the Boolean modifier
-# #         bool_modifier.object = slicer
-
-# #         # Apply the Boolean modifier
-# #         bpy.ops.object.modifier_apply({"object": surface_spine}, modifier=bool_modifier.name)
-
-# #         #Deselect the duplicate spine
-# #         surface_spine.select_set(False)
-# #     return {'FINISHED'} 
+#     return {'FINISHED'}
  
 #For our use original_mesh_name means dendrite, booleans refers to cylinders/slicers  
 class CheckBooleans(bpy.types.Operator):
