@@ -155,41 +155,85 @@ class SpineSlicer(bpy.types.Operator):
         spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict)
         spine_tip_dict = find_spine_tip(self, spine_base_dict)
         create_base_and_tip(self, spine_base_dict, spine_tip_dict)
+        create_surface_area_mesh(self, spine_and_slicer_dict)
 
 
         return {'FINISHED'}
 
+def create_surface_area_mesh(self, spine_and_slicer_dict):
+    for spine, slicer in spine_and_slicer_dict.items():
+        print(spine, 'spine', slicer, 'slicer')
+        spine = bpy.data.objects[spine]
+        slicer = bpy.data.objects[slicer]
+        
+        # Set the desired overlap value
+        overlap = 0.01
 
+        # Set the z dimension of the slicer object
+        slicer.dimensions.z = overlap
 
+        # Create a copy of the spine, add surface area to its name
+        duplicate_spine = spine.copy()
+        duplicate_spine.data = spine.data.copy()
+        duplicate_spine.name = "surface_" + spine.name
 
-# def match_spine_to_slicer(self, selected_object_names):
-#     # Get the active collection and its name
-#     collection = bpy.context.collection
-#     collection_name = collection.name
-#     boolean_meshes_collection = bpy.data.collections[collection_name]
-#     boolean_meshes = [obj for obj in boolean_meshes_collection.objects]
-#     spine_and_slicer_dict = {}
+        # Link the duplicate spine to the same collection as the original spine
+        spine_collection = spine.users_collection[0]
+        spine_collection.objects.link(duplicate_spine)
 
-#     for spine in selected_object_names:
-#         spine = bpy.data.objects[spine]
+        # Deselect all objects
+        bpy.ops.object.select_all(action='DESELECT')
 
-#         # Initialize variables to store closest mesh and distance
-#         closest_mesh = None
-#         closest_distance = float('inf')
+        # Select the duplicate spine and make it the active object
+        duplicate_spine.select_set(True)
+        bpy.context.view_layer.objects.active = duplicate_spine
 
-#         # Iterate through all mesh objects
-#         for mesh_obj in boolean_meshes:
-#             # Calculate the distance between the selected object and the current mesh object
-#             distance = (spine.location - mesh_obj.location).length
-            
-#             # Update closest_mesh and closest_distance if a closer mesh is found
-#             if distance < closest_distance:
-#                 closest_mesh = mesh_obj
-#                 closest_distance = distance
-#             slicer = closest_mesh.name
-#             spine_and_slicer_dict[spine.name] = slicer 
-#     print(len(spine_and_slicer_dict), "dict length")
-#     return(spine_and_slicer_dict)
+        # Create the Solidify modifier
+        solidify_modifier = duplicate_spine.modifiers.new(name="Solidify", type='SOLIDIFY')
+        solidify_modifier.thickness = 0.01  # Adjust the thickness value as desired
+
+        # Apply the Solidify modifier
+        bpy.ops.object.modifier_apply({"object": duplicate_spine}, modifier=solidify_modifier.name)
+
+        # Deselect the duplicate spine
+        duplicate_spine.select_set(False)
+    return {'FINISHED'}    
+    # for spine, slicer in spine_and_slicer_dict.items():
+    #     print(spine, 'spine', slicer, 'slicer')
+    #     spine = bpy.data.objects[spine]
+    #     slicer = bpy.data.objects[slicer]
+    #     #get its slicer, set z to be 0.01
+    #     overlap = 0.01
+        
+    #     slicer.dimensions.z = overlap
+    #     #Create a copy of the spine, add surface area to its name
+    #     duplicate_spine = spine.copy()
+    #     duplicate_spine.data = spine.data.copy()
+    #     duplicate_spine.name = "surface_" + spine.name
+
+    #     # Link the duplicate spine to the same collection as the original spine
+    #     spine_collection = spine.users_collection[0]
+    #     spine_collection.objects.link(duplicate_spine)
+
+    #     # Deselect all objects
+    #     bpy.ops.object.select_all(action='DESELECT')
+
+    #     # Select the duplicate spine and make it the active object
+    #     duplicate_spine.select_set(True)
+    #     bpy.context.view_layer.objects.active = duplicate_spine
+
+    #     # Create the Solidify modifier
+    #     solidify_modifier = duplicate_spine.modifiers.new(name="Solidify", type='SOLIDIFY')
+    #     solidify_modifier.thickness = 0.1  # Adjust the thickness value as desired
+
+    #     # Apply the Solidify modifier
+    #     bpy.ops.object.modifier_apply({"object": duplicate_spine}, modifier=solidify_modifier.name)
+
+    #     duplicate_spine.select_set(False)
+
+        #Apply solidify modifier to it
+        #Apply slicer boolean modifier
+
  
 #For our use original_mesh_name means dendrite, booleans refers to cylinders/slicers  
 class CheckBooleans(bpy.types.Operator):
