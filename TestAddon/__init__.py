@@ -10,7 +10,7 @@ from . ClassDefinitions import ManualLength
 from . ClassDefinitions import WriteNWB
 from . ClassDefinitions import CheckBooleans
 from . ClassDefinitions import AddSpheres
-from . ClassDefinitions import SpineSlicer
+
 
 #Information about the Addon created by the Blender Development VSCode Extension
 bl_info = {
@@ -30,7 +30,6 @@ def register():
     #operators
     bpy.utils.register_class(ExplodingBits)
     bpy.utils.register_class(CheckBooleans)
-    bpy.utils.register_class(SpineSlicer)
     bpy.utils.register_class(DiscSegmenter)
     bpy.utils.register_class(ManualLength)
     bpy.utils.register_class(WriteNWB)
@@ -119,7 +118,6 @@ def unregister():
     bpy.utils.unregister_class(ManualLength)
     bpy.utils.unregister_class(WriteNWB)
     bpy.utils.unregister_class(AddSpheres)
-    bpy.utils.unregister_class(SpineSlicer)
 
     #Subject fields
     bpy.types.Scene.subject_id
