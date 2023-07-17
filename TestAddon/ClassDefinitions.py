@@ -127,29 +127,25 @@ class SpineSlicer(bpy.types.Operator):
     def execute(self, context):
         start_time = time.time()
         #Select active object
-        object = bpy.context.active_object
+        #object = bpy.context.active_object
         #Split it into pieces
-        bpy.ops.mesh.separate(type='LOOSE')
+        #bpy.ops.mesh.separate(type='LOOSE')
         spine_list = [obj for obj in bpy.context.selected_objects]
         #Find the largest mesh and remove it from the list
         max_verts = 0
-        dendrite = ""
-        for o in spine_list:
-            if len(o.data.vertices) > max_verts:
-                max_verts = len(o.data.vertices)
-                dendrite = o.name
-        dendrite = bpy.data.objects[dendrite]
-        spine_list.remove(dendrite)
+        # dendrite = ""
+        # for o in spine_list:
+        #     if len(o.data.vertices) > max_verts:
+        #         max_verts = len(o.data.vertices)
+        #         dendrite = o.name
+        # dendrite = bpy.data.objects[dendrite]
+        # spine_list.remove(dendrite)
 
         # Get the active collection, its name, and put its contents into slicer list
         collection = bpy.context.collection
         collection_name = collection.name
         boolean_meshes_collection = bpy.data.collections[collection_name]
         slicer_list = [obj for obj in boolean_meshes_collection.objects]
-
-        #Why does this break my solidify Boolean?
-        for slicer in slicer_list:
-            slicer.scale *= 2
 
         faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
         spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
@@ -159,10 +155,26 @@ class SpineSlicer(bpy.types.Operator):
         spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict)
         spine_tip_dict = find_spine_tip(self, spine_base_dict)
         create_base_and_tip(self, spine_base_dict, spine_tip_dict)
+
+        for slicer in slicer_list:
+            slicer.scale *= 2
+        
         surface_spine_and_slicer_dict = create_surface_area_mesh(self, spine_and_slicer_dict)
         slice_surface_spines(self, surface_spine_and_slicer_dict)
 
+        for slicer in slicer_list:
+            slicer.scale *= 0.5
 
+        unique_slicers = list(set(spine_and_slicer_dict.values()))
+
+        for matched_slicer in unique_slicers:
+            print(matched_slicer)
+            matched_slicer = bpy.data.objects[matched_slicer]
+            if matched_slicer.name in boolean_meshes_collection.objects:
+                boolean_meshes_collection.objects.unlink(matched_slicer)
+                bpy.context.scene.collection.objects.link(matched_slicer)
+            else:
+                matched_slicer.name = matched_slicer.name + "inspect"
         return {'FINISHED'}
 
 def create_surface_area_mesh(self, spine_and_slicer_dict):
