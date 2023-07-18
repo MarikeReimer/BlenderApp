@@ -83,15 +83,19 @@ class NeuronAnalysis(bpy.types.Panel):
 
         #Add button that generates spheres for Check Boolean error handling        
         row = layout.row()
-        row.operator('object.add_spheres', text = 'Add Sphere Markers')
+        row.operator('object.slice_spines', text = 'Segment Spines')
 
-        #Add button that evaluates Booleans        
-        row = layout.row()
-        row.operator('object.check_booleans', text = 'Check Slicers')
+        #Add button that generates spheres for Check Boolean error handling        
+        # row = layout.row()
+        # row.operator('object.add_spheres', text = 'Add Sphere Markers')
+
+        # #Add button that evaluates Booleans        
+        # row = layout.row()
+        # row.operator('object.check_booleans', text = 'Check Slicers')
         
-        #Add button that moves spines to folders and adds a spine base and tip
-        row = layout.row()
-        row.operator('object.discsegmenter', text = 'Disc Method Segment')
+        # #Add button that moves spines to folders and adds a spine base and tip
+        # row = layout.row()
+        # row.operator('object.discsegmenter', text = 'Disc Method Segment')
 
         #Add button that adds a spine tip if you select its base
         row = layout.row()
@@ -121,21 +125,7 @@ class SpineSlicer(bpy.types.Operator):
     bl_label = 'Slice Spines' 
     
     def execute(self, context):
-        start_time = time.time()
-        #Select active object
-        #object = bpy.context.active_object
-        #Split it into pieces
-        #bpy.ops.mesh.separate(type='LOOSE')
         spine_list = [obj for obj in bpy.context.selected_objects]
-        #Find the largest mesh and remove it from the list
-        max_verts = 0
-        # dendrite = ""
-        # for o in spine_list:
-        #     if len(o.data.vertices) > max_verts:
-        #         max_verts = len(o.data.vertices)
-        #         dendrite = o.name
-        # dendrite = bpy.data.objects[dendrite]
-        # spine_list.remove(dendrite)
 
         # Get the active collection, its name, and put its contents into slicer list
         collection = bpy.context.collection
@@ -151,26 +141,23 @@ class SpineSlicer(bpy.types.Operator):
         spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict)
         spine_tip_dict = find_spine_tip(self, spine_base_dict)
         create_base_and_tip(self, spine_base_dict, spine_tip_dict)
+        create_surface_area_mesh(self, spine_and_slicer_dict)
+        #surface_spine_and_slicer_dict = create_surface_area_mesh(self, spine_and_slicer_dict)
+        #slice_surface_spines(self, surface_spine_and_slicer_dict)
 
-        for slicer in slicer_list:
-            slicer.scale *= 2
-        
-        surface_spine_and_slicer_dict = create_surface_area_mesh(self, spine_and_slicer_dict)
-        slice_surface_spines(self, surface_spine_and_slicer_dict)
+        # for slicer in slicer_list:
+        #     slicer.scale *= 0.5
 
-        for slicer in slicer_list:
-            slicer.scale *= 0.5
+        # unique_slicers = list(set(spine_and_slicer_dict.values()))
 
-        unique_slicers = list(set(spine_and_slicer_dict.values()))
-
-        for matched_slicer in unique_slicers:
-            print(matched_slicer)
-            matched_slicer = bpy.data.objects[matched_slicer]
-            if matched_slicer.name in boolean_meshes_collection.objects:
-                boolean_meshes_collection.objects.unlink(matched_slicer)
-                bpy.context.scene.collection.objects.link(matched_slicer)
-            else:
-                matched_slicer.name = matched_slicer.name + "inspect"
+        # for matched_slicer in unique_slicers:
+        #     print(matched_slicer)
+        #     matched_slicer = bpy.data.objects[matched_slicer]
+        #     if matched_slicer.name in boolean_meshes_collection.objects:
+        #         boolean_meshes_collection.objects.unlink(matched_slicer)
+        #         bpy.context.scene.collection.objects.link(matched_slicer)
+        #     else:
+        #         matched_slicer.name = matched_slicer.name + "inspect"
         return {'FINISHED'}
 
 def create_surface_area_mesh(self, spine_and_slicer_dict):
@@ -191,32 +178,30 @@ def create_surface_area_mesh(self, spine_and_slicer_dict):
         spine_collection.objects.link(duplicate_spine)
 
         # Deselect all objects
-        bpy.ops.object.select_all(action='DESELECT')
+        # bpy.ops.object.select_all(action='DESELECT')
 
-        # Select the duplicate spine
-        duplicate_spine.select_set(True)
+        # # Select the duplicate spine
+        # duplicate_spine.select_set(True)
 
-        # Create the Solidify modifier
-        solidify_modifier = duplicate_spine.modifiers.new(name="Solidify", type='SOLIDIFY')
-        solidify_modifier.thickness = 0.01  # Adjust the thickness value as desired
+        # # Create the Solidify modifier
+        # solidify_modifier = duplicate_spine.modifiers.new(name="Solidify", type='SOLIDIFY')
+        # solidify_modifier.thickness = 0.01  # Adjust the thickness value as desired
+        # print("solidified", duplicate_spine)
 
-        # Apply the Solidify modifier
-        bpy.ops.object.modifier_apply({"object": duplicate_spine}, modifier=solidify_modifier.name)
+        # # Apply the Solidify modifier
+        # bpy.ops.object.modifier_apply({"object": duplicate_spine}, modifier=solidify_modifier.name)
 
-        # Deselect the duplicate spine
-        duplicate_spine.select_set(False)
+        # # Deselect the duplicate spine
+        # duplicate_spine.select_set(False)
 
         # Store the relationship between the duplicate spine and slicer in the dictionary
         surface_spine_and_slicer_dict[duplicate_spine] = slicer
 
-
-    print(surface_spine_and_slicer_dict)
     return surface_spine_and_slicer_dict
 
 
 def slice_surface_spines(self, surface_spine_and_slicer_dict):
     for surface_spine, slicer in surface_spine_and_slicer_dict.items():
-        print(surface_spine.name, 'spine', slicer.name, 'slicer')
 
         # Apply the boolean difference modifier
         bpy.ops.object.select_all(action='DESELECT')
