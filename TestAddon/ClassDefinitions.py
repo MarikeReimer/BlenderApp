@@ -83,7 +83,10 @@ class NeuronAnalysis(bpy.types.Panel):
 
         #Add button that generates spheres for Check Boolean error handling        
         row = layout.row()
-        row.operator('object.slice_spines', text = 'Segment Spines')
+        row.operator('object.slice_spines', text = 'Segment Solid Spines')
+
+        row = layout.row()
+        row.operator('object.segment_hollow_spines', text = 'Segment Hollow Spines')
 
         #Add button that generates spheres for Check Boolean error handling        
         # row = layout.row()
@@ -141,7 +144,7 @@ class SpineSlicer(bpy.types.Operator):
         spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict)
         spine_tip_dict = find_spine_tip(self, spine_base_dict)
         create_base_and_tip(self, spine_base_dict, spine_tip_dict)
-        create_surface_area_mesh(self, spine_and_slicer_dict)
+        #create_surface_area_mesh(self, spine_and_slicer_dict)
         #surface_spine_and_slicer_dict = create_surface_area_mesh(self, spine_and_slicer_dict)
         #slice_surface_spines(self, surface_spine_and_slicer_dict)
 
@@ -245,7 +248,51 @@ def slice_surface_spines(self, surface_spine_and_slicer_dict):
 #         surface_spine.select_set(False)
 
 #     return {'FINISHED'}
- 
+
+
+#Move Hollow Spines to collections
+class SegmentHollowSpines(bpy.types.Operator):
+    bl_idname = 'object.segment_hollow_spines' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'Segment Hollow Spines' 
+
+    def execute(self, context):
+        spine_list = [obj for obj in bpy.context.selected_objects]
+
+        # Get the active collection, its name, and put its contents into slicer list
+        collection = bpy.context.collection
+        collection_name = collection.name
+        boolean_meshes_collection = bpy.data.collections[collection_name]
+        slicer_list = [obj for obj in boolean_meshes_collection.objects]
+
+        faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
+        spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
+        spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
+        #spines_to_collections(self, spine_and_slicer_dict)
+
+        hollow_spines_to_collections(self, spine_and_slicer_dict)
+
+        #rename hollow spines
+        for spine in spine_and_slicer_dict.keys():
+            spine = bpy.data.objects.get(spine)
+            spine.name = "surface_" + spine.name
+
+        return {'FINISHED'}
+
+def hollow_spines_to_collections(self, spine_and_slicer_dict):
+    for spine in spine_and_slicer_dict.keys():
+            spine = bpy.data.objects.get(spine)
+        # Loop through all collections in the scene
+            for collection in bpy.data.collections:
+                if collection.name.lower() in spine.name.lower():
+                    if spine.users_collection:  # Make sure it is not in another collection
+                        for coll in spine.users_collection:
+                            coll.objects.unlink(spine)
+
+                    # Add the spineect to the matching collection
+                    collection.objects.link(spine)
+                    print(f"Moved object '{spine.name}' to collection '{collection.name}'.")
+
+
 #For our use original_mesh_name means dendrite, booleans refers to cylinders/slicers  
 class CheckBooleans(bpy.types.Operator):
     bl_idname = 'object.check_booleans' #operators must follow the naming convention of object.lowercase_letters
