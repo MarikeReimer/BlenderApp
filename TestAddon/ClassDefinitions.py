@@ -7,6 +7,7 @@ from datetime import datetime
 import math
 from collections import defaultdict
 import time
+import re
 
 
 #The new way of adding python libraries
@@ -281,122 +282,122 @@ class SegmentHollowSpines(bpy.types.Operator):
 def hollow_spines_to_collections(self, spine_and_slicer_dict):
     for spine in spine_and_slicer_dict.keys():
             spine = bpy.data.objects.get(spine)
-        # Loop through all collections in the scene
             for collection in bpy.data.collections:
-                if collection.name.lower() in spine.name.lower():
+                collection_name = collection.name.lower()
+                pattern = r'\b' + re.escape(collection_name) + r'\b'
+                
+                if re.search(pattern, spine.name.lower()):
                     if spine.users_collection:  # Make sure it is not in another collection
                         for coll in spine.users_collection:
                             coll.objects.unlink(spine)
 
                     # Add the spineect to the matching collection
                     collection.objects.link(spine)
-                    print(f"Moved object '{spine.name}' to collection '{collection.name}'.")
-
 
 #For our use original_mesh_name means dendrite, booleans refers to cylinders/slicers  
-class CheckBooleans(bpy.types.Operator):
-    bl_idname = 'object.check_booleans' #operators must follow the naming convention of object.lowercase_letters
-    bl_label = 'Check Booleans'   
+# class CheckBooleans(bpy.types.Operator):
+#     bl_idname = 'object.check_booleans' #operators must follow the naming convention of object.lowercase_letters
+#     bl_label = 'Check Booleans'   
 
-    def execute(self, context):
-        start_time = time.time()
+#     def execute(self, context):
+#         start_time = time.time()
         
-        vert_threshold = 1000
+#         vert_threshold = 1000
 
-        #Get objects to perform Boolean on/with
-        boolean_objects = get_objects_for_boolean(self, context)
-        original_mesh = boolean_objects[0]
-        boolean_meshes_collection = boolean_objects[1]
-        original_mesh_copy = boolean_objects[2]
-        #original_mesh_verts = boolean_objects[3]
-        sphere1 = boolean_objects[3]
-        sphere2 = boolean_objects[4]
-        object_collection = boolean_objects[5]
+#         #Get objects to perform Boolean on/with
+#         boolean_objects = get_objects_for_boolean(self, context)
+#         original_mesh = boolean_objects[0]
+#         boolean_meshes_collection = boolean_objects[1]
+#         original_mesh_copy = boolean_objects[2]
+#         #original_mesh_verts = boolean_objects[3]
+#         sphere1 = boolean_objects[3]
+#         sphere2 = boolean_objects[4]
+#         object_collection = boolean_objects[5]
 
-        try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy,  sphere1, sphere2, object_collection)
-        bpy.data.objects.remove(original_mesh, do_unlink=True)
-        bpy.data.objects.remove(original_mesh_copy, do_unlink=True)
+#         try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy,  sphere1, sphere2, object_collection)
+#         bpy.data.objects.remove(original_mesh, do_unlink=True)
+#         bpy.data.objects.remove(original_mesh_copy, do_unlink=True)
 
-        end_time = time.time()
-        elapsed_time = end_time - start_time
-        print("Elapsed time:", elapsed_time, "seconds")
+#         end_time = time.time()
+#         elapsed_time = end_time - start_time
+#         print("Elapsed time:", elapsed_time, "seconds")
 
-        return {'FINISHED'}
+#         return {'FINISHED'}
 
-def get_objects_for_boolean(self, context):
-    # Get the active object and its name
-    object = bpy.context.active_object
-    object_collection = object.users_collection[0]
+# def get_objects_for_boolean(self, context):
+#     # Get the active object and its name
+#     object = bpy.context.active_object
+#     object_collection = object.users_collection[0]
 
-    # Get the active collection and its name
-    collection = bpy.context.collection
-    collection_name = collection.name
+#     # Get the active collection and its name
+#     collection = bpy.context.collection
+#     collection_name = collection.name
 
-    # Get references to the original mesh and the collection
-    original_mesh = bpy.data.objects[object.name]
-    original_mesh = bpy.context.view_layer.objects.active
-    boolean_meshes_collection = bpy.data.collections[collection_name]
-    original_mesh.select_set(True)
+#     # Get references to the original mesh and the collection
+#     original_mesh = bpy.data.objects[object.name]
+#     original_mesh = bpy.context.view_layer.objects.active
+#     boolean_meshes_collection = bpy.data.collections[collection_name]
+#     original_mesh.select_set(True)
 
-    # Store the original mesh data
-    original_mesh_copy = original_mesh.copy()
-    original_mesh_copy.data = original_mesh.data.copy()
-    # original_mesh_verts = len(original_mesh.data.vertices)
+#     # Store the original mesh data
+#     original_mesh_copy = original_mesh.copy()
+#     original_mesh_copy.data = original_mesh.data.copy()
+#     # original_mesh_verts = len(original_mesh.data.vertices)
 
-    sphere1 = bpy.context.scene.objects.get("BoolSphere1")
-    sphere2 = bpy.context.scene.objects.get("BoolSphere2")
+#     sphere1 = bpy.context.scene.objects.get("BoolSphere1")
+#     sphere2 = bpy.context.scene.objects.get("BoolSphere2")
 
-    if not sphere1:
-        print("Please add Spheres")
+#     if not sphere1:
+#         print("Please add Spheres")
 
-    return(original_mesh, boolean_meshes_collection, original_mesh_copy, sphere1,sphere2, object_collection)
+#     return(original_mesh, boolean_meshes_collection, original_mesh_copy, sphere1,sphere2, object_collection)
 
-def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, sphere1, sphere2, object_collection):
-    for obj in boolean_meshes_collection.objects:
-        # Create the boolean modifier 
-        bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
-        bool_modifier.operation = 'DIFFERENCE'
-        bool_modifier.object = obj
+# def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, sphere1, sphere2, object_collection):
+#     for obj in boolean_meshes_collection.objects:
+#         # Create the boolean modifier 
+#         bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
+#         bool_modifier.operation = 'DIFFERENCE'
+#         bool_modifier.object = obj
 
-        # Apply the modifier to the active object
-        bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
+#         # Apply the modifier to the active object
+#         bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
 
-        # Run the raycast between the two spheres
-        hit = CheckBoolsRayCast(sphere1, sphere2)
-        print("hit", hit)
+#         # Run the raycast between the two spheres
+#         hit = CheckBoolsRayCast(sphere1, sphere2)
+#         print("hit", hit)
         
-        if hit:
-            print(obj.name, len(original_mesh.data.vertices), "has issues", 'copy:', len(original_mesh_copy.data.vertices))
+#         if hit:
+#             print(obj.name, len(original_mesh.data.vertices), "has issues", 'copy:', len(original_mesh_copy.data.vertices))
 
-            # Create a new original_mesh object from the original_mesh_copy
-            original_mesh = original_mesh_copy.copy()
-            original_mesh.data = original_mesh_copy.data.copy()
+#             # Create a new original_mesh object from the original_mesh_copy
+#             original_mesh = original_mesh_copy.copy()
+#             original_mesh.data = original_mesh_copy.data.copy()
 
-            # Unlink the previous original_mesh from the scene collection
-            #bpy.context.collection.objects.unlink(original_mesh)
-            #bpy.data.collections[object_collection.name].objects.link(obj)
-            # Link the new original_mesh to the scene collection
-            # Get the scene collection
-            scene_collection = bpy.context.scene.collection
+#             # Unlink the previous original_mesh from the scene collection
+#             #bpy.context.collection.objects.unlink(original_mesh)
+#             #bpy.data.collections[object_collection.name].objects.link(obj)
+#             # Link the new original_mesh to the scene collection
+#             # Get the scene collection
+#             scene_collection = bpy.context.scene.collection
 
-            # Link the object to the scene collection
-            scene_collection.objects.link(original_mesh)
-            #bpy.context.collection.objects.link(original_mesh)
-            # original_mesh.select_set(True)
+#             # Link the object to the scene collection
+#             scene_collection.objects.link(original_mesh)
+#             #bpy.context.collection.objects.link(original_mesh)
+#             # original_mesh.select_set(True)
 
-            # # Update the boolean modifier object reference
-            # bool_modifier.object = obj
+#             # # Update the boolean modifier object reference
+#             # bool_modifier.object = obj
 
-            obj.name = obj.name + " needs inspection"
+#             obj.name = obj.name + " needs inspection"
 
-        if not hit:
-            #Absence of hit means object is between spheres
-            print("Dendrite detected. Good to go!")
-            print(obj.name, len(original_mesh.data.vertices), "success")
-            original_mesh_verts = len(original_mesh.data.vertices)
+#         if not hit:
+#             #Absence of hit means object is between spheres
+#             print("Dendrite detected. Good to go!")
+#             print(obj.name, len(original_mesh.data.vertices), "success")
+#             original_mesh_verts = len(original_mesh.data.vertices)
 
 
-    return {'FINISHED'}
+#     return {'FINISHED'}
 
 # Add spheres for Check Booleans
 class AddSpheres(bpy.types.Operator):
