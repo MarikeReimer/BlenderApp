@@ -9,6 +9,7 @@ from collections import defaultdict
 import time
 import re
 import datajoint as dj
+import csv
 
 
 #The new way of adding python libraries
@@ -120,6 +121,7 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "datajoint_user")
         row.prop(context.scene, "datajoint_password")
 
+        row = layout.row()
         #Pass data to DataJoint
         row.operator('object.load_dj', text = "Load into DataJoint")
         #DataJoint
@@ -1314,7 +1316,212 @@ class LoadDataJoint(bpy.types.Operator):
         schema = connect_to_dj(self, host, datajoint_user, datajoint_password)
         print(schema)
         schema
-        return {'FINISHED'}
+        
+        #Define Mouse table
+        @schema
+        class Subject(dj.Manual):
+            definition = """
+            subject_id: varchar(128)                  # Primary keys above the '---'
+            ---
+            #non-primary columns below the '---' 
+            age: varchar(128)
+            genotype: enum('B6', 'BalbC', 'Unknown', 'Thy1-YFP')
+            sex: enum('M', 'F', 'Unknown')
+            species: varchar(128)
+            strain: varchar(128)
+            """
+
+        @schema
+        class Session(dj.Manual):
+            definition = """
+            ->Subject
+            identifier: varchar(128)                  # Primary keys above the '---'
+            ---
+            #non-primary columns below the '---' 
+            session_start_time: timestamp
+            surgery: varchar(128)
+            pharmacology: varchar(128)
+            notes: varchar(128)
+            """
+
+
+        @schema
+        class Dendrite(dj.Manual):
+            definition = """
+            ->Session
+            dendrite_id: int                  # Primary keys above the '---'
+            ---
+            #non-primary columns below the '---'
+            soma_contact_point: longblob
+            proximal_dendrite_length: float
+            medial_dendrite_length: float
+            distal_dendrite_length: float
+            far_distal_dendrite_length: float
+            """
+
+        @schema
+        class Image_segmentation(dj.Imported):
+            definition = """
+            ->Dendrite
+            segmentation_name: varchar(128)                  # Primary keys above the '---'
+            ---
+            #non-primary columns below the '---'
+            length: float
+            volume: float
+            surface_area:float
+            spine_type: enum('mushroom', 'thin', 'U')
+            center_of_mass: longblob
+            """
+            def make(self, key):
+                subject_id = key['subject_id']
+                identifier = key['identifier']
+
+                nwbfile_to_read = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBfiles/' + str(subject_id) + str(identifier) + '.nwb' #TODO: Remove hard coding
+                #nwbfile_to_read = 'C:/Users/meowm/Downloads/NWBfiles/' + str(subject_id) + str(identifier) + '.nwb'
+
+                print(nwbfile_to_read)
+                with NWBHDF5IO(nwbfile_to_read, 'r') as io:
+                    nwbfile = io.read()     
+                    for group in nwbfile.processing["SpineData"]["ImageSegmentation"].children[:]:
+                        #print(group.name)
+                        if group.name.startswith("Mushroom"):
+                            spine_type = 'mushroom'
+                        elif group.name.startswith("Thin"):
+                            spine_type = 'thin'
+                        else:
+                            spine_type = 'U'
+
+                        length = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].length.data[:]
+                        length = length[0]
+                        volume = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].volume.data[:]
+                        volume = volume[0]
+                        surface_area = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].surface_area.data[:]
+                        surface_area = surface_area[0]
+                        center_of_mass = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].center_of_mass.data[:]
+                        center_of_mass = center_of_mass[0]
+                        
+                        key['segmentation_name'] = group.name 
+                        key['length'] = length
+                        key['volume'] = volume
+                        key['surface_area'] = surface_area
+                        key['spine_type'] = spine_type
+                        key['center_of_mass'] = center_of_mass
+                        self.insert1(key)
+
+        @schema
+        class Distance_to_soma(dj.Computed):
+            definition = """
+            ->Image_segmentation
+            ---
+            distance_to_soma: float"""
+            def make(self, key):
+                center_of_mass = (Image_segmentation() & key).fetch1('center_of_mass')
+                soma_contact_point = (Dendrite() & key).fetch1('soma_contact_point')
+                distance_to_soma = math.dist(center_of_mass,soma_contact_point)
+
+                key['distance_to_soma'] = distance_to_soma
+                self.insert1(key)
+
+        #Instantiate tables
+        subject = Subject()
+        session = Session()
+        dendrite = Dendrite()
+        image_segmentation = Image_segmentation()
+        distance_to_soma = Distance_to_soma()
+
+        print("tables instantiated")
+        
+        AddCSVtoNWB(self, subject, session, dendrite, image_segmentation, distance_to_soma)
+
+        return{'FINISHED'}
+
+def AddCSVtoNWB(self, subject, session, dendrite, image_segmentation, distance_to_soma): 
+    print("trying to read CSV") 
+    path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/' #TODO: remove hard coding
+    os.chdir(path)
+    #Read in dendrite data from CSV
+    with open('DataJointDendriteTable.csv') as csv_file:
+        csv_reader = csv.reader(csv_file, delimiter=',')
+        next(csv_reader) # This skips the header row of the CSV file.
+        #Make a list of the NWB files in the directory
+        #path = 'C:/Users/meowm/Downloads/NWBfiles'
+        path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBFiles'
+        os.chdir(path)
+        NWBfiles = os.listdir(path)
+        NWBfiles.sort()
+        
+        counter = 0
+
+        for row in csv_reader:
+            #NWB file is synced with the row in the CSV file containing dendrite length
+            nwb_filename = NWBfiles[counter]
+            counter += 1
+            print("NWB file,", nwb_filename, ", is being associated with")
+            print(f'/t  {row[1]}')
+            dendrite_number = row[2]
+
+            soma_contact_pointX = float(row[3])
+            soma_contact_pointY = float(row[4])
+            soma_contact_pointZ = float(row[5])
+            soma_contact_point = [soma_contact_pointX, soma_contact_pointY, soma_contact_pointZ]
+            soma_contact_point = np.asarray(soma_contact_point)
+
+            proximal_dendrite_length = float(row[6])
+            medial_dendrite_length = float(row[7])
+            distal_dendrite_length = float(row[8])
+            far_distal_dendrite_length = float(row[9])
+            
+            with NWBHDF5IO(nwb_filename, 'r') as io:
+                nwbfile = io.read()
+            
+            #Subject fields
+            age = nwbfile.subject.age 
+            genotype = nwbfile.subject.genotype
+            sex = nwbfile.subject.sex
+            species = nwbfile.subject.species
+            strain = nwbfile.subject.strain
+            subject_id = nwbfile.subject.subject_id
+
+            #NWBFile Fields
+            identifier = nwbfile.identifier
+            session_start_time = nwbfile.session_start_time
+            pharmacology = nwbfile.pharmacology
+            notes = nwbfile.notes
+            surgery = nwbfile.surgery
+
+            subject.insert1((
+                subject_id,
+                age, 
+                genotype,
+                sex,   
+                species,
+                strain
+                ), skip_duplicates = True)  
+
+            session.insert1((
+                subject_id,
+                identifier,
+                session_start_time,
+                surgery,
+                pharmacology,
+                notes 
+            ))
+
+            dendrite.insert1((
+                subject_id,
+                identifier,
+                dendrite_number,
+                soma_contact_point,
+                proximal_dendrite_length,
+                medial_dendrite_length,
+                distal_dendrite_length,
+                far_distal_dendrite_length
+            ))
+
+            image_segmentation.populate()
+            distance_to_soma.populate()
+        print("It worked")
+        return{"FINISHED"}
 
 #from ClassDefinitions import Subject, Session, Image_segmentation, Dendrite
 
@@ -1329,6 +1536,5 @@ def connect_to_dj(self, host, datajoint_user, datajoint_password):
     return current_schema
 
 
-    # dj.config['database.host'] = 'spinup-db001f1f.cluster-cyynsscieqtk.us-east-1.rds.amazonaws.com'
-    # dj.config['database.user'] = 'MarikeReimer'
-    # dj.config['database.password'] = 'uqHKL3YLMCG0'
+
+
