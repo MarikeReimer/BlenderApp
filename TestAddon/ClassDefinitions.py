@@ -1040,15 +1040,12 @@ def AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma):
         NWBfiles = os.listdir(path)
         NWBfiles.sort()
         
-        counter = 0
-
         for row in csv_reader:
-            #NWB file is synced with the row in the CSV file containing dendrite length
-            nwb_filename = NWBfiles[counter]
-            counter += 1
-            print("NWB file,", nwb_filename, ", is being associated with")
-            print(f'/t  {row[1]}')
-            dendrite_number = row[2]
+            subject_id = row[0]
+            identifier = row[1]
+            nwb_filename = subject_id + identifier + '.nwb'
+
+            dendrite_number = float(row[2])
 
             soma_center_pointX = float(row[3])
             soma_center_pointY = float(row[4])
