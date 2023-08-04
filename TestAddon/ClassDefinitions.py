@@ -55,7 +55,6 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "notes")
         row.prop(context.scene, "pharmacology")
         row.prop(context.scene, "protocol")
-        row.prop(context.scene, "session_start_time")
         row.prop(context.scene, "session_description")
         row.prop(context.scene, "slices")
         row.prop(context.scene, "surgery")
@@ -90,18 +89,6 @@ class NeuronAnalysis(bpy.types.Panel):
 
         row = layout.row()
         row.operator('object.segment_hollow_spines', text = 'Segment Hollow Spines')
-
-        #Add button that generates spheres for Check Boolean error handling        
-        # row = layout.row()
-        # row.operator('object.add_spheres', text = 'Add Sphere Markers')
-
-        # #Add button that evaluates Booleans        
-        # row = layout.row()
-        # row.operator('object.check_booleans', text = 'Check Slicers')
-        
-        # #Add button that moves spines to folders and adds a spine base and tip
-        # row = layout.row()
-        # row.operator('object.discsegmenter', text = 'Disc Method Segment')
 
         #Add button that adds a spine tip if you select its base
         row = layout.row()
@@ -242,35 +229,6 @@ def slice_surface_spines(self, surface_spine_and_slicer_dict):
     return {'FINISHED'}
 
 
-# def slice_surface_spines(self, surface_spine_and_slicer_dict):
-#     for surface_spine, slicer in surface_spine_and_slicer_dict.items():
-#         print(surface_spine.name, 'spine', slicer.name, 'slicer')
-#         slicer.select_set(True)
-#         slicer.scale *= 2
-#         bpy.ops.object.transform_apply(scale=True)
-
-#         bpy.ops.object.select_all(action='DESELECT')
-
-#         # Select the surface spine
-#         surface_spine.select_set(True)
-
-
-#         # Create the Boolean modifier
-#         bool_modifier = surface_spine.modifiers.new(name="Boolean", type='BOOLEAN')
-#         bool_modifier.operation = 'DIFFERENCE'
-
-#         # Set the target object for the Boolean modifier
-#         bool_modifier.object = slicer
-
-#         # Apply the Boolean modifier
-#         bpy.ops.object.modifier_apply({"object": surface_spine}, modifier=bool_modifier.name)
-
-#         # Deselect the surface spine
-#         surface_spine.select_set(False)
-
-#     return {'FINISHED'}
-
-
 #Move Hollow Spines to collections
 class SegmentHollowSpines(bpy.types.Operator):
     bl_idname = 'object.segment_hollow_spines' #operators must follow the naming convention of object.lowercase_letters
@@ -314,110 +272,7 @@ def hollow_spines_to_collections(self, spine_and_slicer_dict):
                     # Add the spineect to the matching collection
                     collection.objects.link(spine)
 
-#For our use original_mesh_name means dendrite, booleans refers to cylinders/slicers  
-# class CheckBooleans(bpy.types.Operator):
-#     bl_idname = 'object.check_booleans' #operators must follow the naming convention of object.lowercase_letters
-#     bl_label = 'Check Booleans'   
 
-#     def execute(self, context):
-#         start_time = time.time()
-        
-#         vert_threshold = 1000
-
-#         #Get objects to perform Boolean on/with
-#         boolean_objects = get_objects_for_boolean(self, context)
-#         original_mesh = boolean_objects[0]
-#         boolean_meshes_collection = boolean_objects[1]
-#         original_mesh_copy = boolean_objects[2]
-#         #original_mesh_verts = boolean_objects[3]
-#         sphere1 = boolean_objects[3]
-#         sphere2 = boolean_objects[4]
-#         object_collection = boolean_objects[5]
-
-#         try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy,  sphere1, sphere2, object_collection)
-#         bpy.data.objects.remove(original_mesh, do_unlink=True)
-#         bpy.data.objects.remove(original_mesh_copy, do_unlink=True)
-
-#         end_time = time.time()
-#         elapsed_time = end_time - start_time
-#         print("Elapsed time:", elapsed_time, "seconds")
-
-#         return {'FINISHED'}
-
-# def get_objects_for_boolean(self, context):
-#     # Get the active object and its name
-#     object = bpy.context.active_object
-#     object_collection = object.users_collection[0]
-
-#     # Get the active collection and its name
-#     collection = bpy.context.collection
-#     collection_name = collection.name
-
-#     # Get references to the original mesh and the collection
-#     original_mesh = bpy.data.objects[object.name]
-#     original_mesh = bpy.context.view_layer.objects.active
-#     boolean_meshes_collection = bpy.data.collections[collection_name]
-#     original_mesh.select_set(True)
-
-#     # Store the original mesh data
-#     original_mesh_copy = original_mesh.copy()
-#     original_mesh_copy.data = original_mesh.data.copy()
-#     # original_mesh_verts = len(original_mesh.data.vertices)
-
-#     sphere1 = bpy.context.scene.objects.get("BoolSphere1")
-#     sphere2 = bpy.context.scene.objects.get("BoolSphere2")
-
-#     if not sphere1:
-#         print("Please add Spheres")
-
-#     return(original_mesh, boolean_meshes_collection, original_mesh_copy, sphere1,sphere2, object_collection)
-
-# def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, sphere1, sphere2, object_collection):
-#     for obj in boolean_meshes_collection.objects:
-#         # Create the boolean modifier 
-#         bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
-#         bool_modifier.operation = 'DIFFERENCE'
-#         bool_modifier.object = obj
-
-#         # Apply the modifier to the active object
-#         bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
-
-#         # Run the raycast between the two spheres
-#         hit = CheckBoolsRayCast(sphere1, sphere2)
-#         print("hit", hit)
-        
-#         if hit:
-#             print(obj.name, len(original_mesh.data.vertices), "has issues", 'copy:', len(original_mesh_copy.data.vertices))
-
-#             # Create a new original_mesh object from the original_mesh_copy
-#             original_mesh = original_mesh_copy.copy()
-#             original_mesh.data = original_mesh_copy.data.copy()
-
-#             # Unlink the previous original_mesh from the scene collection
-#             #bpy.context.collection.objects.unlink(original_mesh)
-#             #bpy.data.collections[object_collection.name].objects.link(obj)
-#             # Link the new original_mesh to the scene collection
-#             # Get the scene collection
-#             scene_collection = bpy.context.scene.collection
-
-#             # Link the object to the scene collection
-#             scene_collection.objects.link(original_mesh)
-#             #bpy.context.collection.objects.link(original_mesh)
-#             # original_mesh.select_set(True)
-
-#             # # Update the boolean modifier object reference
-#             # bool_modifier.object = obj
-
-#             obj.name = obj.name + " needs inspection"
-
-#         if not hit:
-#             #Absence of hit means object is between spheres
-#             print("Dendrite detected. Good to go!")
-#             print(obj.name, len(original_mesh.data.vertices), "success")
-#             original_mesh_verts = len(original_mesh.data.vertices)
-
-
-#     return {'FINISHED'}
 
 # Add spheres for Check Booleans
 class AddSpheres(bpy.types.Operator):
@@ -437,102 +292,6 @@ class AddSpheres(bpy.types.Operator):
 
         return {'FINISHED'}
 
-# def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, original_mesh_verts, sphere1, sphere2):
-#     for obj in boolean_meshes_collection.objects:
-        
-#         # Create the boolean modifier 
-#         bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
-#         bool_modifier.operation = 'DIFFERENCE'
-#         bool_modifier.object = obj
-#         original_mesh.select_set(True)
-
-#         # Apply the modifier to the active object
-#         bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
-        
-#         # Run the raycast between the two spheres
-#         hit = CheckBoolsRayCast(sphere1, sphere2)
-        
-#         if hit:
-#             print("Dendrite detected. Good to go!")
-#             print(obj.name, len(original_mesh.data.vertices), "success")
-#             original_mesh_verts = len(original_mesh.data.vertices)
-
-#         if not hit:
-#             print(obj.name, len(original_mesh.data.vertices), "has issues", 'copy:', len(original_mesh_copy.data.vertices))
-
-#             # Unlink the previous original_mesh from the scene collection
-#             bpy.context.scene.collection.objects.unlink(original_mesh)
-
-#             # Create a new original_mesh object from the original_mesh_copy
-#             original_mesh = original_mesh_copy.copy()
-#             original_mesh.data = original_mesh_copy.data.copy()
-
-#             # Link the new original_mesh to the scene collection
-#             bpy.context.collection.objects.link(original_mesh)
-#             original_mesh.select_set(True)
-
-#             # Update the boolean modifier object reference
-#             bool_modifier.object = obj
-
-#             obj.name = obj.name + " needs inspection"
-#     return {'FINISHED'}
-
-# def try_booleans(self, boolean_meshes_collection, vert_threshold, original_mesh, original_mesh_copy, original_mesh_verts,sphere1,sphere2):
-#     for obj in boolean_meshes_collection.objects:
-#         print("modifying object", original_mesh.name)
-        
-#         # Create the boolean modifier 
-#         bool_modifier = original_mesh.modifiers.new(name="Boolean", type='BOOLEAN')
-#         bool_modifier.operation = 'DIFFERENCE'
-#         bool_modifier.object = obj
-
-#         # Check if original_mesh is in the scene collection before unlinking
-#         if original_mesh.name in bpy.context.scene.collection.objects:
-#             bpy.context.scene.collection.objects.unlink(original_mesh)
-
-#         # Link the modified original_mesh to the scene collection
-#         bpy.context.scene.collection.objects.link(original_mesh)
-#         original_mesh.select_set(True)
-
-#         # Set the active object to original_mesh
-#         bpy.context.view_layer.objects.active = original_mesh
-
-#         # Apply the modifier to the active object
-#         bpy.ops.object.modifier_apply(modifier=bool_modifier.name)
-        
-#         #Run a raycast between two spheres a fixed distance apart, on either side of the dendrite
-#         hit, location, normal, face_index = CheckBoolsRayCast(self, sphere1, sphere2)
-#         if hit:
-#             print("Dendrite detected, gtg")
-
-#         #If it hits the target spere, fail.  (The dendrite should be blocking)
-
-#         # Check to see how well the Boolean worked and apply error handling
-#         # Use the difference in vertices to determine if the original mesh was deleted
-
-#         if original_mesh_verts - len(original_mesh.data.vertices) > vert_threshold:
-#             print(obj.name, len(original_mesh.data.vertices), "has issues", 'copy:', len(original_mesh_copy.data.vertices))
-
-#             # Unlink the previous original_mesh from the scene collection
-#             bpy.context.scene.collection.objects.unlink(original_mesh)
-
-#             # Create a new original_mesh object from the original_mesh_copy
-#             original_mesh = original_mesh_copy.copy()
-#             original_mesh.data = original_mesh_copy.data.copy()
-
-#             # Link the new original_mesh to the scene collection
-#             bpy.context.scene.collection.objects.link(original_mesh)
-#             original_mesh.select_set(True)
-
-#             # Update the boolean modifier object reference
-#             bool_modifier.object = obj
-
-#             obj.name = obj.name + " needs inspection"
-
-#         else:
-#             print(obj.name, len(original_mesh.data.vertices), "success")
-#             original_mesh_verts = len(original_mesh.data.vertices)
-#     return {'FINISHED'}
 
 def CheckBoolsRayCast(sphere1, sphere2):    
     # Define the start and end points for the raycast
@@ -560,32 +319,6 @@ def CheckBoolsRayCast(sphere1, sphere2):
     
     return hit
 
-# def CheckBoolsRayCast(self, sphere1, sphere2):    
-#     # Define the start and end points for the raycast
-#     start_point = sphere1.location
-#     end_point = sphere2.location
-
-#     # Perform the raycast
-#     direction = end_point - start_point
-#     ray_length = direction.length
-#     direction.normalize()
-
-#     # Check for intersections with objects
-#     found_intersection = False
-#     for obj in bpy.context.scene.objects:
-#         if obj != sphere1 and obj != sphere2:
-#             hit, location, normal, face_index = obj.ray_cast(start_point, direction)
-#             if hit:
-#                 found_intersection = True
-#                 break
-
-#     # Check if an object was found between the spheres
-#     if found_intersection:
-#         print("There is an object between the spheres.")
-#     else:
-#         print("There is no object between the spheres.")
-    
-#     return(hit)
 
 # ////
 
@@ -638,9 +371,7 @@ class WriteNWB(bpy.types.Operator):
         lab = bpy.context.scene.lab
         notes = bpy.context.scene.notes
         pharmacology = bpy.context.scene.pharmacology
-        protocol =  bpy.context.scene.protocol
-        session_start_time = bpy.context.scene.session_start_time
-        session_start_time = datetime.strptime(session_start_time, '%Y-%m-%d %H:%M:%S')      
+        protocol =  bpy.context.scene.protocol 
         session_description = bpy.context.scene.session_description
         slices = bpy.context.scene.slices
         surgery = bpy.context.scene.surgery
@@ -682,7 +413,7 @@ class WriteNWB(bpy.types.Operator):
             pharmacology = pharmacology,
             protocol = protocol,
             session_description = session_description,
-            session_start_time = session_start_time,
+            session_start_time = datetime.now(),
             slices = slices,
             surgery = surgery, 
             subject = subject
@@ -793,7 +524,7 @@ class WriteNWB(bpy.types.Operator):
             surface_area = ''
 
             #Create unique name
-            segmentation_name = collection.name + ' mesh plane_segmentaton'
+            segmentation_name = collection.name + '_plane_segmentaton'
             print("segmentation_name", segmentation_name)
 
             #Create plane segmentation from our NWB extension    
@@ -1241,23 +972,6 @@ def cone_raycast(self, spine_base, obj):
             ray_cast_results.append((hit_point))
     return(ray_cast_results)
 
-# #Add spheres for Check Booleans
-# class AddSpheres(bpy.types.Operator):
-#     bl_idname = 'object.add_spheres' #operators must follow the naming convention of object.lowercase_letters
-#     bl_label = 'Add Spheres'
-    
-#     def execute(self, context):
-#         # Create two icospheres
-#         bpy.ops.mesh.primitive_ico_sphere_add(location=(0, 0, 0))
-#         sphere1 = bpy.context.object
-#         bpy.ops.mesh.primitive_ico_sphere_add(location=(0, 0, 3))
-#         sphere2 = bpy.context.object
-
-#         # Rename the icospheres
-#         sphere1.name = "BoolSphere1"
-#         sphere2.name = "BoolSphere2"
-
-#         return {'FINISHED'}
 
 
 #Might be useful later
@@ -1276,27 +990,7 @@ def cone_raycast(self, spine_base, obj):
 #                 else:
 #                     spine.data.materials.append(slicer_color)  
 
-# def mesh_cleaner(self):
-#     scene = bpy.context.scene
-#     print('cleaning meshes')
-#     # Iterate through the objects in the scene collection
-#     for obj in scene.collection.all_objects:
-#         if obj.type == 'MESH':
-#             print(obj.name)
-#             bpy.ops.object.origin_set(type='ORIGIN_CENTER_OF_VOLUME')
-#             bpy.ops.object.transform_apply(location=True, rotation=True, scale=True)
-#             # Switch to Edit Mode
-#             bpy.context.view_layer.objects.active
-#             bpy.ops.object.mode_set(mode='EDIT')
 
-#             # Select all vertices
-#             bpy.ops.mesh.select_all(action='SELECT')
-#             #bpy.ops.mesh.remove_doubles()
-#             # Recalculate normals
-#             bpy.ops.mesh.normals_make_consistent(inside=False)
-
-#             # Switch back to Object Mode
-#             bpy.ops.object.mode_set(mode='OBJECT')
 
 
 ### DataJoint
@@ -1313,134 +1007,29 @@ class LoadDataJoint(bpy.types.Operator):
         datajoint_user= bpy.context.scene.datajoint_user
         datajoint_password = bpy.context.scene.datajoint_password
 
-        schema = connect_to_dj(self, host, datajoint_user, datajoint_password)
+        connect_to_dj(host, datajoint_user, datajoint_password)
+
+        schema = dj.schema('MarikeReimer', locals()) #TODO: Fix hard coding
         print(schema)
-        schema
+
+        schema_holder = instantiate_tables(schema)
+        mouse = schema_holder[0] 
+        session = schema_holder[1]
+        dendrite = schema_holder[2]
+        image_segmentation = schema_holder[3] 
+        distance_to_soma = schema_holder[4]   
+        print(distance_to_soma)
         
-        #Define Mouse table
-        @schema
-        class Subject(dj.Manual):
-            definition = """
-            subject_id: varchar(128)                  # Primary keys above the '---'
-            ---
-            #non-primary columns below the '---' 
-            age: varchar(128)
-            genotype: enum('B6', 'BalbC', 'Unknown', 'Thy1-YFP')
-            sex: enum('M', 'F', 'Unknown')
-            species: varchar(128)
-            strain: varchar(128)
-            """
-
-        @schema
-        class Session(dj.Manual):
-            definition = """
-            ->Subject
-            identifier: varchar(128)                  # Primary keys above the '---'
-            ---
-            #non-primary columns below the '---' 
-            session_start_time: timestamp
-            surgery: varchar(128)
-            pharmacology: varchar(128)
-            notes: varchar(128)
-            """
-
-
-        @schema
-        class Dendrite(dj.Manual):
-            definition = """
-            ->Session
-            dendrite_id: int                  # Primary keys above the '---'
-            ---
-            #non-primary columns below the '---'
-            soma_contact_point: longblob
-            proximal_dendrite_length: float
-            medial_dendrite_length: float
-            distal_dendrite_length: float
-            far_distal_dendrite_length: float
-            """
-
-        @schema
-        class Image_segmentation(dj.Imported):
-            definition = """
-            ->Dendrite
-            segmentation_name: varchar(128)                  # Primary keys above the '---'
-            ---
-            #non-primary columns below the '---'
-            length: float
-            volume: float
-            surface_area:float
-            spine_type: enum('mushroom', 'thin', 'U')
-            center_of_mass: longblob
-            """
-            def make(self, key):
-                subject_id = key['subject_id']
-                identifier = key['identifier']
-
-                nwbfile_to_read = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBfiles/' + str(subject_id) + str(identifier) + '.nwb' #TODO: Remove hard coding
-                #nwbfile_to_read = 'C:/Users/meowm/Downloads/NWBfiles/' + str(subject_id) + str(identifier) + '.nwb'
-
-                print(nwbfile_to_read)
-                with NWBHDF5IO(nwbfile_to_read, 'r') as io:
-                    nwbfile = io.read()     
-                    for group in nwbfile.processing["SpineData"]["ImageSegmentation"].children[:]:
-                        #print(group.name)
-                        if group.name.startswith("Mushroom"):
-                            spine_type = 'mushroom'
-                        elif group.name.startswith("Thin"):
-                            spine_type = 'thin'
-                        else:
-                            spine_type = 'U'
-
-                        length = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].length.data[:]
-                        length = length[0]
-                        volume = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].volume.data[:]
-                        volume = volume[0]
-                        surface_area = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].surface_area.data[:]
-                        surface_area = surface_area[0]
-                        center_of_mass = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].center_of_mass.data[:]
-                        center_of_mass = center_of_mass[0]
-                        
-                        key['segmentation_name'] = group.name 
-                        key['length'] = length
-                        key['volume'] = volume
-                        key['surface_area'] = surface_area
-                        key['spine_type'] = spine_type
-                        key['center_of_mass'] = center_of_mass
-                        self.insert1(key)
-
-        @schema
-        class Distance_to_soma(dj.Computed):
-            definition = """
-            ->Image_segmentation
-            ---
-            distance_to_soma: float"""
-            def make(self, key):
-                center_of_mass = (Image_segmentation() & key).fetch1('center_of_mass')
-                soma_contact_point = (Dendrite() & key).fetch1('soma_contact_point')
-                distance_to_soma = math.dist(center_of_mass,soma_contact_point)
-
-                key['distance_to_soma'] = distance_to_soma
-                self.insert1(key)
-
-        #Instantiate tables
-        subject = Subject()
-        session = Session()
-        dendrite = Dendrite()
-        image_segmentation = Image_segmentation()
-        distance_to_soma = Distance_to_soma()
-
-        print("tables instantiated")
-        
-        AddCSVtoNWB(self, subject, session, dendrite, image_segmentation, distance_to_soma)
+        AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma)
 
         return{'FINISHED'}
 
-def AddCSVtoNWB(self, subject, session, dendrite, image_segmentation, distance_to_soma): 
+def AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma): 
     print("trying to read CSV") 
     path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/' #TODO: remove hard coding
     os.chdir(path)
     #Read in dendrite data from CSV
-    with open('DataJointDendriteTable.csv') as csv_file:
+    with open('DataJointDiscDendriteTable_V1.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader) # This skips the header row of the CSV file.
         #Make a list of the NWB files in the directory
@@ -1460,22 +1049,20 @@ def AddCSVtoNWB(self, subject, session, dendrite, image_segmentation, distance_t
             print(f'/t  {row[1]}')
             dendrite_number = row[2]
 
-            soma_contact_pointX = float(row[3])
-            soma_contact_pointY = float(row[4])
-            soma_contact_pointZ = float(row[5])
-            soma_contact_point = [soma_contact_pointX, soma_contact_pointY, soma_contact_pointZ]
-            soma_contact_point = np.asarray(soma_contact_point)
+            soma_center_pointX = float(row[3])
+            soma_center_pointY = float(row[4])
+            soma_center_pointZ = float(row[5])
+            soma_center_point = [soma_center_pointX, soma_center_pointY, soma_center_pointZ]
+            soma_center_point = np.asarray(soma_center_point)
 
             proximal_dendrite_length = float(row[6])
             medial_dendrite_length = float(row[7])
             distal_dendrite_length = float(row[8])
-            far_distal_dendrite_length = float(row[9])
             
             with NWBHDF5IO(nwb_filename, 'r') as io:
                 nwbfile = io.read()
             
             #Subject fields
-            age = nwbfile.subject.age 
             genotype = nwbfile.subject.genotype
             sex = nwbfile.subject.sex
             species = nwbfile.subject.species
@@ -1484,14 +1071,11 @@ def AddCSVtoNWB(self, subject, session, dendrite, image_segmentation, distance_t
 
             #NWBFile Fields
             identifier = nwbfile.identifier
-            session_start_time = nwbfile.session_start_time
             pharmacology = nwbfile.pharmacology
-            notes = nwbfile.notes
             surgery = nwbfile.surgery
 
-            subject.insert1((
+            mouse.insert1((
                 subject_id,
-                age, 
                 genotype,
                 sex,   
                 species,
@@ -1501,21 +1085,18 @@ def AddCSVtoNWB(self, subject, session, dendrite, image_segmentation, distance_t
             session.insert1((
                 subject_id,
                 identifier,
-                session_start_time,
                 surgery,
-                pharmacology,
-                notes 
+                pharmacology
             ))
 
             dendrite.insert1((
                 subject_id,
                 identifier,
                 dendrite_number,
-                soma_contact_point,
+                soma_center_point,
                 proximal_dendrite_length,
                 medial_dendrite_length,
-                distal_dendrite_length,
-                far_distal_dendrite_length
+                distal_dendrite_length
             ))
 
             image_segmentation.populate()
@@ -1523,18 +1104,124 @@ def AddCSVtoNWB(self, subject, session, dendrite, image_segmentation, distance_t
         print("It worked")
         return{"FINISHED"}
 
-#from ClassDefinitions import Subject, Session, Image_segmentation, Dendrite
 
-def connect_to_dj(self, host, datajoint_user, datajoint_password):
+def connect_to_dj(host, datajoint_user, datajoint_password):
     dj.config['database.host'] = host
     dj.config['database.user'] = datajoint_user
     dj.config['database.password'] = datajoint_password
     dj.conn()
 
-    #Create a schema to organize the pipeline. Defining it here means you only need to change the code in one place.
-    current_schema = dj.schema('MarikeReimer', locals())
-    return current_schema
+def instantiate_tables(schema):
+    #Define Mouse table
+    @schema
+    class Mouse(dj.Manual):
+        definition = """
+        subject_id: varchar(128)                  # Primary keys above the '---'
+        ---
+        #non-primary columns below the '---' 
+        genotype: enum('B6', 'BalbC', 'Unknown', 'Thy1-YFP')
+        sex: enum('M', 'F', 'Unknown')
+        species: varchar(128)
+        strain: varchar(128)
+        """
 
+    mouse = Mouse()
 
+    @schema
+    class Session(dj.Manual):
+        definition = """
+        ->Mouse
+        identifier: varchar(128)                  # Primary keys above the '---'
+        ---
+        #non-primary columns below the '---' 
+        surgery: varchar(128)
+        pharmacology: varchar(128)
+        """
+
+    session = Session()
+
+    @schema
+    class Dendrite(dj.Manual):
+        definition = """
+        ->Session
+        dendrite_id: int                  # Primary keys above the '---'
+        ---
+        #non-primary columns below the '---'
+        soma_center_point: longblob
+        proximal_dendrite_length: float
+        medial_dendrite_length: float
+        distal_dendrite_length: float
+        """
+
+    dendrite = Dendrite()
+
+    @schema
+    class Image_segmentation(dj.Imported):
+        definition = """
+        ->Dendrite
+        segmentation_name: varchar(128)                  # Primary keys above the '---'
+        ---
+        #non-primary columns below the '---'
+        length: float
+        volume: float
+        surface_area:float
+        spine_type: enum('mushroom', 'thin', 'U')
+        center_of_mass: longblob
+        """
+        def make(self, key):
+            subject_id = key['subject_id']
+            identifier = key['identifier']
+
+            nwbfile_to_read = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBfiles/' + str(subject_id) + str(identifier) + '.nwb' #TODO: Remove hard coding
+            #nwbfile_to_read = 'C:/Users/meowm/Downloads/NWBfiles/' + str(subject_id) + str(identifier) + '.nwb'
+
+            print(nwbfile_to_read)
+            with NWBHDF5IO(nwbfile_to_read, 'r') as io:
+                nwbfile = io.read()     
+                for group in nwbfile.processing["SpineData"]["ImageSegmentation"].children[:]:
+                    #print(group.name)
+                    if group.name.startswith("Mushroom"):
+                        spine_type = 'mushroom'
+                    elif group.name.startswith("Thin"):
+                        spine_type = 'thin'
+                    else:
+                        spine_type = 'U'
+
+                    length = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].length.data[:]
+                    length = length[0]
+                    volume = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].volume.data[:]
+                    volume = volume[0]
+                    surface_area = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].surface_area.data[:]
+                    surface_area = surface_area[0]
+                    center_of_mass = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].center_of_mass.data[:]
+                    center_of_mass = center_of_mass[0]
+                    
+                    key['segmentation_name'] = group.name 
+                    key['length'] = length
+                    key['volume'] = volume
+                    key['surface_area'] = surface_area
+                    key['spine_type'] = spine_type
+                    key['center_of_mass'] = center_of_mass
+                    self.insert1(key)
+
+    image_segmentation = Image_segmentation()
+
+    @schema
+    class Distance_to_soma(dj.Computed):
+        definition = """
+        ->Image_segmentation
+        ---
+        distance_to_soma: float"""
+        def make(self, key):
+            center_of_mass = (Image_segmentation() & key).fetch1('center_of_mass')
+            soma_center_point = (Dendrite() & key).fetch1('soma_center_point')
+            distance_to_soma = math.dist(center_of_mass,soma_center_point)
+
+            key['distance_to_soma'] = distance_to_soma
+            self.insert1(key)
+
+    distance_to_soma = Distance_to_soma()
+
+    return mouse, session, dendrite, image_segmentation, distance_to_soma
 
 

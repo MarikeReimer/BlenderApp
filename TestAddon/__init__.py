@@ -59,23 +59,21 @@ def register():
       (name = "Strain", default = "C57BL/6")
     #NWBfile fields
     bpy.types.Scene.experiment_description = bpy.props.StringProperty \
-      (name = "Experiment Description", default = 'We studied the efficacy of romidepsin as a treatment to reduce spasticity and abnormal dendritic spine growth following a contusion injury.')    
+      (name = "Experiment Description", default = 'We developed a dendritic spine analysis platform using virtual reality and Blender to study the efficacy of romidepsin as a treatment to reduce spasticity and abnormal dendritic spine growth following a spinal cord contusion injury.')    
     bpy.types.Scene.experimenter = bpy.props.StringProperty \
-      (name = "Experimenter", default = "Sierra Kauer")
+      (name = "Experimenter", default = "")
     bpy.types.Scene.identifier = bpy.props.StringProperty \
       (name = "Identifier", default = 'Neuron#_Dendrite#')
     bpy.types.Scene.institution = bpy.props.StringProperty \
       (name = "Institution", default = 'Yale University')  
     bpy.types.Scene.lab = bpy.props.StringProperty \
-      (name = "Lab", default = 'Tan Lab')  
+      (name = "Lab", default = '')  
     bpy.types.Scene.notes = bpy.props.StringProperty \
-      (name = "Notes", default = "Intrathecal")  
+      (name = "Notes", default = "")  
     bpy.types.Scene.pharmacology = bpy.props.StringProperty \
       (name = "Pharmacology", default = "Romidepsin")
     bpy.types.Scene.protocol = bpy.props.StringProperty \
-      (name = "Protocol", default = "AT0003")
-    bpy.types.Scene.session_start_time = bpy.props.StringProperty \
-      (name = "Session Start Time", default = "2022-12-15 14:35:15")
+      (name = "Protocol", default = "")
     bpy.types.Scene.session_description = bpy.props.StringProperty \
       (name = "Session Description", default = "Image stacks of neurons were converted into OBJs, traced in Tilt Brush, and then segmented in Blender.")
     bpy.types.Scene.slices = bpy.props.StringProperty \
@@ -95,7 +93,7 @@ def register():
     bpy.types.Scene.imaging_rate = bpy.props.FloatProperty \
       (name = "Imaging Rate")
     bpy.types.Scene.indicator = bpy.props.StringProperty \
-      (name = "Indicator", default = "YFP")
+      (name = "Indicator", default = "Thy1-YFP")
     bpy.types.Scene.location = bpy.props.StringProperty \
       (name = "Location", default = "spinal cord")
     bpy.types.Scene.grid_spacing = bpy.props.FloatProperty \
@@ -154,7 +152,6 @@ def unregister():
     bpy.types.Scene.notes
     bpy.types.Scene.pharmacology
     bpy.types.Scene.protocol
-    bpy.types.Scene.session_start_time
     bpy.types.Scene.session_description
     bpy.types.Scene.slices
     bpy.types.Scene.surgery
