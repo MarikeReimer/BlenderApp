@@ -111,9 +111,6 @@ class NeuronAnalysis(bpy.types.Panel):
         row = layout.row()
         #Pass data to DataJoint
         row.operator('object.load_dj', text = "Load into DataJoint")
-        #DataJoint
-        #Add 
-
 
 
 #ROW OPERATORS
@@ -274,50 +271,50 @@ def hollow_spines_to_collections(self, spine_and_slicer_dict):
 
 
 
-# Add spheres for Check Booleans
-class AddSpheres(bpy.types.Operator):
-    bl_idname = 'object.add_spheres'
-    bl_label = 'Add Spheres'
+# # Add spheres for Check Booleans
+# class AddSpheres(bpy.types.Operator):
+#     bl_idname = 'object.add_spheres'
+#     bl_label = 'Add Spheres'
 
-    def execute(self, context):
-        # Create two icospheres
-        bpy.ops.mesh.primitive_ico_sphere_add(location=(0, 0, 0))
-        sphere1 = bpy.context.object
-        bpy.ops.mesh.primitive_ico_sphere_add(location=(0, 0, 3))
-        sphere2 = bpy.context.object
+#     def execute(self, context):
+#         # Create two icospheres
+#         bpy.ops.mesh.primitive_ico_sphere_add(location=(0, 0, 0))
+#         sphere1 = bpy.context.object
+#         bpy.ops.mesh.primitive_ico_sphere_add(location=(0, 0, 3))
+#         sphere2 = bpy.context.object
 
-        # Rename the icospheres
-        sphere1.name = "BoolSphere1"
-        sphere2.name = "BoolSphere2"
+#         # Rename the icospheres
+#         sphere1.name = "BoolSphere1"
+#         sphere2.name = "BoolSphere2"
 
-        return {'FINISHED'}
+#         return {'FINISHED'}
 
 
-def CheckBoolsRayCast(sphere1, sphere2):    
-    # Define the start and end points for the raycast
-    start_point = sphere1.location
-    end_point = sphere2.location
+# def CheckBoolsRayCast(sphere1, sphere2):    
+#     # Define the start and end points for the raycast
+#     start_point = sphere1.location
+#     end_point = sphere2.location
 
-    # Perform the raycast
-    direction = end_point - start_point
-    direction.normalize()
+#     # Perform the raycast
+#     direction = end_point - start_point
+#     direction.normalize()
 
-    # Check for intersections with objects
-    found_intersection = False
-    for obj in bpy.context.scene.objects:
-        if obj != sphere1 and obj != sphere2:
-            hit, location, normal, face_index = obj.ray_cast(start_point, direction)
-            if hit:
-                found_intersection = True
-                break
+#     # Check for intersections with objects
+#     found_intersection = False
+#     for obj in bpy.context.scene.objects:
+#         if obj != sphere1 and obj != sphere2:
+#             hit, location, normal, face_index = obj.ray_cast(start_point, direction)
+#             if hit:
+#                 found_intersection = True
+#                 break
 
-    # Check if an object was found between the spheres
-    if found_intersection:
-        print("There is an object between the spheres.")
-    else:
-        print("There is no object between the spheres.")
+#     # Check if an object was found between the spheres
+#     if found_intersection:
+#         print("There is an object between the spheres.")
+#     else:
+#         print("There is no object between the spheres.")
     
-    return hit
+#     return hit
 
 
 # ////
@@ -544,11 +541,15 @@ class WriteNWB(bpy.types.Operator):
                     point2 = length_holder[1]
                     length = self.distance_vec(i, point1, point2)
 
-                elif i.type == 'MESH' and len(i.data.vertices) > 2:
+                elif i.type == 'MESH' and i.name.startswith('surface'):
+                    mesh_attributes = self.find_mesh_attributes(i)
+                    doubled_surface_area = mesh_attributes[2]
+                    surface_area = doubled_surface_area/2 
+
+                else:
                     mesh_attributes = self.find_mesh_attributes(i)
                     center_of_mass = mesh_attributes[0]
                     volume = mesh_attributes[1]
-                    surface_area = mesh_attributes[2]
 
             #Add columns to ROI to hold extracted variables
             plane_segmentation.add_column('center_of_mass', 'center_of_mass')
@@ -567,7 +568,7 @@ class WriteNWB(bpy.types.Operator):
                 )
                    
                 #This code can be used to extract the verticies and faces if we want to keep them in the NWBFile
-                #NOTE: edges should be included if we decide to do that
+                #NOTE: edges should be included when we decide to do that
 
                 #     # for v in bm.verts:
                 #     #     mesh_verts.append(v.co)
