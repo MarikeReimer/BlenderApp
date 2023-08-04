@@ -12,6 +12,8 @@ from . ClassDefinitions import WriteNWB
 #from . ClassDefinitions import AddSpheres
 from . ClassDefinitions import SpineSlicer
 from . ClassDefinitions import SegmentHollowSpines
+from . ClassDefinitions import LoadDataJoint
+
 
 #Information about the Addon created by the Blender Development VSCode Extension
 bl_info = {
@@ -37,6 +39,7 @@ def register():
     bpy.utils.register_class(ManualLength)
     bpy.utils.register_class(WriteNWB)
     #bpy.utils.register_class(AddSpheres)
+    bpy.utils.register_class(LoadDataJoint)
  
        
     #Subject Table fields
@@ -99,7 +102,6 @@ def register():
       (name = "Grid Spacing")
     bpy.types.Scene.grid_spacing_unit = bpy.props.StringProperty \
       (name = "Grid Spacing Units", default = 'um')
-    #Fields that would do better in a dropdown
     bpy.types.Scene.device = bpy.props.StringProperty \
       (name = "Device", default = "iXon EMCCD 1")
     bpy.types.Scene.optical_channel_name = bpy.props.StringProperty \
@@ -108,6 +110,15 @@ def register():
       (name = "Optical Channel Description", default = "Channel for YFP")
     bpy.types.Scene.emission_lambda = bpy.props.FloatProperty \
       (name = "emission_lambda", default = 525)
+    
+    #DataJoint Fields
+    bpy.types.Scene.host = bpy.props.StringProperty \
+      (name = "host", default = "spinup-db001f1f.cluster-cyynsscieqtk.us-east-1.rds.amazonaws.com")
+    bpy.types.Scene.datajoint_user = bpy.props.StringProperty \
+      (name = "datajoint_user", default = "MarikeReimer")
+    bpy.types.Scene.datajoint_password = bpy.props.StringProperty \
+      (name = "datajoint_password", default = "uqHKL3YLMCG0")
+
 
 #Unregister classes so that they don't clash with other addons
 def unregister():
@@ -123,6 +134,8 @@ def unregister():
     #bpy.utils.unregister_class(AddSpheres)
     bpy.utils.unregister_class(SpineSlicer)
     bpy.utils.unregister_class(SegmentHollowSpines)
+
+    bpy.utils.unregister_class(LoadDataJoint)
 
     #Subject fields
     bpy.types.Scene.subject_id
@@ -159,6 +172,19 @@ def unregister():
     bpy.types.Scene.optical_channel_name
     bpy.types.Scene.optical_channel_description
     bpy.types.Scene.emission_lambda
+    
+    #DataJoint fields
+    bpy.types.Scene.host
+    bpy.types.Scene.datajoint_user
+    bpy.types.Scene.datajoint_password
+
+    #DataJoint Fields
+    bpy.types.Scene.host = bpy.props.StringProperty \
+      (name = "host", default = "spinup-db001f1f.cluster-cyynsscieqtk.us-east-1.rds.amazonaws.com")
+    bpy.types.Scene.datajoint_user = bpy.props.StringProperty \
+      (name = "datajoint_user", default = "MarikeReimer")
+    bpy.types.Scene.datajoint_password = bpy.props.StringProperty \
+      (name = "datajoint_password", default = "uqHKL3YLMCG0")
 
 
 

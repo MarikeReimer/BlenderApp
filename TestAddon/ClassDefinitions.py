@@ -8,6 +8,7 @@ import math
 from collections import defaultdict
 import time
 import re
+import datajoint as dj
 
 
 #The new way of adding python libraries
@@ -58,7 +59,7 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "slices")
         row.prop(context.scene, "surgery")
 
-        #Add Device menu (someday):
+        #Add Device:
         row.prop(context.scene, "device")
     
         #Add OpticalChannel menu (someday):
@@ -108,6 +109,23 @@ class NeuronAnalysis(bpy.types.Panel):
         #Add button that writes data from panel and object values to an NWB file
         row = layout.row()
         row.operator('object.write_nwb', text = "Write NWB File")
+
+        
+        #Add button that writes data from panel and object values to an NWB file
+        row = layout.row()
+
+        #Add fields for DataJoint
+        row = self.layout.column(align = True)
+        row.prop(context.scene, "host")
+        row.prop(context.scene, "datajoint_user")
+        row.prop(context.scene, "datajoint_password")
+
+        #Pass data to DataJoint
+        row.operator('object.load_dj', text = "Load into DataJoint")
+        #DataJoint
+        #Add 
+
+
 
 #ROW OPERATORS
 
@@ -668,7 +686,7 @@ class WriteNWB(bpy.types.Operator):
             subject = subject
             )  
 
-        #Extract Strings Which Belong in Dropdown Menus
+        #Extract Strings 
         plane_name = bpy.context.scene.plane_name
         device = bpy.context.scene.device
         optical_channel_name = bpy.context.scene.optical_channel_name
@@ -1279,3 +1297,38 @@ def cone_raycast(self, spine_base, obj):
 #             bpy.ops.object.mode_set(mode='OBJECT')
 
 
+### DataJoint
+
+class LoadDataJoint(bpy.types.Operator):
+    bl_idname = 'object.load_dj' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'Load DataJoint'
+    
+    def execute(self, context):
+        # Connect to datajoint
+        
+        #Extract Strings 
+        host = bpy.context.scene.host
+        datajoint_user= bpy.context.scene.datajoint_user
+        datajoint_password = bpy.context.scene.datajoint_password
+
+        schema = connect_to_dj(self, host, datajoint_user, datajoint_password)
+        print(schema)
+        schema
+        return {'FINISHED'}
+
+#from ClassDefinitions import Subject, Session, Image_segmentation, Dendrite
+
+def connect_to_dj(self, host, datajoint_user, datajoint_password):
+    dj.config['database.host'] = host
+    dj.config['database.user'] = datajoint_user
+    dj.config['database.password'] = datajoint_password
+    dj.conn()
+
+    #Create a schema to organize the pipeline. Defining it here means you only need to change the code in one place.
+    current_schema = dj.schema('MarikeReimer', locals())
+    return current_schema
+
+
+    # dj.config['database.host'] = 'spinup-db001f1f.cluster-cyynsscieqtk.us-east-1.rds.amazonaws.com'
+    # dj.config['database.user'] = 'MarikeReimer'
+    # dj.config['database.password'] = 'uqHKL3YLMCG0'
