@@ -1046,6 +1046,8 @@ def AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma):
             csv_subject_id = str(row[0])
             csv_identifier = row[1]
 
+            #Check to see if the current file's subject_ID and identifier match a row in the CSV file, then retreive its data
+
             if subject_id == csv_subject_id and identifier == csv_identifier:
                 nwb_filename = subject_id + identifier + '.nwb'
 
@@ -1103,7 +1105,7 @@ def AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma):
 
                 image_segmentation.populate()
                 distance_to_soma.populate()
-        print("It worked")
+        print("Data loaded")
         
         return{"FINISHED"}
 
