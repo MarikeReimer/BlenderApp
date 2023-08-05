@@ -28,7 +28,7 @@ from mathutils.bvhtree import BVHTree
 #NeuronAnalysis creates a 3Dview panel and add rows for text entry fields and buttons linked to operators.
 
 class NeuronAnalysis(bpy.types.Panel):
-    bl_label = "Neuron Analysis" #The name of our panel
+    bl_label = "NeuroSpineSlicer" #The name of our panel
     bl_idname = "PT_TestPanel" #Gives the panel gets a custom ID, otherwise it takes the name of the class used to define the panel.  Used default from template
     bl_space_type = 'VIEW_3D' #Puts the panel on the VIEW_3D tool bar
     bl_region_type = 'UI' #The region where the panel will be used
