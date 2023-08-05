@@ -1026,9 +1026,12 @@ class LoadDataJoint(bpy.types.Operator):
         return{'FINISHED'}
 
 def AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma): 
-    print("trying to read CSV") 
+    subject_id = bpy.context.scene.subject_id
+    identifier = bpy.context.scene.identifier
+    
     path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/' #TODO: remove hard coding
     os.chdir(path)
+
     #Read in dendrite data from CSV
     with open('DataJointDiscDendriteTable_V1.csv') as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
@@ -1040,65 +1043,68 @@ def AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma):
         NWBfiles.sort()
         
         for row in csv_reader:
-            subject_id = str(row[0])
-            identifier = row[1]
-            nwb_filename = subject_id + identifier + '.nwb'
+            csv_subject_id = str(row[0])
+            csv_identifier = row[1]
 
-            dendrite_number = float(row[2])
+            if subject_id == csv_subject_id and identifier == csv_identifier:
+                nwb_filename = subject_id + identifier + '.nwb'
 
-            soma_center_pointX = float(row[3])
-            soma_center_pointY = float(row[4])
-            soma_center_pointZ = float(row[5])
-            soma_center_point = [soma_center_pointX, soma_center_pointY, soma_center_pointZ]
-            soma_center_point = np.asarray(soma_center_point)
+                dendrite_number = float(row[2])
 
-            proximal_dendrite_length = float(row[6])
-            medial_dendrite_length = float(row[7])
-            distal_dendrite_length = float(row[8])
-            
-            with NWBHDF5IO(nwb_filename, 'r') as io:
-                nwbfile = io.read()
-            
-            #Subject fields
-            genotype = nwbfile.subject.genotype
-            sex = nwbfile.subject.sex
-            species = nwbfile.subject.species
-            strain = nwbfile.subject.strain
-            subject_id = nwbfile.subject.subject_id
+                soma_center_pointX = float(row[3])
+                soma_center_pointY = float(row[4])
+                soma_center_pointZ = float(row[5])
+                soma_center_point = [soma_center_pointX, soma_center_pointY, soma_center_pointZ]
+                soma_center_point = np.asarray(soma_center_point)
 
-            #NWBFile Fields
-            identifier = nwbfile.identifier
-            pharmacology = nwbfile.pharmacology
-            surgery = nwbfile.surgery
+                proximal_dendrite_length = float(row[6])
+                medial_dendrite_length = float(row[7])
+                distal_dendrite_length = float(row[8])
+                
+                with NWBHDF5IO(nwb_filename, 'r') as io:
+                    nwbfile = io.read()
+                
+                #Subject fields
+                genotype = nwbfile.subject.genotype
+                sex = nwbfile.subject.sex
+                species = nwbfile.subject.species
+                strain = nwbfile.subject.strain
+                subject_id = nwbfile.subject.subject_id
 
-            mouse.insert1((
-                subject_id,
-                genotype,
-                sex,   
-                species,
-                strain
-                ), skip_duplicates = True)  
+                #NWBFile Fields
+                identifier = nwbfile.identifier
+                pharmacology = nwbfile.pharmacology
+                surgery = nwbfile.surgery
 
-            session.insert1((
-                subject_id,
-                identifier,
-                surgery,
-                pharmacology
-            ))
+                mouse.insert1((
+                    subject_id,
+                    genotype,
+                    sex,   
+                    species,
+                    strain
+                    ), skip_duplicates = True)  
 
-            dendrite.insert1((
-                subject_id,
-                identifier,
-                dendrite_number,
-                soma_center_point,
-                proximal_dendrite_length,
-                medial_dendrite_length,
-                distal_dendrite_length
-            ))
+                session.insert1((
+                    subject_id,
+                    identifier,
+                    surgery,
+                    pharmacology
+                ))
 
-            image_segmentation.populate()
-            distance_to_soma.populate()
+                dendrite.insert1((
+                    subject_id,
+                    identifier,
+                    dendrite_number,
+                    soma_center_point,
+                    proximal_dendrite_length,
+                    medial_dendrite_length,
+                    distal_dendrite_length
+                ))
+
+                image_segmentation.populate()
+                distance_to_soma.populate()
         print("It worked")
+        
         return{"FINISHED"}
 
 
@@ -1175,7 +1181,7 @@ def instantiate_tables(schema):
             with NWBHDF5IO(nwbfile_to_read, 'r') as io:
                 nwbfile = io.read()     
                 for group in nwbfile.processing["SpineData"]["ImageSegmentation"].children[:]:
-                    print(group.name, "has issues")
+                    print(group.name)
                     if group.name.startswith("Mushroom"):
                         spine_type = 'mushroom'
                     elif group.name.startswith("Thin"):
@@ -1200,7 +1206,6 @@ def instantiate_tables(schema):
                     key['surface_area'] = surface_area
                     key['spine_type'] = spine_type
                     key['center_of_mass'] = center_of_mass
-                    print("key", key)
                     self.insert1(key)
 
     image_segmentation = Image_segmentation()
