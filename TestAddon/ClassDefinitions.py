@@ -80,26 +80,21 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "grid_spacing_unit")
 
         #Add button that separates meshes        
-        # row = layout.row()
         row.operator('object.exploding_bits', text = 'Separate Meshes')
 
         #Add button that generates spheres for Check Boolean error handling        
-        # row = layout.row()
         row.operator('object.slice_spines', text = 'Segment Solid Spines')
 
         # row = layout.row()
         row.operator('object.segment_hollow_spines', text = 'Segment Hollow Spines')
 
         #Add button that adds a spine tip if you select its base
-        # row = layout.row()
         row.operator('object.individual_length_finder', text = 'Manual Length')    
 
         #Add button that writes data from panel and object values to an NWB file
-        # row = layout.row()
         row.operator('object.write_nwb', text = "Write NWB File")
 
-        #Add file selector 
-        # row = layout.row()
+        #Add CSV file selector 
         row.operator("file.select", text = "CSV Selector")
 
         #Add fields for DataJoint
@@ -108,7 +103,6 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "datajoint_user")
         row.prop(context.scene, "datajoint_password")
 
-        # row = layout.row()
         #Pass data to DataJoint
         row.operator('object.load_dj', text = "Load into DataJoint")
 
@@ -145,46 +139,46 @@ class ExplodingBits(bpy.types.Operator):
         bpy.ops.mesh.separate(type='LOOSE')
         return {'FINISHED'}
 
-# #Slice off Spines
-# class SpineSlicer(bpy.types.Operator):
-#     bl_idname = 'object.slice_spines' #operators must follow the naming convention of object.lowercase_letters
-#     bl_label = 'Slice Spines' 
+#Segment Solid Spines
+class SpineSlicer(bpy.types.Operator):
+    bl_idname = 'object.slice_spines' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'Slice Spines' 
     
-#     def execute(self, context):
-#         spine_list = [obj for obj in bpy.context.selected_objects]
+    def execute(self, context):
+        spine_list = [obj for obj in bpy.context.selected_objects]
 
-#         # Get the active collection, its name, and put its contents into slicer list
-#         collection = bpy.context.collection
-#         collection_name = collection.name
-#         boolean_meshes_collection = bpy.data.collections[collection_name]
-#         slicer_list = [obj for obj in boolean_meshes_collection.objects]
+        # Get the active collection, its name, and put its contents into slicer list
+        collection = bpy.context.collection
+        collection_name = collection.name
+        boolean_meshes_collection = bpy.data.collections[collection_name]
+        slicer_list = [obj for obj in boolean_meshes_collection.objects]
 
-#         faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
-#         spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
-#         spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
-#         spines_to_collections(self, spine_and_slicer_dict)
-#         #paint_spines(self, spine_and_slicer_dict)
-#         spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict)
-#         spine_tip_dict = find_spine_tip(self, spine_base_dict)
-#         create_base_and_tip(self, spine_base_dict, spine_tip_dict)
-#         #create_surface_area_mesh(self, spine_and_slicer_dict)
-#         #surface_spine_and_slicer_dict = create_surface_area_mesh(self, spine_and_slicer_dict)
-#         #slice_surface_spines(self, surface_spine_and_slicer_dict)
+        faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
+        spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
+        spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
+        spines_to_collections(self, spine_and_slicer_dict)
+        #paint_spines(self, spine_and_slicer_dict)
+        spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict)
+        spine_tip_dict = find_spine_tip(self, spine_base_dict)
+        create_base_and_tip(self, spine_base_dict, spine_tip_dict)
+        #create_surface_area_mesh(self, spine_and_slicer_dict)
+        #surface_spine_and_slicer_dict = create_surface_area_mesh(self, spine_and_slicer_dict)
+        #slice_surface_spines(self, surface_spine_and_slicer_dict)
 
-#         # for slicer in slicer_list:
-#         #     slicer.scale *= 0.5
+        # for slicer in slicer_list:
+        #     slicer.scale *= 0.5
 
-#         # unique_slicers = list(set(spine_and_slicer_dict.values()))
+        # unique_slicers = list(set(spine_and_slicer_dict.values()))
 
-#         # for matched_slicer in unique_slicers:
-#         #     print(matched_slicer)
-#         #     matched_slicer = bpy.data.objects[matched_slicer]
-#         #     if matched_slicer.name in boolean_meshes_collection.objects:
-#         #         boolean_meshes_collection.objects.unlink(matched_slicer)
-#         #         bpy.context.scene.collection.objects.link(matched_slicer)
-#         #     else:
-#         #         matched_slicer.name = matched_slicer.name + "inspect"
-#         return {'FINISHED'}
+        # for matched_slicer in unique_slicers:
+        #     print(matched_slicer)
+        #     matched_slicer = bpy.data.objects[matched_slicer]
+        #     if matched_slicer.name in boolean_meshes_collection.objects:
+        #         boolean_meshes_collection.objects.unlink(matched_slicer)
+        #         bpy.context.scene.collection.objects.link(matched_slicer)
+        #     else:
+        #         matched_slicer.name = matched_slicer.name + "inspect"
+        return {'FINISHED'}
 
 # def create_surface_area_mesh(self, spine_and_slicer_dict):
 #     surface_spine_and_slicer_dict = {}

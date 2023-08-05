@@ -10,10 +10,10 @@ from . ClassDefinitions import ManualLength
 from . ClassDefinitions import WriteNWB
 #from . ClassDefinitions import CheckBooleans
 #from . ClassDefinitions import AddSpheres
-# . ClassDefinitions import SpineSlicer
+from . ClassDefinitions import SpineSlicer
 from . ClassDefinitions import SegmentHollowSpines
 from . ClassDefinitions import LoadDataJoint
-from . ClassDefinitions import FILE_SELECTOR_OT_SelectFile
+#from . ClassDefinitions import FILE_SELECTOR_OT_SelectFile
 
 #Information about the Addon created by the Blender Development VSCode Extension
 bl_info = {
@@ -33,7 +33,7 @@ def register():
     #operators
     bpy.utils.register_class(ExplodingBits)
     #bpy.utils.register_class(CheckBooleans)
-    #bpy.utils.register_class(SpineSlicer)
+    bpy.utils.register_class(SpineSlicer)
     bpy.utils.register_class(SegmentHollowSpines)
     #bpy.utils.register_class(DiscSegmenter)
     bpy.utils.register_class(ManualLength)
@@ -133,7 +133,7 @@ def unregister():
     bpy.utils.unregister_class(ManualLength)
     bpy.utils.unregister_class(WriteNWB)
     #bpy.utils.unregister_class(AddSpheres)
-    #bpy.utils.unregister_class(SpineSlicer)
+    bpy.utils.unregister_class(SpineSlicer)
     bpy.utils.unregister_class(SegmentHollowSpines)
     #bpy.utils.unregister_class(FILE_SELECTOR_OT_SelectFile)
     bpy.utils.unregister_class(LoadDataJoint)
