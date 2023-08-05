@@ -108,7 +108,11 @@ def register():
     bpy.types.Scene.optical_channel_description = bpy.props.StringProperty \
       (name = "Optical Channel Description", default = "Channel for YFP")
     bpy.types.Scene.emission_lambda = bpy.props.FloatProperty \
-      (name = "emission_lambda", default = 525)
+      (name = "emission_lambda", default = 525)      
+    bpy.types.Scene.my_path_property = bpy.props.StringProperty(
+        name="Output Files",
+        subtype='FILE_PATH'
+    )
     
     #DataJoint Fields
     bpy.types.Scene.selected_file = bpy.props.StringProperty \
@@ -173,6 +177,8 @@ def unregister():
     bpy.types.Scene.optical_channel_name
     bpy.types.Scene.optical_channel_description
     bpy.types.Scene.emission_lambda
+
+    del bpy.types.Scene.my_path_property
     
     #DataJoint fields
     bpy.types.Scene.selected_file

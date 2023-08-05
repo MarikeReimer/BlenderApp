@@ -36,7 +36,8 @@ class NeuronAnalysis(bpy.types.Panel):
     
     #Create a layout and add fields and buttons to it
     def draw(self, context):
-        layout = self.layout      
+        layout = self.layout
+        scene = context.scene      
         row = layout.column(align = True)
         #Add fields for the Subject class strings
         row.prop(context.scene, "subject_id")
@@ -90,12 +91,27 @@ class NeuronAnalysis(bpy.types.Panel):
         #Add button that adds a spine tip if you select its base
         row.operator('object.individual_length_finder', text = 'Manual Length')    
 
+        #Add button that separates meshes        
+        row.operator('object.exploding_bits', text = 'Separate Meshes')
+
+
+        row = layout.row()
+        #Select Directory to Write NWB Files
+        layout.prop(scene, "my_path_property")
+        # if context.scene.my_path_property:
+        #     layout.label(text="Dir: " + context.scene.my_path_property)
+
+        row = layout.row()        
         #Add button that writes data from panel and object values to an NWB file
         row.operator('object.write_nwb', text = "Write NWB File")
 
+        row = layout.row()
         #Add CSV file selector 
         row.operator("object.file_select", text = "Select CSV File")
+        if context.scene.selected_file:
+            layout.label(text="Selected File: " + context.scene.selected_file)
 
+        row = layout.row()
         #Add fields for DataJoint
         row.prop(context.scene, "host")
         row.prop(context.scene, "datajoint_user")
@@ -104,8 +120,6 @@ class NeuronAnalysis(bpy.types.Panel):
         #Pass data to DataJoint
         row.operator('object.load_dj', text = "Load into DataJoint")
 
-        if context.scene.selected_file:
-            layout.label(text="Selected File: " + context.scene.selected_file)
 
 
 class FILE_SELECT_OT_SelectFile(bpy.types.Operator):
