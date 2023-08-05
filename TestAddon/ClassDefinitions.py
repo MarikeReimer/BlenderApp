@@ -577,8 +577,8 @@ class WriteNWB(bpy.types.Operator):
                 #     #     vertices = face.vertices
                 #     #     face_vert_list = [vertices[0], vertices[1], vertices[2]]
                 #     #     faces.append(face_vert_list)
-
-        os.chdir('C:/Users/meowm/Downloads') #TODO: How do I handle this for the final version?
+        path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBFiles'
+        os.chdir(path) #TODO: How do I handle this for the final version?
         #Write the NWB file
         with NWBHDF5IO(nwbfile_name, 'w') as io:
             io.write(nwbfile)
@@ -1034,14 +1034,13 @@ def AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma):
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader) # This skips the header row of the CSV file.
         #Make a list of the NWB files in the directory
-        #path = 'C:/Users/meowm/Downloads/NWBfiles'
         path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBFiles'
         os.chdir(path)
         NWBfiles = os.listdir(path)
         NWBfiles.sort()
         
         for row in csv_reader:
-            subject_id = row[0]
+            subject_id = str(row[0])
             identifier = row[1]
             nwb_filename = subject_id + identifier + '.nwb'
 
@@ -1171,13 +1170,12 @@ def instantiate_tables(schema):
             identifier = key['identifier']
 
             nwbfile_to_read = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBfiles/' + str(subject_id) + str(identifier) + '.nwb' #TODO: Remove hard coding
-            #nwbfile_to_read = 'C:/Users/meowm/Downloads/NWBfiles/' + str(subject_id) + str(identifier) + '.nwb'
 
             print(nwbfile_to_read)
             with NWBHDF5IO(nwbfile_to_read, 'r') as io:
                 nwbfile = io.read()     
                 for group in nwbfile.processing["SpineData"]["ImageSegmentation"].children[:]:
-                    #print(group.name)
+                    print(group.name, "has issues")
                     if group.name.startswith("Mushroom"):
                         spine_type = 'mushroom'
                     elif group.name.startswith("Thin"):
@@ -1202,6 +1200,7 @@ def instantiate_tables(schema):
                     key['surface_area'] = surface_area
                     key['spine_type'] = spine_type
                     key['center_of_mass'] = center_of_mass
+                    print("key", key)
                     self.insert1(key)
 
     image_segmentation = Image_segmentation()
