@@ -10,10 +10,10 @@ from . ClassDefinitions import ManualLength
 from . ClassDefinitions import WriteNWB
 #from . ClassDefinitions import CheckBooleans
 #from . ClassDefinitions import AddSpheres
-from . ClassDefinitions import SpineSlicer
+# . ClassDefinitions import SpineSlicer
 from . ClassDefinitions import SegmentHollowSpines
 from . ClassDefinitions import LoadDataJoint
-
+from . ClassDefinitions import FILE_SELECTOR_OT_SelectFile
 
 #Information about the Addon created by the Blender Development VSCode Extension
 bl_info = {
@@ -33,20 +33,21 @@ def register():
     #operators
     bpy.utils.register_class(ExplodingBits)
     #bpy.utils.register_class(CheckBooleans)
-    bpy.utils.register_class(SpineSlicer)
+    #bpy.utils.register_class(SpineSlicer)
     bpy.utils.register_class(SegmentHollowSpines)
     #bpy.utils.register_class(DiscSegmenter)
     bpy.utils.register_class(ManualLength)
     bpy.utils.register_class(WriteNWB)
     #bpy.utils.register_class(AddSpheres)
     bpy.utils.register_class(LoadDataJoint)
+    #bpy.utils.register_class(FILE_SELECTOR_OT_SelectFile)
  
        
     #Subject Table fields
     bpy.types.Scene.subject_id = bpy.props.StringProperty \
-      (name = "Subject ID", default = "Anm_")
+      (name = "Subject ID", default = "L")
     bpy.types.Scene.age = bpy.props.StringProperty \
-      (name = "Age", default = "P#D")
+      (name = "Age", default = "")
     #bpy.types.Scene.subject_description = bpy.props.StringProperty \
     #  (name = "Description", default = 'fuzzy')
     bpy.types.Scene.genotype = bpy.props.StringProperty \
@@ -110,6 +111,8 @@ def register():
       (name = "emission_lambda", default = 525)
     
     #DataJoint Fields
+    #bpy.types.Scene.selected_file = bpy.props.StringProperty \
+      #(name="Selected File", default = "C:/Users/meowm/OneDrive/TanLab/DataJointTesting/")
     bpy.types.Scene.host = bpy.props.StringProperty \
       (name = "host", default = "spinup-db001f1f.cluster-cyynsscieqtk.us-east-1.rds.amazonaws.com")
     bpy.types.Scene.datajoint_user = bpy.props.StringProperty \
@@ -130,10 +133,11 @@ def unregister():
     bpy.utils.unregister_class(ManualLength)
     bpy.utils.unregister_class(WriteNWB)
     #bpy.utils.unregister_class(AddSpheres)
-    bpy.utils.unregister_class(SpineSlicer)
+    #bpy.utils.unregister_class(SpineSlicer)
     bpy.utils.unregister_class(SegmentHollowSpines)
-
+    #bpy.utils.unregister_class(FILE_SELECTOR_OT_SelectFile)
     bpy.utils.unregister_class(LoadDataJoint)
+    
 
     #Subject fields
     bpy.types.Scene.subject_id
@@ -176,13 +180,10 @@ def unregister():
     bpy.types.Scene.datajoint_password
 
     #DataJoint Fields
-    bpy.types.Scene.host = bpy.props.StringProperty \
-      (name = "host", default = "spinup-db001f1f.cluster-cyynsscieqtk.us-east-1.rds.amazonaws.com")
-    bpy.types.Scene.datajoint_user = bpy.props.StringProperty \
-      (name = "datajoint_user", default = "MarikeReimer")
-    bpy.types.Scene.datajoint_password = bpy.props.StringProperty \
-      (name = "datajoint_password", default = "uqHKL3YLMCG0")
-
+    #bpy.types.Scene.selected_file = bpy.props.StringProperty
+    bpy.types.Scene.host = bpy.props.StringProperty
+    bpy.types.Scene.datajoint_user = bpy.props.StringProperty
+    bpy.types.Scene.datajoint_password = bpy.props.StringProperty
 
 
 #Used for importing dropdown menu pieces in a pretty way
