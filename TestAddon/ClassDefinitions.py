@@ -68,7 +68,6 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "emission_lambda")
 
         #Add fields for Imaging Plane
-        # row = self.layout.column(align = True)
         row.prop(context.scene, "plane_name")
         row.prop(context.scene, "plane_description")
         row.prop(context.scene, "excitation_lambda")
@@ -95,10 +94,9 @@ class NeuronAnalysis(bpy.types.Panel):
         row.operator('object.write_nwb', text = "Write NWB File")
 
         #Add CSV file selector 
-        row.operator("file.select", text = "CSV Selector")
+        row.operator("object.file_select", text = "Select CSV File")
 
         #Add fields for DataJoint
-        row = self.layout.column(align = True)
         row.prop(context.scene, "host")
         row.prop(context.scene, "datajoint_user")
         row.prop(context.scene, "datajoint_password")
@@ -106,19 +104,19 @@ class NeuronAnalysis(bpy.types.Panel):
         #Pass data to DataJoint
         row.operator('object.load_dj', text = "Load into DataJoint")
 
-        # if context.scene.selected_file:
-        #     layout.label(text="Selected File: " + context.scene.selected_file)
+        if context.scene.selected_file:
+            layout.label(text="Selected File: " + context.scene.selected_file)
 
 
-
-class FILE_SELECTOR_OT_SelectFile(bpy.types.Operator):
-    bl_idname = "file.select"
+class FILE_SELECT_OT_SelectFile(bpy.types.Operator):
+    bl_idname = "object.file_select"
     bl_label = "Select File"
     
     filepath: bpy.props.StringProperty(subtype="FILE_PATH")
 
     def execute(self, context):
         context.scene.selected_file = self.filepath
+        print(self.filepath)
         return {'FINISHED'}
 
     def invoke(self, context, event):
