@@ -114,14 +114,14 @@ class NeuronAnalysis(bpy.types.Panel):
         row = box.row(align=True)
         #Select Directory to Write NWB Files
         row.prop(scene, "my_path_property")
-        row = box.row()
+        #row = box.row()
         # Custom button to open the directory browser
-        row.operator('object.select_directory', text="Select Directory")
+        #row.operator('object.select_directory')
         #row.operator('object.my_path_property', text="Select Output Directory")
         #filepath = bpy.props.StringProperty(subtype="DIR_PATH")
         
         if context.scene.my_path_property:
-            layout.label(text="Selected Directory: " + context.scene.my_path_property)
+            layout.label(text=context.scene.my_path_property)
 
         # row.prop(scene, "my_path_property")
         # directory_path = os.path.dirname(context.scene.my_path_property)

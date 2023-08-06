@@ -116,7 +116,7 @@ def register():
     # bpy.types.Scene.my_path_property = bpy.props.StringProperty \
     #   (name="Select Output Directory")#, default = "C:\Users\meowm\OneDrive\TanLab\DataJointTesting\NWBfiles")
     bpy.types.Scene.my_path_property = bpy.props.StringProperty \
-      (name="Output Directory", subtype='DIR_PATH') #, subtype='FILE_PATH',  # Use FILE_PATH for file selection
+      (name="Output Directory", subtype='DIR_PATH', default = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBFiles') #, subtype='FILE_PATH',  # Use FILE_PATH for file selection
     
     
     #DataJoint Fields
