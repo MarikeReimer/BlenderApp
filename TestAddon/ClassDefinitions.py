@@ -37,16 +37,24 @@ class NeuronAnalysis(bpy.types.Panel):
     #Create a layout and add fields and buttons to it
     def draw(self, context):
         layout = self.layout
-        scene = context.scene      
-        row = layout.column(align = True)
-        #Add fields for the Subject class strings
+        scene = context.scene
+        
+        box = layout.box()
+        box.label(text="Subject Information")
+
+        row = box.column(align=True)
         row.prop(context.scene, "subject_id")
         row.prop(context.scene, "age")
-        #row.prop(context.scene, "subject_description")
+        row.prop(context.scene, "subject_description")      
         row.prop(context.scene, "genotype")
         row.prop(context.scene, "sex")
         row.prop(context.scene, "species")
         row.prop(context.scene, "strain")
+        
+        box = layout.box()
+        box.label(text="Experiment Meta Data")
+        row = box.column(align=True)
+
         #Add fields for NWBFile strings
         row.prop(context.scene, "experimenter")
         row.prop(context.scene, "experiment_description")
@@ -61,6 +69,11 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "surgery")
 
         #Add Device:
+        box = layout.box()
+        box.label(text="Imaging Device Meta Data")
+
+        row = box.column(align=True)
+        row.label(text="Properties in the second box")
         row.prop(context.scene, "device")
     
         #Add OpticalChannel :
@@ -79,45 +92,50 @@ class NeuronAnalysis(bpy.types.Panel):
         row.prop(context.scene, "grid_spacing")
         row.prop(context.scene, "grid_spacing_unit")
 
+        box = layout.box()
+        box.label(text="Segmenting Tools")
+        row = box.row(align=True)
         #Add button that separates meshes        
         row.operator('object.exploding_bits', text = 'Separate Meshes')
 
-        #Add button that generates spheres for Check Boolean error handling        
+        row = box.row()       
         row.operator('object.slice_spines', text = 'Segment Solid Spines')
 
-        # row = layout.row()
+        row = box.row() 
         row.operator('object.segment_hollow_spines', text = 'Segment Hollow Spines')
 
-        #Add button that adds a spine tip if you select its base
+        row = box.row() 
         row.operator('object.individual_length_finder', text = 'Manual Length')    
 
-        #Add button that separates meshes        
-        row.operator('object.exploding_bits', text = 'Separate Meshes')
 
-
-        row = layout.row()
+        box = layout.box()
+        box.label(text="Link Files and Directories")
+        row = box.row(align=True)
         #Select Directory to Write NWB Files
-        layout.prop(scene, "my_path_property")
+        row.prop(scene, "my_path_property")
+        row = box.row()
         # if context.scene.my_path_property:
-        #     layout.label(text="Dir: " + context.scene.my_path_property)
-
-        row = layout.row()        
+        #     layout.label(text="Dir: " + context.scene.my_path_property)     
         #Add button that writes data from panel and object values to an NWB file
         row.operator('object.write_nwb', text = "Write NWB File")
-
-        row = layout.row()
+       
+    
+        box = layout.box()
+        box.label(text="DataJoint")
+        row = box.row(align=True)
         #Add CSV file selector 
         row.operator("object.file_select", text = "Select CSV File")
         if context.scene.selected_file:
             layout.label(text="Selected File: " + context.scene.selected_file)
-
-        row = layout.row()
+        
         #Add fields for DataJoint
+        row = box.row() 
         row.prop(context.scene, "host")
         row.prop(context.scene, "datajoint_user")
         row.prop(context.scene, "datajoint_password")
 
         #Pass data to DataJoint
+        row = box.row() 
         row.operator('object.load_dj', text = "Load into DataJoint")
 
 
