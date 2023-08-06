@@ -651,7 +651,7 @@ class WriteNWB(bpy.types.Operator):
         #path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBFiles'
         path = context.scene.my_path_property
         print(path)
-        os.chdir(path) #TODO: How do I handle this for the final version?
+        os.chdir(path) 
         #Write the NWB file
         with NWBHDF5IO(nwbfile_name, 'w') as io:
             io.write(nwbfile)
@@ -917,7 +917,7 @@ def FindSelectedVerts(self):
     return(vert_list)
 
 #Given several selected verticies find the center
-def FindSpineBase(self,vert_list):  #TODO: rename to tip
+def FindSpineBase(self,vert_list):  
     x, y, z = [ sum( [v.co[i] for v in vert_list] ) for i in range(3)] #Tested this - it does need to be 3
     count = float(len(vert_list))
     spine_base = Vector( (x, y, z ) ) / count        
@@ -1254,8 +1254,10 @@ def instantiate_tables(schema):
             subject_id = key['subject_id']
             identifier = key['identifier']
 
-            nwbfile_to_read = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBfiles/' + str(subject_id) + str(identifier) + '.nwb' #TODO: Remove hard coding
+            path = bpy.context.scene.my_path_property
 
+            #nwbfile_to_read = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBfiles/' + str(subject_id) + str(identifier) + '.nwb' #TODO: Remove hard coding
+            nwbfile_to_read = path
             print(nwbfile_to_read)
             with NWBHDF5IO(nwbfile_to_read, 'r') as io:
                 nwbfile = io.read()     
