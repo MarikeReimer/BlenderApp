@@ -121,7 +121,7 @@ def register():
     
     #DataJoint Fields
     bpy.types.Scene.selected_file = bpy.props.StringProperty \
-      (name="Selected File")#,  #subtype='FILE_PATH', #default = "C:\Users\meowm\OneDrive\TanLab\DataJointTesting\DataJointDiscDendriteTable_V1")
+      (name="Selected File", default = "C:/Users/meowm/OneDrive/TanLab/DataJointTesting/DataJointDiscDendriteTable_V1.csv")
         
     bpy.types.Scene.host = bpy.props.StringProperty \
       (name = "host", default = "spinup-db001f1f.cluster-cyynsscieqtk.us-east-1.rds.amazonaws.com")

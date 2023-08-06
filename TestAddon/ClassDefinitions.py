@@ -114,21 +114,12 @@ class NeuronAnalysis(bpy.types.Panel):
         row = box.row(align=True)
         #Select Directory to Write NWB Files
         row.prop(scene, "my_path_property")
-        #row = box.row()
-        # Custom button to open the directory browser
-        #row.operator('object.select_directory')
-        #row.operator('object.my_path_property', text="Select Output Directory")
-        #filepath = bpy.props.StringProperty(subtype="DIR_PATH")
+
         
         if context.scene.my_path_property:
             layout.label(text=context.scene.my_path_property)
-
-        # row.prop(scene, "my_path_property")
-        # directory_path = os.path.dirname(context.scene.my_path_property)
         
         row = box.row()
-        # if context.scene.my_path_property:
-        #     layout.label(text="Dir: " + context.scene.my_path_property)     
         #Add button that writes data from panel and object values to an NWB file
         row.operator('object.write_nwb', text = "Write NWB File")
 
@@ -1083,7 +1074,7 @@ class LoadDataJoint(bpy.types.Operator):
 
         connect_to_dj(host, datajoint_user, datajoint_password)
 
-        schema = dj.schema('MarikeReimer', locals()) #TODO: Fix hard coding
+        schema = dj.schema(datajoint_user, locals())
         print(schema)
 
         schema_holder = instantiate_tables(schema)
@@ -1095,7 +1086,6 @@ class LoadDataJoint(bpy.types.Operator):
         print(distance_to_soma)
         
         #Select CSV()
-
         AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma)
 
 
@@ -1105,18 +1095,26 @@ class LoadDataJoint(bpy.types.Operator):
 def AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma): 
     subject_id = bpy.context.scene.subject_id
     identifier = bpy.context.scene.identifier
+
+    path = bpy.context.scene.selected_file
+    print(path)
     
-    # path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/' #TODO: remove hard coding
-    # os.chdir(path)
+    # Replace '\\' with '/' in the path
+    converted_path = path.replace('\\', '/')
+    csv_directory_path, csv_file_name = os.path.split(converted_path)
+
+    os.chdir(csv_directory_path)
 
     #Read in dendrite data from CSV
-    with open('DataJointDiscDendriteTable_V1.csv') as csv_file:
+    with open(csv_file_name) as csv_file:
         csv_reader = csv.reader(csv_file, delimiter=',')
         next(csv_reader) # This skips the header row of the CSV file.
         #Make a list of the NWB files in the directory
-        path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBFiles'
-        os.chdir(path)
-        NWBfiles = os.listdir(path)
+        # path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBFiles'
+        # os.chdir(path)
+        nwb_file_path = bpy.context.scene.my_path_property
+        os.chdir(nwb_file_path)
+        NWBfiles = os.listdir(nwb_file_path)
         NWBfiles.sort()
         
         for row in csv_reader:
@@ -1140,6 +1138,8 @@ def AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma):
                 medial_dendrite_length = float(row[7])
                 distal_dendrite_length = float(row[8])
                 
+
+                print(nwb_filename)
                 with NWBHDF5IO(nwb_filename, 'r') as io:
                     nwbfile = io.read()
                 
@@ -1255,9 +1255,7 @@ def instantiate_tables(schema):
             identifier = key['identifier']
 
             path = bpy.context.scene.my_path_property
-
-            #nwbfile_to_read = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBfiles/' + str(subject_id) + str(identifier) + '.nwb' #TODO: Remove hard coding
-            nwbfile_to_read = path
+            nwbfile_to_read = path + '/' + str(subject_id) + str(identifier) + '.nwb'
             print(nwbfile_to_read)
             with NWBHDF5IO(nwbfile_to_read, 'r') as io:
                 nwbfile = io.read()     
