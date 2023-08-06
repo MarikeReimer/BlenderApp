@@ -29,7 +29,7 @@ from mathutils.bvhtree import BVHTree
 
 class NeuronAnalysis(bpy.types.Panel):
     bl_label = "NeuroSpineSlicer" #The name of our panel
-    bl_idname = "PT_TestPanel" #Gives the panel gets a custom ID, otherwise it takes the name of the class used to define the panel.  Used default from template
+    bl_idname = "_PT_TestPanel" #Gives the panel gets a custom ID, otherwise it takes the name of the class used to define the panel.  Used default from template
     bl_space_type = 'VIEW_3D' #Puts the panel on the VIEW_3D tool bar
     bl_region_type = 'UI' #The region where the panel will be used
     bl_category = 'NeuronAnalysis' #The category is used for filtering in the add-ons panel.
@@ -110,23 +110,37 @@ class NeuronAnalysis(bpy.types.Panel):
 
         box = layout.box()
         box.label(text="Link Files and Directories")
+        
         row = box.row(align=True)
         #Select Directory to Write NWB Files
         row.prop(scene, "my_path_property")
+        row = box.row()
+        # Custom button to open the directory browser
+        row.operator('object.select_directory', text="Select Directory")
+        #row.operator('object.my_path_property', text="Select Output Directory")
+        #filepath = bpy.props.StringProperty(subtype="DIR_PATH")
+        
+        if context.scene.my_path_property:
+            layout.label(text="Selected Directory: " + context.scene.my_path_property)
+
+        # row.prop(scene, "my_path_property")
+        # directory_path = os.path.dirname(context.scene.my_path_property)
+        
         row = box.row()
         # if context.scene.my_path_property:
         #     layout.label(text="Dir: " + context.scene.my_path_property)     
         #Add button that writes data from panel and object values to an NWB file
         row.operator('object.write_nwb', text = "Write NWB File")
+
+        #Add CSV file selector 
+        row.operator("object.file_select", text = "Select CSV File")
+        if context.scene.selected_file:
+            layout.label(text="Selected File: " + context.scene.selected_file)
        
     
         box = layout.box()
         box.label(text="DataJoint")
         row = box.row(align=True)
-        #Add CSV file selector 
-        row.operator("object.file_select", text = "Select CSV File")
-        if context.scene.selected_file:
-            layout.label(text="Selected File: " + context.scene.selected_file)
         
         #Add fields for DataJoint
         row = box.row() 
@@ -149,6 +163,21 @@ class FILE_SELECT_OT_SelectFile(bpy.types.Operator):
     def execute(self, context):
         context.scene.selected_file = self.filepath
         print(self.filepath)
+        return {'FINISHED'}
+
+    def invoke(self, context, event):
+        context.window_manager.fileselect_add(self)
+        return {'RUNNING_MODAL'}
+    
+    
+class SelectDirectoryOperator(bpy.types.Operator):
+    bl_idname = "object.select_directory"
+    bl_label = "Select Directory"
+
+    directory_path: bpy.props.StringProperty(subtype="DIR_PATH")
+
+    def execute(self, context):
+        context.scene.my_path_property = self.directory_path
         return {'FINISHED'}
 
     def invoke(self, context, event):
@@ -397,7 +426,7 @@ class WriteNWB(bpy.types.Operator):
     def AddPanelData(self):
         subject_id = bpy.context.scene.subject_id 
         age = bpy.context.scene.age
-        #subject_description = bpy.context.scene.subject_description
+        subject_description = str(bpy.context.scene.subject_description)
         genotype = bpy.context.scene.genotype
         sex = bpy.context.scene.sex
         species = bpy.context.scene.species
@@ -432,7 +461,7 @@ class WriteNWB(bpy.types.Operator):
         #Create pynwb subject
         subject = Subject(
             age = age,
-            #description = subject_description,
+            description = subject_description,
             genotype = genotype,
             sex = sex,
             species = species,
@@ -619,7 +648,9 @@ class WriteNWB(bpy.types.Operator):
                 #     #     vertices = face.vertices
                 #     #     face_vert_list = [vertices[0], vertices[1], vertices[2]]
                 #     #     faces.append(face_vert_list)
-        path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBFiles'
+        #path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBFiles'
+        path = context.scene.my_path_property
+        print(path)
         os.chdir(path) #TODO: How do I handle this for the final version?
         #Write the NWB file
         with NWBHDF5IO(nwbfile_name, 'w') as io:
