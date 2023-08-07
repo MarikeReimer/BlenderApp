@@ -13,7 +13,8 @@ from . ClassDefinitions import WriteNWB
 from . ClassDefinitions import SpineSlicer
 from . ClassDefinitions import SegmentHollowSpines
 from . ClassDefinitions import LoadDataJoint
-
+from . ClassDefinitions import FILE_SELECT_OT_SelectFile
+from . ClassDefinitions import SelectDirectoryOperator
 
 #Information about the Addon created by the Blender Development VSCode Extension
 bl_info = {
@@ -40,15 +41,17 @@ def register():
     bpy.utils.register_class(WriteNWB)
     #bpy.utils.register_class(AddSpheres)
     bpy.utils.register_class(LoadDataJoint)
+    bpy.utils.register_class(FILE_SELECT_OT_SelectFile)
+    bpy.utils.register_class(SelectDirectoryOperator)
  
        
     #Subject Table fields
     bpy.types.Scene.subject_id = bpy.props.StringProperty \
-      (name = "Subject ID", default = "Anm_")
+      (name = "Subject ID", default = "L")
     bpy.types.Scene.age = bpy.props.StringProperty \
-      (name = "Age", default = "P#D")
-    #bpy.types.Scene.subject_description = bpy.props.StringProperty \
-    #  (name = "Description", default = 'fuzzy')
+      (name = "Age", default = "")
+    bpy.types.Scene.subject_description = bpy.props.StringProperty \
+      (name = "Description", default = '')
     bpy.types.Scene.genotype = bpy.props.StringProperty \
       (name = "Genotype", default = 'Thy1-YFP')
     bpy.types.Scene.sex = bpy.props.StringProperty \
@@ -85,7 +88,7 @@ def register():
     bpy.types.Scene.plane_name = bpy.props.StringProperty \
       (name = "Plane Name", default = "488nm GFP CF40")
     bpy.types.Scene.plane_description = bpy.props.StringProperty \
-      (name = "Plane Description", default = "Plane for GFP")
+      (name = "Plane Description", default = "Plane for YFP")
     bpy.types.Scene.excitation_lambda = bpy.props.FloatProperty \
       (name = "Excitation Lambda", default = 488)
     bpy.types.Scene.external_file = bpy.props.StringProperty \
@@ -107,9 +110,19 @@ def register():
     bpy.types.Scene.optical_channel_description = bpy.props.StringProperty \
       (name = "Optical Channel Description", default = "Channel for YFP")
     bpy.types.Scene.emission_lambda = bpy.props.FloatProperty \
-      (name = "emission_lambda", default = 525)
+      (name = "emission_lambda", default = 525)     
+
+
+    # bpy.types.Scene.my_path_property = bpy.props.StringProperty \
+    #   (name="Select Output Directory")#, default = "C:\Users\meowm\OneDrive\TanLab\DataJointTesting\NWBfiles")
+    bpy.types.Scene.my_path_property = bpy.props.StringProperty \
+      (name="Output Directory", subtype='DIR_PATH', default = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBFiles') #, subtype='FILE_PATH',  # Use FILE_PATH for file selection
+    
     
     #DataJoint Fields
+    bpy.types.Scene.selected_file = bpy.props.StringProperty \
+      (name="Selected File", default = "C:/Users/meowm/OneDrive/TanLab/DataJointTesting/DataJointDiscDendriteTable_V1.csv")
+        
     bpy.types.Scene.host = bpy.props.StringProperty \
       (name = "host", default = "spinup-db001f1f.cluster-cyynsscieqtk.us-east-1.rds.amazonaws.com")
     bpy.types.Scene.datajoint_user = bpy.props.StringProperty \
@@ -132,13 +145,15 @@ def unregister():
     #bpy.utils.unregister_class(AddSpheres)
     bpy.utils.unregister_class(SpineSlicer)
     bpy.utils.unregister_class(SegmentHollowSpines)
-
+    bpy.utils.unregister_class(FILE_SELECT_OT_SelectFile)
+    bpy.utils.unregister_class(SelectDirectoryOperator)
     bpy.utils.unregister_class(LoadDataJoint)
+    
 
     #Subject fields
     bpy.types.Scene.subject_id
     bpy.types.Scene.age
-    #bpy.types.Scene.subject_description
+    bpy.types.Scene.subject_description
     bpy.types.Scene.sex
     bpy.types.Scene.species
     bpy.types.Scene.strain
@@ -169,20 +184,14 @@ def unregister():
     bpy.types.Scene.optical_channel_name
     bpy.types.Scene.optical_channel_description
     bpy.types.Scene.emission_lambda
+
+    #del bpy.types.Scene.my_path_property
     
     #DataJoint fields
+    bpy.types.Scene.selected_file
     bpy.types.Scene.host
     bpy.types.Scene.datajoint_user
     bpy.types.Scene.datajoint_password
-
-    #DataJoint Fields
-    bpy.types.Scene.host = bpy.props.StringProperty \
-      (name = "host", default = "spinup-db001f1f.cluster-cyynsscieqtk.us-east-1.rds.amazonaws.com")
-    bpy.types.Scene.datajoint_user = bpy.props.StringProperty \
-      (name = "datajoint_user", default = "MarikeReimer")
-    bpy.types.Scene.datajoint_password = bpy.props.StringProperty \
-      (name = "datajoint_password", default = "uqHKL3YLMCG0")
-
 
 
 #Used for importing dropdown menu pieces in a pretty way
