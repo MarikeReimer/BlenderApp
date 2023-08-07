@@ -74,7 +74,7 @@ def register():
     bpy.types.Scene.notes = bpy.props.StringProperty \
       (name = "Notes", default = "")  
     bpy.types.Scene.pharmacology = bpy.props.StringProperty \
-      (name = "Pharmacology", default = "Romidepsin")
+      (name = "Pharmacology", default = "Romidepsin 2.5mg/kg inject IP 4 weeks after SCI")
     bpy.types.Scene.protocol = bpy.props.StringProperty \
       (name = "Protocol", default = "")
     bpy.types.Scene.session_description = bpy.props.StringProperty \
