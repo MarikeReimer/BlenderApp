@@ -1247,7 +1247,7 @@ def instantiate_tables(schema):
         length: float
         volume: float
         surface_area:float
-        spine_type: enum('mushroom', 'thin', disconnected,'U')
+        spine_type: enum('mushroom', 'thin', 'disconnected','stubby','U')
         center_of_mass: longblob
         """
         def make(self, key):
@@ -1267,6 +1267,8 @@ def instantiate_tables(schema):
                         spine_type = 'thin'
                     elif group.name.startswith("Disconnected"):
                         spine_type = 'disconnected'
+                    elif group.name.startswith("Stubby"):
+                        spine_type = 'stubby'
                     else:
                         spine_type = 'U'
 
