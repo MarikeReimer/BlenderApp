@@ -143,6 +143,9 @@ class NeuronAnalysis(bpy.types.Panel):
         row = box.row() 
         row.operator('object.load_dj', text = "Load into DataJoint")
 
+        #Pass data to DataJoint
+        row = box.row() 
+        row.operator('object.drop_current', text = "Clear Current Entry")
 
 
 class FILE_SELECT_OT_SelectFile(bpy.types.Operator):
@@ -534,7 +537,6 @@ class WriteNWB(bpy.types.Operator):
         point2 = i.data.vertices[1].co
         #Calculate distance between two points.
         length = (point2 - point1).length
-        print("spine name is", i.name, "vector length is ", length)
         return length
 
     #Extract attributes from spine meshes when running the execute loop
@@ -607,6 +609,10 @@ class WriteNWB(bpy.types.Operator):
                     mesh_attributes = self.find_mesh_attributes(i)
                     doubled_surface_area = mesh_attributes[2]
                     surface_area = doubled_surface_area/2 
+                    print("surface_area", surface_area)
+
+                elif i.type == 'MESH' and i.name.startswith('endpoints'):
+                    pass
 
                 else:
                     mesh_attributes = self.find_mesh_attributes(i)
@@ -639,9 +645,8 @@ class WriteNWB(bpy.types.Operator):
                 #     #     vertices = face.vertices
                 #     #     face_vert_list = [vertices[0], vertices[1], vertices[2]]
                 #     #     faces.append(face_vert_list)
-        #path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBFiles'
+
         path = context.scene.my_path_property
-        print(path)
         os.chdir(path) 
         #Write the NWB file
         with NWBHDF5IO(nwbfile_name, 'w') as io:
@@ -1083,11 +1088,9 @@ class LoadDataJoint(bpy.types.Operator):
         dendrite = schema_holder[2]
         image_segmentation = schema_holder[3] 
         distance_to_soma = schema_holder[4]   
-        print(distance_to_soma)
         
         #Select CSV()
         AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma)
-
 
 
         return{'FINISHED'}
@@ -1097,7 +1100,6 @@ def AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma):
     identifier = bpy.context.scene.identifier
 
     path = bpy.context.scene.selected_file
-    print(path)
     
     # Replace '\\' with '/' in the path
     converted_path = path.replace('\\', '/')
@@ -1328,3 +1330,39 @@ class FILE_SELECTOR_PT_Panel(bpy.types.Panel):
 
         if context.selected_file:
             layout.label(text="Selected File: " + context.selected_file)
+
+
+class DropCurrentSubjectIdentifier(bpy.types.Operator):
+    bl_idname = 'object.drop_current' #operators must follow the naming convention of object.lowercase_letters
+    bl_label = 'Drop Current'
+    
+    def execute(self, context):
+        # Connect to datajoint
+        
+        #Extract Strings 
+        host = bpy.context.scene.host
+        datajoint_user= bpy.context.scene.datajoint_user
+        datajoint_password = bpy.context.scene.datajoint_password
+        subject_id = bpy.context.scene.subject_id
+        identifier = bpy.context.scene.identifier
+
+        connect_to_dj(host, datajoint_user, datajoint_password)
+
+        schema = dj.schema(datajoint_user, locals())
+        print(schema)
+
+        schema_holder = instantiate_tables(schema)
+        mouse = schema_holder[0] 
+        session = schema_holder[1]
+        dendrite = schema_holder[2]
+        image_segmentation = schema_holder[3] 
+        distance_to_soma = schema_holder[4]   
+        print(distance_to_soma)
+        
+        #(session & 'subject_id = "L912"'& 'identifier = "Dendrite1"').delete()
+        #(session & 'str(subject_id) = subject_id' & 'str(identifier) = identifier').delete()
+        (session & f'subject_id = "{subject_id}"' & f'identifier = "{identifier}"').delete()  #try this
+
+        #(session & subject_id & identifier).delete()
+        print("deleting ", session & subject_id & identifier)
+        return{'FINISHED'}

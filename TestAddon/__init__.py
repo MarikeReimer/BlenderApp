@@ -13,6 +13,7 @@ from . ClassDefinitions import WriteNWB
 from . ClassDefinitions import SpineSlicer
 from . ClassDefinitions import SegmentHollowSpines
 from . ClassDefinitions import LoadDataJoint
+from . ClassDefinitions import DropCurrentSubjectIdentifier
 from . ClassDefinitions import FILE_SELECT_OT_SelectFile
 from . ClassDefinitions import SelectDirectoryOperator
 
@@ -41,6 +42,7 @@ def register():
     bpy.utils.register_class(WriteNWB)
     #bpy.utils.register_class(AddSpheres)
     bpy.utils.register_class(LoadDataJoint)
+    bpy.utils.register_class(DropCurrentSubjectIdentifier)
     bpy.utils.register_class(FILE_SELECT_OT_SelectFile)
     bpy.utils.register_class(SelectDirectoryOperator)
  
@@ -148,6 +150,7 @@ def unregister():
     bpy.utils.unregister_class(FILE_SELECT_OT_SelectFile)
     bpy.utils.unregister_class(SelectDirectoryOperator)
     bpy.utils.unregister_class(LoadDataJoint)
+    bpy.utils.unregister_class(DropCurrentSubjectIdentifier)
     
 
     #Subject fields
