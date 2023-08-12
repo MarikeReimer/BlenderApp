@@ -5,11 +5,8 @@ from datetime import datetime
 #Import class definitions
 from . ClassDefinitions import NeuronAnalysis
 from . ClassDefinitions import ExplodingBits
-#from . ClassDefinitions import DiscSegmenter
 from . ClassDefinitions import ManualLength
 from . ClassDefinitions import WriteNWB
-#from . ClassDefinitions import CheckBooleans
-#from . ClassDefinitions import AddSpheres
 from . ClassDefinitions import SpineSlicer
 from . ClassDefinitions import SegmentHollowSpines
 from . ClassDefinitions import LoadDataJoint

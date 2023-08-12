@@ -28,7 +28,7 @@ from mathutils.bvhtree import BVHTree
 #NeuronAnalysis creates a 3Dview panel and add rows for text entry fields and buttons linked to operators.
 
 class NeuronAnalysis(bpy.types.Panel):
-    bl_label = "NeuroSpineSlicer" #The name of our panel
+    bl_label = "NeuroSlicer" #The name of our panel
     bl_idname = "_PT_TestPanel" #Gives the panel gets a custom ID, otherwise it takes the name of the class used to define the panel.  Used default from template
     bl_space_type = 'VIEW_3D' #Puts the panel on the VIEW_3D tool bar
     bl_region_type = 'UI' #The region where the panel will be used
@@ -144,9 +144,11 @@ class NeuronAnalysis(bpy.types.Panel):
         row.operator('object.load_dj', text = "Load into DataJoint")
 
         #Pass data to DataJoint
-        row = box.row() 
-        row.operator('object.drop_current', text = "Clear Current Entry")
+        # row = box.row() 
+        # row.operator('object.drop_current', text = "Clear Current Entry")
 
+
+#ROW OPERATORS
 
 class FILE_SELECT_OT_SelectFile(bpy.types.Operator):
     bl_idname = "object.file_select"
@@ -178,8 +180,6 @@ class SelectDirectoryOperator(bpy.types.Operator):
         context.window_manager.fileselect_add(self)
         return {'RUNNING_MODAL'}
 
-#ROW OPERATORS
-
 #Row operator that applies "separate by loose parts" to mesh    
 class ExplodingBits(bpy.types.Operator):
     bl_idname = 'object.exploding_bits' #operators must follow the naming convention of object.lowercase_letters
@@ -192,7 +192,7 @@ class ExplodingBits(bpy.types.Operator):
         bpy.ops.mesh.separate(type='LOOSE')
         return {'FINISHED'}
 
-#Segment Solid Spines
+#Segment Solid Spines/Autosegmenter
 class SpineSlicer(bpy.types.Operator):
     bl_idname = 'object.slice_spines' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'Slice Spines' 
@@ -214,81 +214,7 @@ class SpineSlicer(bpy.types.Operator):
         spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict)
         spine_tip_dict = find_spine_tip(self, spine_base_dict)
         create_base_and_tip(self, spine_base_dict, spine_tip_dict)
-        #create_surface_area_mesh(self, spine_and_slicer_dict)
-        #surface_spine_and_slicer_dict = create_surface_area_mesh(self, spine_and_slicer_dict)
-        #slice_surface_spines(self, surface_spine_and_slicer_dict)
-
-        # for slicer in slicer_list:
-        #     slicer.scale *= 0.5
-
-        # unique_slicers = list(set(spine_and_slicer_dict.values()))
-
-        # for matched_slicer in unique_slicers:
-        #     print(matched_slicer)
-        #     matched_slicer = bpy.data.objects[matched_slicer]
-        #     if matched_slicer.name in boolean_meshes_collection.objects:
-        #         boolean_meshes_collection.objects.unlink(matched_slicer)
-        #         bpy.context.scene.collection.objects.link(matched_slicer)
-        #     else:
-        #         matched_slicer.name = matched_slicer.name + "inspect"
         return {'FINISHED'}
-
-# def create_surface_area_mesh(self, spine_and_slicer_dict):
-#     surface_spine_and_slicer_dict = {}
-    
-#     # Iterate over the spine and slicer dictionary
-#     for spine, slicer in spine_and_slicer_dict.items():
-#         spine = bpy.data.objects[spine]
-#         slicer = bpy.data.objects[slicer]
-
-#         # Create a copy of the spine, add surface area to its name
-#         duplicate_spine = spine.copy()
-#         duplicate_spine.data = spine.data.copy()
-#         duplicate_spine.name = "surface_" + spine.name
-
-#         # Link the duplicate spine to the same collection as the original spine
-#         spine_collection = spine.users_collection[0]
-#         spine_collection.objects.link(duplicate_spine)
-
-#         # Deselect all objects
-#         # bpy.ops.object.select_all(action='DESELECT')
-
-#         # # Select the duplicate spine
-#         # duplicate_spine.select_set(True)
-
-#         # # Create the Solidify modifier
-#         # solidify_modifier = duplicate_spine.modifiers.new(name="Solidify", type='SOLIDIFY')
-#         # solidify_modifier.thickness = 0.01  # Adjust the thickness value as desired
-#         # print("solidified", duplicate_spine)
-
-#         # # Apply the Solidify modifier
-#         # bpy.ops.object.modifier_apply({"object": duplicate_spine}, modifier=solidify_modifier.name)
-
-#         # # Deselect the duplicate spine
-#         # duplicate_spine.select_set(False)
-
-#         # Store the relationship between the duplicate spine and slicer in the dictionary
-#         surface_spine_and_slicer_dict[duplicate_spine] = slicer
-
-#     return surface_spine_and_slicer_dict
-
-
-# def slice_surface_spines(self, surface_spine_and_slicer_dict):
-#     for surface_spine, slicer in surface_spine_and_slicer_dict.items():
-
-#         # Apply the boolean difference modifier
-#         bpy.ops.object.select_all(action='DESELECT')
-#         surface_spine.select_set(True)
-#         slicer.select_set(True)
-#         bpy.context.view_layer.objects.active = surface_spine
-#         bpy.ops.object.modifier_add(type='BOOLEAN')
-#         bool_modifier = surface_spine.modifiers[-1]
-#         bool_modifier.operation = 'DIFFERENCE'
-#         bool_modifier.object = slicer
-#         bpy.ops.object.modifier_apply({"object": surface_spine}, modifier=bool_modifier.name)
-#         bpy.ops.object.select_all(action='DESELECT')
-
-#     return {'FINISHED'}
 
 
 #Move Hollow Spines to collections
@@ -333,82 +259,6 @@ def hollow_spines_to_collections(self, spine_and_slicer_dict):
 
                     # Add the spineect to the matching collection
                     collection.objects.link(spine)
-
-
-
-# # Add spheres for Check Booleans
-# class AddSpheres(bpy.types.Operator):
-#     bl_idname = 'object.add_spheres'
-#     bl_label = 'Add Spheres'
-
-#     def execute(self, context):
-#         # Create two icospheres
-#         bpy.ops.mesh.primitive_ico_sphere_add(location=(0, 0, 0))
-#         sphere1 = bpy.context.object
-#         bpy.ops.mesh.primitive_ico_sphere_add(location=(0, 0, 3))
-#         sphere2 = bpy.context.object
-
-#         # Rename the icospheres
-#         sphere1.name = "BoolSphere1"
-#         sphere2.name = "BoolSphere2"
-
-#         return {'FINISHED'}
-
-
-# def CheckBoolsRayCast(sphere1, sphere2):    
-#     # Define the start and end points for the raycast
-#     start_point = sphere1.location
-#     end_point = sphere2.location
-
-#     # Perform the raycast
-#     direction = end_point - start_point
-#     direction.normalize()
-
-#     # Check for intersections with objects
-#     found_intersection = False
-#     for obj in bpy.context.scene.objects:
-#         if obj != sphere1 and obj != sphere2:
-#             hit, location, normal, face_index = obj.ray_cast(start_point, direction)
-#             if hit:
-#                 found_intersection = True
-#                 break
-
-#     # Check if an object was found between the spheres
-#     if found_intersection:
-#         print("There is an object between the spheres.")
-#     else:
-#         print("There is no object between the spheres.")
-    
-#     return hit
-
-
-# ////
-
-#Discsegmenter
-#Finds spines and slicers based on selected objects
-#Spines are named after their slicers and intersecting faces are found - not as reliably as it should
-#Spine base is defined as the center_point of all the face intersecting points
-#Spines are moved to folders, if they are missing their base, they are removed from folders
-#Normals for the slicer polygons are found at the closest point to the spine center of mass
-#Tips for stubby spines use the slicer normal to raycast from the spine base.  Tips for all other spines are created for the farthest vertex
-
-class DiscSegmenter(bpy.types.Operator): 
-    bl_idname = 'object.discsegmenter' #operators must follow the naming convention of object.lowercase_letters
-    bl_label = 'AutoSegmenter'        
-  
-    def execute(self, context):
-        spine_and_slicers = get_spines(self)
-        spine_list = spine_and_slicers[0]
-        slicer_list = spine_and_slicers[1]
-        faces_and_spine_slicer_pairs = find_overlapping_spine_faces(self, spine_list, slicer_list)
-        spine_overlapping_indices_dict = faces_and_spine_slicer_pairs[0]
-        spine_and_slicer_dict = faces_and_spine_slicer_pairs[1]
-        spines_to_collections(self, spine_and_slicer_dict)
-        #paint_spines(self, spine_and_slicer_dict)
-        spine_base_dict = find_spine_bases(self, spine_overlapping_indices_dict, spine_and_slicer_dict)
-        spine_tip_dict = find_spine_tip(self, spine_base_dict)
-        create_base_and_tip(self, spine_base_dict, spine_tip_dict)
-        return {'FINISHED'}
 
 
 #This class contains methods which extract data from the text-entry panel, meshes, and endpoints and the writes them to an NWB File
@@ -654,7 +504,7 @@ class WriteNWB(bpy.types.Operator):
 
         return {'FINISHED'}
 
-#DiscSegmentor
+#Spine Slicer/Autosegmenter Methods
 #Put the selected meshes into spine list.  Put unselected objects into slicer list  
 def get_spines(self):  
     spine_list = [mesh for mesh in bpy.context.selected_objects]
@@ -1037,28 +887,9 @@ def cone_raycast(self, spine_base, obj):
         _, hit_point, _, _ = obj.ray_cast(start_point, end_point - start_point)
 
         if hit_point is not None:
-            # Transform the hit point to world coordinates
-            #hit_point = obj_matrix.inverted() @ hit_point
             ray_cast_results.append((hit_point))
     return(ray_cast_results)
 
-
-
-#Might be useful later
-
-# def paint_spines(self, modified_spine_and_slicer_dict):
-#     for spine, slicer in modified_spine_and_slicer_dict.items():
-#         slicer = bpy.data.objects.get(slicer)
-#         spine = bpy.data.objects.get(spine)
-
-#         if slicer and spine:
-#             if slicer.data.materials:
-#                 slicer_color = slicer.data.materials[0]
-
-#                 if spine.data.materials:
-#                     spine.data.materials[0] = slicer_color
-#                 else:
-#                     spine.data.materials.append(slicer_color)  
 
 
 
@@ -1330,6 +1161,24 @@ class FILE_SELECTOR_PT_Panel(bpy.types.Panel):
 
         if context.selected_file:
             layout.label(text="Selected File: " + context.selected_file)
+
+
+
+#Might be useful later
+
+# def paint_spines(self, modified_spine_and_slicer_dict):
+#     for spine, slicer in modified_spine_and_slicer_dict.items():
+#         slicer = bpy.data.objects.get(slicer)
+#         spine = bpy.data.objects.get(spine)
+
+#         if slicer and spine:
+#             if slicer.data.materials:
+#                 slicer_color = slicer.data.materials[0]
+
+#                 if spine.data.materials:
+#                     spine.data.materials[0] = slicer_color
+#                 else:
+#                     spine.data.materials.append(slicer_color)  
 
 
 class DropCurrentSubjectIdentifier(bpy.types.Operator):
