@@ -199,7 +199,7 @@ class SpineSlicer(bpy.types.Operator):
     
     def execute(self, context):
         spine_list = [obj for obj in bpy.context.selected_objects]
-        print(len(spine_list), "# spines")
+        print(len(spine_list,))
 
         # Get the active collection, its name, and put its contents into slicer list
         collection = bpy.context.collection
@@ -564,17 +564,17 @@ class SegmentationMethods():
                         bpy.context.scene.collection.objects.link(spine)
                     break 
 
-                if intersects == False:
-                    spines_without_bases.append(spine.name)
-                    for collection in spine.users_collection:
-                        collection.objects.unlink(spine)
-                        bpy.data.collections.remove(collection)
-                        bpy.context.scene.collection.objects.link(spine)        
+            if intersects == False:
+                spines_without_bases.append(spine.name)
+                for collection in spine.users_collection:
+                    collection.objects.unlink(spine)
+                    bpy.data.collections.remove(collection)
+                    bpy.context.scene.collection.objects.link(spine)        
         
-        print("spines without bases", spines_without_bases)
-        spine_bm.free()
-        slicer_bm.free()
-        return(spine_overlapping_indices_dict, spine_and_slicer_dict)
+            print("spines without bases", spines_without_bases)
+            spine_bm.free()
+            slicer_bm.free()
+            return(spine_overlapping_indices_dict, spine_and_slicer_dict)
 
     #Check each spine to find its intersecting slicer.  
     #Find the spine faces that intersect with the slicer and the normal vector of the slicer which is currently borked     
@@ -736,130 +736,246 @@ class ManualLength(bpy.types.Operator):
     bl_idname = 'object.individual_length_finder' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'Manual Length'
 
-    def execute(self, context):
-        spine_name = name_spine_after_slicer(self)
-        vert_list = FindSelectedVerts(self)
-        spine_base = FindSpineBase(self, vert_list)
-        spine_tip = FindSpineTip(self, spine_base)
-        spine_to_collection(self)
-        CreateEndpointMesh(self, spine_base, spine_tip, spine_name)
+    #Get selected verticies
+    def FindSelectedVerts(self):
+        mode = bpy.context.active_object.mode
+        bpy.ops.object.mode_set(mode='OBJECT')
+        vert_list = []
+        for v in bpy.context.active_object.data.vertices:
+            if v.select:
+                vert_list.append(v)
+            else:
+                pass
+        
+        bpy.ops.object.mode_set(mode=mode)
+        return(vert_list)
+
+    #Given several selected verticies find the center
+    def FindSpineBase(self,vert_list):  
+        x, y, z = [ sum( [v.co[i] for v in vert_list] ) for i in range(3)] #Tested this - it does need to be 3
+        count = float(len(vert_list))
+        spine_base = Vector( (x, y, z ) ) / count        
+
+        return(spine_base)
+
+    #Compare the distance between the spine base and all other verices to find the farthest point
+    def FindSpineTip(self, spine_base):
+        spine_length_dict = {}
+        spine_coordinates_dict = {}
+        obj = bpy.context.active_object
+
+
+        if obj.name[:6]== 'Stubby':
+            ray_direction = obj.location
+            ray_max_distance = 10
+            hit, location, normal, face_index = obj.ray_cast(spine_base, ray_direction, distance = ray_max_distance)
+            spine_tip = location   
+
+        
+            #Mark the tip
+            bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_tip), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0)) 
+            return(spine_tip)
+
+        else:         
+            for vert in bpy.context.active_object.data.vertices:
+                length = math.dist(vert.co, spine_base)         
+                spine_length_dict[vert.index] = length
+                spine_coordinates_dict[vert.index] = vert.co                
+
+                spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
+                spine_tip = spine_coordinates_dict[spine_tip_index]
+
+            #Mark the tip
+            bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_tip), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0)) 
+
+            return(spine_tip)
+
+    def CreateEndpointMesh(self, spine_base, spine_tip, spine_name):
+        #Use the spine base and spine tip coordinates to create points in active object's collection
+        #Get active object
+        #obj = bpy.data.objects.get(spine_name)
+        obj = bpy.data.objects[spine_name]
+        
+        #Make a mesh
+        edges = []
+        faces = []
+        verts = [spine_base, spine_tip]    
+        endpoint_mesh = bpy.data.meshes.new("endpoints_" + str(obj.name))  
+        endpoint_mesh.from_pydata(verts, edges, faces)
+
+        #Use the selected object's coordinates for reference frame
+        endpoint_mesh.transform(obj.matrix_world)
+
+        #Link to active object's collection
+        collection = obj.users_collection[0]        
+            
+        endpoints = bpy.data.objects.new(endpoint_mesh.name, endpoint_mesh)
+        
+        collection.objects.link(endpoints)
         return {'FINISHED'}
 
-#Get selected verticies
-def FindSelectedVerts(self):
-    mode = bpy.context.active_object.mode
-    bpy.ops.object.mode_set(mode='OBJECT')
-    vert_list = []
-    for v in bpy.context.active_object.data.vertices:
-        if v.select:
-            vert_list.append(v)
-        else:
-            pass
+    def name_spine_after_slicer(self):
+        # Get the selected object
+        selected_obj = bpy.context.object
+        # Initialize variables for tracking the closest mesh
+        closest_distance = float('inf')
+        closest_mesh = None
+
+        # Iterate over all objects in the scene
+        for obj in bpy.context.scene.objects:
+            # Check if the object is a mesh and not the selected object
+            if obj.type == 'MESH' and obj != selected_obj and obj.name != "Object":
+                # Get the world space positions of the objects
+                selected_obj_world = selected_obj.matrix_world.translation
+                obj_world = obj.matrix_world.translation
+
+                # Calculate the distance between the objects
+                distance = (selected_obj_world - obj_world).length
+
+                # Update the closest mesh if the distance is smaller
+                if distance < closest_distance:
+                    closest_distance = distance
+                    closest_mesh = obj
+        selected_obj.name = closest_mesh.name[6:]
+        spine_name = selected_obj.name 
+        return(spine_name)
+
+
+    def spine_to_collection(self):
+        spine = bpy.context.object
+        old_collection_name = spine.users_collection
+        old_collection_name = old_collection_name[0]
+        old_collection_name.objects.unlink(spine)
+        new_collection_name = spine.name
+        new_collection = bpy.data.collections.new(new_collection_name)
+        bpy.context.scene.collection.children.link(new_collection)
+        new_collection.objects.link(spine)
+        return {'FINISHED'}    
+
+    def execute(self, context):
+        spine_name = ManualLength.name_spine_after_slicer(self)
+        vert_list = ManualLength.FindSelectedVerts(self)
+        spine_base = ManualLength.FindSpineBase(self, vert_list)
+        spine_tip = ManualLength.FindSpineTip(self, spine_base)
+        ManualLength.spine_to_collection(self)
+        ManualLength.CreateEndpointMesh(self, spine_base, spine_tip, spine_name)
+        return {'FINISHED'}
+
+# #Get selected verticies
+# def FindSelectedVerts(self):
+#     mode = bpy.context.active_object.mode
+#     bpy.ops.object.mode_set(mode='OBJECT')
+#     vert_list = []
+#     for v in bpy.context.active_object.data.vertices:
+#         if v.select:
+#             vert_list.append(v)
+#         else:
+#             pass
     
-    bpy.ops.object.mode_set(mode=mode)
-    return(vert_list)
+#     bpy.ops.object.mode_set(mode=mode)
+#     return(vert_list)
 
-#Given several selected verticies find the center
-def FindSpineBase(self,vert_list):  
-    x, y, z = [ sum( [v.co[i] for v in vert_list] ) for i in range(3)] #Tested this - it does need to be 3
-    count = float(len(vert_list))
-    spine_base = Vector( (x, y, z ) ) / count        
+# #Given several selected verticies find the center
+# def FindSpineBase(self,vert_list):  
+#     x, y, z = [ sum( [v.co[i] for v in vert_list] ) for i in range(3)] #Tested this - it does need to be 3
+#     count = float(len(vert_list))
+#     spine_base = Vector( (x, y, z ) ) / count        
 
-    return(spine_base)
+#     return(spine_base)
 
-#Compare the distance between the spine base and all other verices to find the farthest point
-def FindSpineTip(self, spine_base):
-    spine_length_dict = {}
-    spine_coordinates_dict = {}
-    obj = bpy.context.active_object
+# #Compare the distance between the spine base and all other verices to find the farthest point
+# def FindSpineTip(self, spine_base):
+#     spine_length_dict = {}
+#     spine_coordinates_dict = {}
+#     obj = bpy.context.active_object
 
 
-    if obj.name[:6]== 'Stubby':
-        ray_direction = obj.location
-        ray_max_distance = 10
-        hit, location, normal, face_index = obj.ray_cast(spine_base, ray_direction, distance = ray_max_distance)
-        spine_tip = location   
+#     if obj.name[:6]== 'Stubby':
+#         ray_direction = obj.location
+#         ray_max_distance = 10
+#         hit, location, normal, face_index = obj.ray_cast(spine_base, ray_direction, distance = ray_max_distance)
+#         spine_tip = location   
 
     
-        #Mark the tip
-        bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_tip), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0)) 
-        return(spine_tip)
+#         #Mark the tip
+#         bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_tip), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0)) 
+#         return(spine_tip)
 
-    else:         
-        for vert in bpy.context.active_object.data.vertices:
-            length = math.dist(vert.co, spine_base)         
-            spine_length_dict[vert.index] = length
-            spine_coordinates_dict[vert.index] = vert.co                
+#     else:         
+#         for vert in bpy.context.active_object.data.vertices:
+#             length = math.dist(vert.co, spine_base)         
+#             spine_length_dict[vert.index] = length
+#             spine_coordinates_dict[vert.index] = vert.co                
 
-            spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
-            spine_tip = spine_coordinates_dict[spine_tip_index]
+#             spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
+#             spine_tip = spine_coordinates_dict[spine_tip_index]
 
-        #Mark the tip
-        bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_tip), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0)) 
+#         #Mark the tip
+#         bpy.ops.mesh.primitive_ico_sphere_add(radius=.01, calc_uvs=True, enter_editmode=False, align='WORLD', location=(spine_tip), rotation=(0.0, 0.0, 0.0), scale=(0.0, 0.0, 0.0)) 
 
-        return(spine_tip)
+#         return(spine_tip)
 
-def CreateEndpointMesh(self, spine_base, spine_tip, spine_name):
-    #Use the spine base and spine tip coordinates to create points in active object's collection
-    #Get active object
-    #obj = bpy.data.objects.get(spine_name)
-    obj = bpy.data.objects[spine_name]
+# def CreateEndpointMesh(self, spine_base, spine_tip, spine_name):
+#     #Use the spine base and spine tip coordinates to create points in active object's collection
+#     #Get active object
+#     #obj = bpy.data.objects.get(spine_name)
+#     obj = bpy.data.objects[spine_name]
     
-    #Make a mesh
-    edges = []
-    faces = []
-    verts = [spine_base, spine_tip]    
-    endpoint_mesh = bpy.data.meshes.new("endpoints_" + str(obj.name))  
-    endpoint_mesh.from_pydata(verts, edges, faces)
+#     #Make a mesh
+#     edges = []
+#     faces = []
+#     verts = [spine_base, spine_tip]    
+#     endpoint_mesh = bpy.data.meshes.new("endpoints_" + str(obj.name))  
+#     endpoint_mesh.from_pydata(verts, edges, faces)
 
-    #Use the selected object's coordinates for reference frame
-    endpoint_mesh.transform(obj.matrix_world)
+#     #Use the selected object's coordinates for reference frame
+#     endpoint_mesh.transform(obj.matrix_world)
 
-    #Link to active object's collection
-    collection = obj.users_collection[0]        
+#     #Link to active object's collection
+#     collection = obj.users_collection[0]        
         
-    endpoints = bpy.data.objects.new(endpoint_mesh.name, endpoint_mesh)
+#     endpoints = bpy.data.objects.new(endpoint_mesh.name, endpoint_mesh)
     
-    collection.objects.link(endpoints)
-    return {'FINISHED'}
+#     collection.objects.link(endpoints)
+#     return {'FINISHED'}
 
-def name_spine_after_slicer(self):
-    # Get the selected object
-    selected_obj = bpy.context.object
-    # Initialize variables for tracking the closest mesh
-    closest_distance = float('inf')
-    closest_mesh = None
+# def name_spine_after_slicer(self):
+#     # Get the selected object
+#     selected_obj = bpy.context.object
+#     # Initialize variables for tracking the closest mesh
+#     closest_distance = float('inf')
+#     closest_mesh = None
 
-    # Iterate over all objects in the scene
-    for obj in bpy.context.scene.objects:
-        # Check if the object is a mesh and not the selected object
-        if obj.type == 'MESH' and obj != selected_obj and obj.name != "Object":
-            # Get the world space positions of the objects
-            selected_obj_world = selected_obj.matrix_world.translation
-            obj_world = obj.matrix_world.translation
+#     # Iterate over all objects in the scene
+#     for obj in bpy.context.scene.objects:
+#         # Check if the object is a mesh and not the selected object
+#         if obj.type == 'MESH' and obj != selected_obj and obj.name != "Object":
+#             # Get the world space positions of the objects
+#             selected_obj_world = selected_obj.matrix_world.translation
+#             obj_world = obj.matrix_world.translation
 
-            # Calculate the distance between the objects
-            distance = (selected_obj_world - obj_world).length
+#             # Calculate the distance between the objects
+#             distance = (selected_obj_world - obj_world).length
 
-            # Update the closest mesh if the distance is smaller
-            if distance < closest_distance:
-                closest_distance = distance
-                closest_mesh = obj
-    selected_obj.name = closest_mesh.name[6:]
-    spine_name = selected_obj.name 
-    return(spine_name)
+#             # Update the closest mesh if the distance is smaller
+#             if distance < closest_distance:
+#                 closest_distance = distance
+#                 closest_mesh = obj
+#     selected_obj.name = closest_mesh.name[6:]
+#     spine_name = selected_obj.name 
+#     return(spine_name)
 
 
-def spine_to_collection(self):    
-    spine = bpy.context.object
-    old_collection_name = spine.users_collection
-    old_collection_name = old_collection_name[0]
-    old_collection_name.objects.unlink(spine)
-    new_collection_name = spine.name
-    new_collection = bpy.data.collections.new(new_collection_name)
-    bpy.context.scene.collection.children.link(new_collection)
-    new_collection.objects.link(spine)
-    return {'FINISHED'}
+# def spine_to_collection(self):    
+    # spine = bpy.context.object
+    # old_collection_name = spine.users_collection
+    # old_collection_name = old_collection_name[0]
+    # old_collection_name.objects.unlink(spine)
+    # new_collection_name = spine.name
+    # new_collection = bpy.data.collections.new(new_collection_name)
+    # bpy.context.scene.collection.children.link(new_collection)
+    # new_collection.objects.link(spine)
+    # return {'FINISHED'}
 
 def cone_raycast(self, spine_base, obj):
     direction = obj.location - spine_base 
