@@ -199,6 +199,7 @@ class SpineSlicer(bpy.types.Operator):
     
     def execute(self, context):
         spine_list = [obj for obj in bpy.context.selected_objects]
+        print(len(spine_list), "# spines")
 
         # Get the active collection, its name, and put its contents into slicer list
         collection = bpy.context.collection
@@ -514,11 +515,11 @@ class SegmentationMethods():
 
         for obj in all_obs.all_objects:
             slicer_list.append(obj)
-
         return(spine_list, slicer_list)
 
     #Put spines into folders with their name
     def spines_to_collections(self, spine_and_slicer_dict):
+        print(len(spine_and_slicer_dict), "# spines")
         #Add spines to their own folders
         for spine in spine_and_slicer_dict.keys():
             spine = bpy.data.objects.get(spine)
@@ -529,7 +530,7 @@ class SegmentationMethods():
             new_collection = bpy.data.collections.new(new_collection_name)
             bpy.context.scene.collection.children.link(new_collection)
             new_collection.objects.link(spine)
-        return {'FINISHED'}
+        #return {'FINISHED'}
 
     def find_overlapping_spine_faces(self, spine_list, slicer_list):
         spine_overlapping_indices_dict = {}
@@ -563,13 +564,12 @@ class SegmentationMethods():
                         bpy.context.scene.collection.objects.link(spine)
                     break 
 
-            if intersects == False:
-                spines_without_bases.append(spine.name)
-                for collection in spine.users_collection:
-                    collection.objects.unlink(spine)
-                    bpy.data.collections.remove(collection)
-                    bpy.context.scene.collection.objects.link(spine)
-        
+                if intersects == False:
+                    spines_without_bases.append(spine.name)
+                    for collection in spine.users_collection:
+                        collection.objects.unlink(spine)
+                        bpy.data.collections.remove(collection)
+                        bpy.context.scene.collection.objects.link(spine)        
         
         print("spines without bases", spines_without_bases)
         spine_bm.free()
@@ -635,7 +635,7 @@ class SegmentationMethods():
                         distance = spine.location - location
                         index =  results.index(location)
                         tip_locations[index] = distance
-                    farthest_location_index = get_key_with_largest_value(tip_locations)
+                    farthest_location_index = SegmentationMethods.get_key_with_largest_value(tip_locations)
                     spine_tip_location = results[farthest_location_index]
 
                     spine_tip = spine.matrix_world @ spine_tip_location
