@@ -656,22 +656,6 @@ class SegmentationMethods():
                     scene.view_layers.update()
                     
                 else:
-                    # #Compare the distance between Spine Base and all other verticies in spine_mesh and store in "spine_length_dict"   
-                    # spine_length_dict = {}
-                    # spine_coordinates_dict = {}
-                                            
-                    # for vert in spine.data.vertices:
-                    #     length = math.dist(vert.co, spine_base)         
-                    #     spine_length_dict[vert.index] = length
-                    #     spine_coordinates_dict[vert.index] = vert.co                
-
-                    # spine_tip_index = max(spine_length_dict, key=spine_length_dict.get)
-                    # spine_tip = spine_coordinates_dict[spine_tip_index]
-                    # spine_tip_location = spine.matrix_world @ spine_tip
-
-                    # #Clear dictionary between loops    
-                    # spine_length_dict = {}
-                    # spine_coordinates_dict = {}
                     vertices = [spine.matrix_world @ v.co for v in spine.data.vertices]            
 
                     # Initialize the farthest distance to zero
@@ -896,7 +880,7 @@ class ManualLength(bpy.types.Operator):
 class LoadDataJoint(bpy.types.Operator):
     bl_idname = 'object.load_dj' #operators must follow the naming convention of object.lowercase_letters
     bl_label = 'Load DataJoint'
-    
+
     def execute(self, context):
         # Connect to datajoint
         
@@ -905,12 +889,12 @@ class LoadDataJoint(bpy.types.Operator):
         datajoint_user= bpy.context.scene.datajoint_user
         datajoint_password = bpy.context.scene.datajoint_password
 
-        connect_to_dj(host, datajoint_user, datajoint_password)
+        LoadDataJoint.connect_to_dj(host, datajoint_user, datajoint_password)
 
         schema = dj.schema(datajoint_user, locals())
         print(schema)
 
-        schema_holder = instantiate_tables(schema)
+        schema_holder = LoadDataJoint.instantiate_tables(schema)
         mouse = schema_holder[0] 
         session = schema_holder[1]
         dendrite = schema_holder[2]
@@ -918,226 +902,444 @@ class LoadDataJoint(bpy.types.Operator):
         distance_to_soma = schema_holder[4]   
         
         #Select CSV()
-        AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma)
+        LoadDataJoint.AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma)
+        return{"FINISHED"}
 
+    
+    def AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma): 
+        subject_id = bpy.context.scene.subject_id
+        identifier = bpy.context.scene.identifier
+
+        path = bpy.context.scene.selected_file
+        
+        # Replace '\\' with '/' in the path
+        converted_path = path.replace('\\', '/')
+        csv_directory_path, csv_file_name = os.path.split(converted_path)
+
+        os.chdir(csv_directory_path)
+
+        #Read in dendrite data from CSV
+        with open(csv_file_name) as csv_file:
+            csv_reader = csv.reader(csv_file, delimiter=',')
+            next(csv_reader) # This skips the header row of the CSV file.
+            #Make a list of the NWB files in the directory
+            # path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBFiles'
+            # os.chdir(path)
+            nwb_file_path = bpy.context.scene.my_path_property
+            os.chdir(nwb_file_path)
+            NWBfiles = os.listdir(nwb_file_path)
+            NWBfiles.sort()
+            
+            for row in csv_reader:
+                csv_subject_id = str(row[0])
+                csv_identifier = row[1]
+
+                #Check to see if the current file's subject_ID and identifier match a row in the CSV file, then retreive its data
+
+                if subject_id == csv_subject_id and identifier == csv_identifier:
+                    nwb_filename = subject_id + identifier + '.nwb'
+
+                    dendrite_number = float(row[2])
+
+                    soma_center_pointX = float(row[3])
+                    soma_center_pointY = float(row[4])
+                    soma_center_pointZ = float(row[5])
+                    soma_center_point = [soma_center_pointX, soma_center_pointY, soma_center_pointZ]
+                    soma_center_point = np.asarray(soma_center_point)
+
+                    proximal_dendrite_length = float(row[6])
+                    medial_dendrite_length = float(row[7])
+                    distal_dendrite_length = float(row[8])
+                    
+
+                    print(nwb_filename)
+                    with NWBHDF5IO(nwb_filename, 'r') as io:
+                        nwbfile = io.read()
+                    
+                    #Subject fields
+                    genotype = nwbfile.subject.genotype
+                    sex = nwbfile.subject.sex
+                    species = nwbfile.subject.species
+                    strain = nwbfile.subject.strain
+                    subject_id = nwbfile.subject.subject_id
+
+                    #NWBFile Fields
+                    identifier = nwbfile.identifier
+                    pharmacology = nwbfile.pharmacology
+                    surgery = nwbfile.surgery
+
+                    mouse.insert1((
+                        subject_id,
+                        genotype,
+                        sex,   
+                        species,
+                        strain
+                        ), skip_duplicates = True)  
+
+                    session.insert1((
+                        subject_id,
+                        identifier,
+                        surgery,
+                        pharmacology
+                    ))
+
+                    dendrite.insert1((
+                        subject_id,
+                        identifier,
+                        dendrite_number,
+                        soma_center_point,
+                        proximal_dendrite_length,
+                        medial_dendrite_length,
+                        distal_dendrite_length
+                    ))
+
+                    image_segmentation.populate()
+                    distance_to_soma.populate()
+            print("Data loaded")
+            
+            return{"FINISHED"}
+
+
+    def connect_to_dj(host, datajoint_user, datajoint_password):
+        dj.config['database.host'] = host
+        dj.config['database.user'] = datajoint_user
+        dj.config['database.password'] = datajoint_password
+        dj.conn()
+
+    def instantiate_tables(schema):
+        #Define Mouse table
+        @schema
+        class Mouse(dj.Manual):
+            definition = """
+            subject_id: varchar(128)                  # Primary keys above the '---'
+            ---
+            #non-primary columns below the '---' 
+            genotype: enum('B6', 'BalbC', 'Unknown', 'Thy1-YFP')
+            sex: enum('M', 'F', 'Unknown')
+            species: varchar(128)
+            strain: varchar(128)
+            """
+
+        mouse = Mouse()
+
+        @schema
+        class Session(dj.Manual):
+            definition = """
+            ->Mouse
+            identifier: varchar(128)                  # Primary keys above the '---'
+            ---
+            #non-primary columns below the '---' 
+            surgery: varchar(128)
+            pharmacology: varchar(128)
+            """
+
+        session = Session()
+
+        @schema
+        class Dendrite(dj.Manual):
+            definition = """
+            ->Session
+            dendrite_id: int                  # Primary keys above the '---'
+            ---
+            #non-primary columns below the '---'
+            soma_center_point: longblob
+            proximal_dendrite_length: float
+            medial_dendrite_length: float
+            distal_dendrite_length: float
+            """
+
+        dendrite = Dendrite()
+
+        @schema
+        class Image_segmentation(dj.Imported):
+            definition = """
+            ->Dendrite
+            segmentation_name: varchar(128)                  # Primary keys above the '---'
+            ---
+            #non-primary columns below the '---'
+            length: float
+            volume: float
+            surface_area:float
+            spine_type: enum('mushroom', 'thin', 'disconnected','stubby','U')
+            center_of_mass: longblob
+            """
+            def make(self, key):
+                subject_id = key['subject_id']
+                identifier = key['identifier']
+
+                path = bpy.context.scene.my_path_property
+                nwbfile_to_read = path + '/' + str(subject_id) + str(identifier) + '.nwb'
+                print(nwbfile_to_read)
+                with NWBHDF5IO(nwbfile_to_read, 'r') as io:
+                    nwbfile = io.read()     
+                    for group in nwbfile.processing["SpineData"]["ImageSegmentation"].children[:]:
+                        print(group.name)
+                        if group.name.startswith("Mushroom"):
+                            spine_type = 'mushroom'
+                        elif group.name.startswith("Thin"):
+                            spine_type = 'thin'
+                        elif group.name.startswith("Disconnected"):
+                            spine_type = 'disconnected'
+                        elif group.name.startswith("Stubby"):
+                            spine_type = 'stubby'
+                        else:
+                            spine_type = 'U'
+
+                        length = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].length.data[:]
+                        length = length[0]
+                        volume = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].volume.data[:]
+                        volume = volume[0]
+                        surface_area = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].surface_area.data[:]
+                        surface_area = surface_area[0]
+                        center_of_mass = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].center_of_mass.data[:]
+                        center_of_mass = center_of_mass[0]
+                        
+                        key['segmentation_name'] = group.name 
+                        key['length'] = length
+                        key['volume'] = volume
+                        key['surface_area'] = surface_area
+                        key['spine_type'] = spine_type
+                        key['center_of_mass'] = center_of_mass
+                        self.insert1(key)
+
+        image_segmentation = Image_segmentation()
+
+        @schema
+        class Distance_to_soma(dj.Computed):
+            definition = """
+            ->Image_segmentation
+            ---
+            distance_to_soma: float"""
+            def make(self, key):
+                center_of_mass = (Image_segmentation() & key).fetch1('center_of_mass')
+                soma_center_point = (Dendrite() & key).fetch1('soma_center_point')
+                distance_to_soma = math.dist(center_of_mass,soma_center_point)
+
+                key['distance_to_soma'] = distance_to_soma
+                self.insert1(key)
+
+        distance_to_soma = Distance_to_soma()
+
+        return mouse, session, dendrite, image_segmentation, distance_to_soma
+    
 
         return{'FINISHED'}
 
-def AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma): 
-    subject_id = bpy.context.scene.subject_id
-    identifier = bpy.context.scene.identifier
+# def AddCSVtoNWB(mouse, session, dendrite, image_segmentation, distance_to_soma): 
+#     subject_id = bpy.context.scene.subject_id
+#     identifier = bpy.context.scene.identifier
 
-    path = bpy.context.scene.selected_file
+#     path = bpy.context.scene.selected_file
     
-    # Replace '\\' with '/' in the path
-    converted_path = path.replace('\\', '/')
-    csv_directory_path, csv_file_name = os.path.split(converted_path)
+#     # Replace '\\' with '/' in the path
+#     converted_path = path.replace('\\', '/')
+#     csv_directory_path, csv_file_name = os.path.split(converted_path)
 
-    os.chdir(csv_directory_path)
+#     os.chdir(csv_directory_path)
 
-    #Read in dendrite data from CSV
-    with open(csv_file_name) as csv_file:
-        csv_reader = csv.reader(csv_file, delimiter=',')
-        next(csv_reader) # This skips the header row of the CSV file.
-        #Make a list of the NWB files in the directory
-        # path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBFiles'
-        # os.chdir(path)
-        nwb_file_path = bpy.context.scene.my_path_property
-        os.chdir(nwb_file_path)
-        NWBfiles = os.listdir(nwb_file_path)
-        NWBfiles.sort()
+#     #Read in dendrite data from CSV
+#     with open(csv_file_name) as csv_file:
+#         csv_reader = csv.reader(csv_file, delimiter=',')
+#         next(csv_reader) # This skips the header row of the CSV file.
+#         #Make a list of the NWB files in the directory
+#         # path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBFiles'
+#         # os.chdir(path)
+#         nwb_file_path = bpy.context.scene.my_path_property
+#         os.chdir(nwb_file_path)
+#         NWBfiles = os.listdir(nwb_file_path)
+#         NWBfiles.sort()
         
-        for row in csv_reader:
-            csv_subject_id = str(row[0])
-            csv_identifier = row[1]
+#         for row in csv_reader:
+#             csv_subject_id = str(row[0])
+#             csv_identifier = row[1]
 
-            #Check to see if the current file's subject_ID and identifier match a row in the CSV file, then retreive its data
+#             #Check to see if the current file's subject_ID and identifier match a row in the CSV file, then retreive its data
 
-            if subject_id == csv_subject_id and identifier == csv_identifier:
-                nwb_filename = subject_id + identifier + '.nwb'
+#             if subject_id == csv_subject_id and identifier == csv_identifier:
+#                 nwb_filename = subject_id + identifier + '.nwb'
 
-                dendrite_number = float(row[2])
+#                 dendrite_number = float(row[2])
 
-                soma_center_pointX = float(row[3])
-                soma_center_pointY = float(row[4])
-                soma_center_pointZ = float(row[5])
-                soma_center_point = [soma_center_pointX, soma_center_pointY, soma_center_pointZ]
-                soma_center_point = np.asarray(soma_center_point)
+#                 soma_center_pointX = float(row[3])
+#                 soma_center_pointY = float(row[4])
+#                 soma_center_pointZ = float(row[5])
+#                 soma_center_point = [soma_center_pointX, soma_center_pointY, soma_center_pointZ]
+#                 soma_center_point = np.asarray(soma_center_point)
 
-                proximal_dendrite_length = float(row[6])
-                medial_dendrite_length = float(row[7])
-                distal_dendrite_length = float(row[8])
+#                 proximal_dendrite_length = float(row[6])
+#                 medial_dendrite_length = float(row[7])
+#                 distal_dendrite_length = float(row[8])
                 
 
-                print(nwb_filename)
-                with NWBHDF5IO(nwb_filename, 'r') as io:
-                    nwbfile = io.read()
+#                 print(nwb_filename)
+#                 with NWBHDF5IO(nwb_filename, 'r') as io:
+#                     nwbfile = io.read()
                 
-                #Subject fields
-                genotype = nwbfile.subject.genotype
-                sex = nwbfile.subject.sex
-                species = nwbfile.subject.species
-                strain = nwbfile.subject.strain
-                subject_id = nwbfile.subject.subject_id
+#                 #Subject fields
+#                 genotype = nwbfile.subject.genotype
+#                 sex = nwbfile.subject.sex
+#                 species = nwbfile.subject.species
+#                 strain = nwbfile.subject.strain
+#                 subject_id = nwbfile.subject.subject_id
 
-                #NWBFile Fields
-                identifier = nwbfile.identifier
-                pharmacology = nwbfile.pharmacology
-                surgery = nwbfile.surgery
+#                 #NWBFile Fields
+#                 identifier = nwbfile.identifier
+#                 pharmacology = nwbfile.pharmacology
+#                 surgery = nwbfile.surgery
 
-                mouse.insert1((
-                    subject_id,
-                    genotype,
-                    sex,   
-                    species,
-                    strain
-                    ), skip_duplicates = True)  
+#                 mouse.insert1((
+#                     subject_id,
+#                     genotype,
+#                     sex,   
+#                     species,
+#                     strain
+#                     ), skip_duplicates = True)  
 
-                session.insert1((
-                    subject_id,
-                    identifier,
-                    surgery,
-                    pharmacology
-                ))
+#                 session.insert1((
+#                     subject_id,
+#                     identifier,
+#                     surgery,
+#                     pharmacology
+#                 ))
 
-                dendrite.insert1((
-                    subject_id,
-                    identifier,
-                    dendrite_number,
-                    soma_center_point,
-                    proximal_dendrite_length,
-                    medial_dendrite_length,
-                    distal_dendrite_length
-                ))
+#                 dendrite.insert1((
+#                     subject_id,
+#                     identifier,
+#                     dendrite_number,
+#                     soma_center_point,
+#                     proximal_dendrite_length,
+#                     medial_dendrite_length,
+#                     distal_dendrite_length
+#                 ))
 
-                image_segmentation.populate()
-                distance_to_soma.populate()
-        print("Data loaded")
+#                 image_segmentation.populate()
+#                 distance_to_soma.populate()
+#         print("Data loaded")
         
-        return{"FINISHED"}
+#         return{"FINISHED"}
 
 
-def connect_to_dj(host, datajoint_user, datajoint_password):
-    dj.config['database.host'] = host
-    dj.config['database.user'] = datajoint_user
-    dj.config['database.password'] = datajoint_password
-    dj.conn()
+# def connect_to_dj(host, datajoint_user, datajoint_password):
+#     dj.config['database.host'] = host
+#     dj.config['database.user'] = datajoint_user
+#     dj.config['database.password'] = datajoint_password
+#     dj.conn()
 
-def instantiate_tables(schema):
-    #Define Mouse table
-    @schema
-    class Mouse(dj.Manual):
-        definition = """
-        subject_id: varchar(128)                  # Primary keys above the '---'
-        ---
-        #non-primary columns below the '---' 
-        genotype: enum('B6', 'BalbC', 'Unknown', 'Thy1-YFP')
-        sex: enum('M', 'F', 'Unknown')
-        species: varchar(128)
-        strain: varchar(128)
-        """
+# def instantiate_tables(schema):
+#     #Define Mouse table
+#     @schema
+#     class Mouse(dj.Manual):
+#         definition = """
+#         subject_id: varchar(128)                  # Primary keys above the '---'
+#         ---
+#         #non-primary columns below the '---' 
+#         genotype: enum('B6', 'BalbC', 'Unknown', 'Thy1-YFP')
+#         sex: enum('M', 'F', 'Unknown')
+#         species: varchar(128)
+#         strain: varchar(128)
+#         """
 
-    mouse = Mouse()
+#     mouse = Mouse()
 
-    @schema
-    class Session(dj.Manual):
-        definition = """
-        ->Mouse
-        identifier: varchar(128)                  # Primary keys above the '---'
-        ---
-        #non-primary columns below the '---' 
-        surgery: varchar(128)
-        pharmacology: varchar(128)
-        """
+#     @schema
+#     class Session(dj.Manual):
+#         definition = """
+#         ->Mouse
+#         identifier: varchar(128)                  # Primary keys above the '---'
+#         ---
+#         #non-primary columns below the '---' 
+#         surgery: varchar(128)
+#         pharmacology: varchar(128)
+#         """
 
-    session = Session()
+#     session = Session()
 
-    @schema
-    class Dendrite(dj.Manual):
-        definition = """
-        ->Session
-        dendrite_id: int                  # Primary keys above the '---'
-        ---
-        #non-primary columns below the '---'
-        soma_center_point: longblob
-        proximal_dendrite_length: float
-        medial_dendrite_length: float
-        distal_dendrite_length: float
-        """
+#     @schema
+#     class Dendrite(dj.Manual):
+#         definition = """
+#         ->Session
+#         dendrite_id: int                  # Primary keys above the '---'
+#         ---
+#         #non-primary columns below the '---'
+#         soma_center_point: longblob
+#         proximal_dendrite_length: float
+#         medial_dendrite_length: float
+#         distal_dendrite_length: float
+#         """
 
-    dendrite = Dendrite()
+#     dendrite = Dendrite()
 
-    @schema
-    class Image_segmentation(dj.Imported):
-        definition = """
-        ->Dendrite
-        segmentation_name: varchar(128)                  # Primary keys above the '---'
-        ---
-        #non-primary columns below the '---'
-        length: float
-        volume: float
-        surface_area:float
-        spine_type: enum('mushroom', 'thin', 'disconnected','stubby','U')
-        center_of_mass: longblob
-        """
-        def make(self, key):
-            subject_id = key['subject_id']
-            identifier = key['identifier']
+#     @schema
+#     class Image_segmentation(dj.Imported):
+#         definition = """
+#         ->Dendrite
+#         segmentation_name: varchar(128)                  # Primary keys above the '---'
+#         ---
+#         #non-primary columns below the '---'
+#         length: float
+#         volume: float
+#         surface_area:float
+#         spine_type: enum('mushroom', 'thin', 'disconnected','stubby','U')
+#         center_of_mass: longblob
+#         """
+#         def make(self, key):
+#             subject_id = key['subject_id']
+#             identifier = key['identifier']
 
-            path = bpy.context.scene.my_path_property
-            nwbfile_to_read = path + '/' + str(subject_id) + str(identifier) + '.nwb'
-            print(nwbfile_to_read)
-            with NWBHDF5IO(nwbfile_to_read, 'r') as io:
-                nwbfile = io.read()     
-                for group in nwbfile.processing["SpineData"]["ImageSegmentation"].children[:]:
-                    print(group.name)
-                    if group.name.startswith("Mushroom"):
-                        spine_type = 'mushroom'
-                    elif group.name.startswith("Thin"):
-                        spine_type = 'thin'
-                    elif group.name.startswith("Disconnected"):
-                        spine_type = 'disconnected'
-                    elif group.name.startswith("Stubby"):
-                        spine_type = 'stubby'
-                    else:
-                        spine_type = 'U'
+#             path = bpy.context.scene.my_path_property
+#             nwbfile_to_read = path + '/' + str(subject_id) + str(identifier) + '.nwb'
+#             print(nwbfile_to_read)
+#             with NWBHDF5IO(nwbfile_to_read, 'r') as io:
+#                 nwbfile = io.read()     
+#                 for group in nwbfile.processing["SpineData"]["ImageSegmentation"].children[:]:
+#                     print(group.name)
+#                     if group.name.startswith("Mushroom"):
+#                         spine_type = 'mushroom'
+#                     elif group.name.startswith("Thin"):
+#                         spine_type = 'thin'
+#                     elif group.name.startswith("Disconnected"):
+#                         spine_type = 'disconnected'
+#                     elif group.name.startswith("Stubby"):
+#                         spine_type = 'stubby'
+#                     else:
+#                         spine_type = 'U'
 
-                    length = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].length.data[:]
-                    length = length[0]
-                    volume = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].volume.data[:]
-                    volume = volume[0]
-                    surface_area = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].surface_area.data[:]
-                    surface_area = surface_area[0]
-                    center_of_mass = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].center_of_mass.data[:]
-                    center_of_mass = center_of_mass[0]
+#                     length = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].length.data[:]
+#                     length = length[0]
+#                     volume = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].volume.data[:]
+#                     volume = volume[0]
+#                     surface_area = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].surface_area.data[:]
+#                     surface_area = surface_area[0]
+#                     center_of_mass = nwbfile.processing["SpineData"]["ImageSegmentation"][group.name].center_of_mass.data[:]
+#                     center_of_mass = center_of_mass[0]
                     
-                    key['segmentation_name'] = group.name 
-                    key['length'] = length
-                    key['volume'] = volume
-                    key['surface_area'] = surface_area
-                    key['spine_type'] = spine_type
-                    key['center_of_mass'] = center_of_mass
-                    self.insert1(key)
+#                     key['segmentation_name'] = group.name 
+#                     key['length'] = length
+#                     key['volume'] = volume
+#                     key['surface_area'] = surface_area
+#                     key['spine_type'] = spine_type
+#                     key['center_of_mass'] = center_of_mass
+#                     self.insert1(key)
 
-    image_segmentation = Image_segmentation()
+#     image_segmentation = Image_segmentation()
 
-    @schema
-    class Distance_to_soma(dj.Computed):
-        definition = """
-        ->Image_segmentation
-        ---
-        distance_to_soma: float"""
-        def make(self, key):
-            center_of_mass = (Image_segmentation() & key).fetch1('center_of_mass')
-            soma_center_point = (Dendrite() & key).fetch1('soma_center_point')
-            distance_to_soma = math.dist(center_of_mass,soma_center_point)
+#     @schema
+#     class Distance_to_soma(dj.Computed):
+#         definition = """
+#         ->Image_segmentation
+#         ---
+#         distance_to_soma: float"""
+#         def make(self, key):
+#             center_of_mass = (Image_segmentation() & key).fetch1('center_of_mass')
+#             soma_center_point = (Dendrite() & key).fetch1('soma_center_point')
+#             distance_to_soma = math.dist(center_of_mass,soma_center_point)
 
-            key['distance_to_soma'] = distance_to_soma
-            self.insert1(key)
+#             key['distance_to_soma'] = distance_to_soma
+#             self.insert1(key)
 
-    distance_to_soma = Distance_to_soma()
+#     distance_to_soma = Distance_to_soma()
 
-    return mouse, session, dendrite, image_segmentation, distance_to_soma
+#     return mouse, session, dendrite, image_segmentation, distance_to_soma
 
 
 class FILE_SELECTOR_PT_Panel(bpy.types.Panel):
