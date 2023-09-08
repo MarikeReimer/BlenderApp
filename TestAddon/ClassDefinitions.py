@@ -457,8 +457,11 @@ class WriteNWB(bpy.types.Operator):
                 elif i.type == 'MESH' and i.name.startswith('surface'):
                     mesh_attributes = self.find_mesh_attributes(i)
                     doubled_surface_area = mesh_attributes[2]
-                    surface_area = doubled_surface_area/2 
-                    print("surface_area", surface_area)
+                    surface_area = doubled_surface_area/2
+
+                elif i.type == 'MESH' and i.name.startswith('manual'):
+                    mesh_attributes = self.find_mesh_attributes(i)
+                    surface_area = mesh_attributes[2]
 
                 elif i.type == 'MESH' and i.name.startswith('endpoints'):
                     pass
@@ -1060,7 +1063,7 @@ class LoadDataJoint(bpy.types.Operator):
             length: float
             volume: float
             surface_area:float
-            spine_type: enum('mushroom', 'thin', 'disconnected','stubby','U')
+            spine_type: enum('mushroom', 'thin', 'disconnected','strict_thin','stubby','U')
             center_of_mass: longblob
             """
             def make(self, key):
@@ -1082,6 +1085,8 @@ class LoadDataJoint(bpy.types.Operator):
                             spine_type = 'disconnected'
                         elif group.name.startswith("Stubby"):
                             spine_type = 'stubby'
+                        elif group.name.startswith("Strict"):
+                            spine_type = 'strict_thin'
                         else:
                             spine_type = 'U'
 

@@ -117,7 +117,7 @@ def register():
     
     #DataJoint Fields
     bpy.types.Scene.selected_file = bpy.props.StringProperty \
-      (name="Selected File", default = "C:/Users/meowm/OneDrive/TanLab/DataJointTesting/DataJointDiscDendriteTable_V1_dendritestart.csv")
+      (name="Selected File", default = "C:/Users/meowm/OneDrive/TanLab/DataJointTesting/DataJointDiscDendriteTable_V1_dendritestart_strict.csv")
         
     bpy.types.Scene.host = bpy.props.StringProperty \
       (name = "host", default = "spinup-db001f1f.cluster-cyynsscieqtk.us-east-1.rds.amazonaws.com")
@@ -138,7 +138,7 @@ def unregister():
     bpy.utils.unregister_class(WriteNWB)
     bpy.utils.unregister_class(SpineSlicer)
     bpy.utils.unregister_class(SegmentHollowSpines)
-    #bpy.utils.unregister_class(FILE_SELECT_OT_SelectFile)
+    bpy.utils.unregister_class(FILE_SELECT_OT_SelectFile)
     bpy.utils.unregister_class(SelectDirectoryOperator)
     bpy.utils.unregister_class(LoadDataJoint)
     #bpy.utils.unregister_class(DropCurrentSubjectIdentifier)

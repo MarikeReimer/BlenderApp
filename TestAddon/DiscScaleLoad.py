@@ -82,14 +82,14 @@ class Image_segmentation(dj.Imported):
     length: float
     volume: float
     surface_area:float
-    spine_type: enum('mushroom', 'thin', 'disconnected', 'stubby','U')
+    spine_type: enum('mushroom', 'thin', 'disconnected', 'stubby', 'strict_thin', 'U')
     center_of_mass: longblob
     """
     def make(self, key):
         subject_id = key['subject_id']
         identifier = key['identifier']
 
-        nwbfile_to_read = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBfiles/' + str(subject_id) + str(identifier) + '.nwb' #TODO: Remove hard coding
+        nwbfile_to_read = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBfiles/' + str(subject_id) + str(identifier) + '.nwb'
         #nwbfile_to_read = 'C:/Users/meowm/Downloads/NWBfiles/' + str(subject_id) + str(identifier) + '.nwb'
 
         print(nwbfile_to_read)
@@ -105,6 +105,8 @@ class Image_segmentation(dj.Imported):
                     spine_type = 'disconnected'
                 elif group.name.startswith("Stubby"):
                     spine_type = 'stubby'
+                elif group.name.startswith("Strict"):
+                    spine_type = 'strict_thin'
                 else:
                     spine_type = 'U'
 
@@ -153,7 +155,7 @@ path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/' #TODO: remove hard cod
 
 os.chdir(path)
 #Read in dendrite data from CSV
-with open('DataJointDiscDendriteTable_V1.csv') as csv_file:
+with open('DataJointDiscDendriteTable_V1_dendritestart_strict.csv') as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=',')
     next(csv_reader) # This skips the header row of the CSV file.
     #Make a list of the NWB files in the directory
