@@ -150,12 +150,12 @@ image_segmentation = Image_segmentation()
 distance_to_soma = Distance_to_soma()
 
 
-path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/' #TODO: remove hard coding
+path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/' 
 #path = 'C:/Users/meowm/Downloads/'
 
 os.chdir(path)
 #Read in dendrite data from CSV
-with open('DataJointDiscDendriteTable_V1_dendritestart_strict.csv') as csv_file:
+with open('DataJointDiscDendriteTable_current.csv') as csv_file:
     csv_reader = csv.reader(csv_file, delimiter=',')
     next(csv_reader) # This skips the header row of the CSV file.
     #Make a list of the NWB files in the directory

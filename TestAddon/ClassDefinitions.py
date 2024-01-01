@@ -977,7 +977,7 @@ class LoadDataJoint(bpy.types.Operator):
                         sex,   
                         species,
                         strain
-                        ), skip_duplicates = True)  
+                        ))  
 
                     session.insert1((
                         subject_id,
@@ -1017,7 +1017,7 @@ class LoadDataJoint(bpy.types.Operator):
             subject_id: varchar(128)                  # Primary keys above the '---'
             ---
             #non-primary columns below the '---' 
-            genotype: enum('B6', 'BalbC', 'Unknown', 'Thy1-YFP')
+            genotype: varchar(128)
             sex: enum('M', 'F', 'Unknown')
             species: varchar(128)
             strain: varchar(128)
@@ -1085,8 +1085,8 @@ class LoadDataJoint(bpy.types.Operator):
                             spine_type = 'disconnected'
                         elif group.name.startswith("Stubby"):
                             spine_type = 'stubby'
-                        elif group.name.startswith("Strict"):
-                            spine_type = 'strict_thin'
+                        # elif group.name.startswith("Strict"):
+                        #     spine_type = 'strict_thin'
                         else:
                             spine_type = 'U'
 

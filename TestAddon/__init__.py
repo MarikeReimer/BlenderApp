@@ -78,7 +78,7 @@ def register():
     bpy.types.Scene.slices = bpy.props.StringProperty \
       (name = "Slices", default = "Coronal")
     bpy.types.Scene.surgery = bpy.props.StringProperty \
-      (name = "Surgery", default = "Contusion")
+      (name = "Surgery", default = "Contusion: (50 kDyn) SCI at the thoracic vertebral level 11 (T11), lumbar segment 2 (L2)")
 
     #Imaging Plane Fields
     bpy.types.Scene.plane_name = bpy.props.StringProperty \
@@ -117,7 +117,7 @@ def register():
     
     #DataJoint Fields
     bpy.types.Scene.selected_file = bpy.props.StringProperty \
-      (name="Selected File", default = "C:/Users/meowm/OneDrive/TanLab/DataJointTesting/DataJointDiscDendriteTable_V1_dendritestart_strict.csv")
+      (name="Selected File", default = "C:/Users/meowm/OneDrive/TanLab/DataJointTesting/DataJointDiscDendriteTable_V1.csv")
         
     bpy.types.Scene.host = bpy.props.StringProperty \
       (name = "host", default = "spinup-db001f1f.cluster-cyynsscieqtk.us-east-1.rds.amazonaws.com")
