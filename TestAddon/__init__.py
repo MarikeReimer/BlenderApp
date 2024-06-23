@@ -15,8 +15,8 @@ from . ClassDefinitions import SelectDirectoryOperator
 
 #Information about the Addon created by the Blender Development VSCode Extension
 bl_info = {
-    "name" : "TestAddon",
-    "author" : "Marike",
+    "name" : "VRSASEAddon",
+    "author" : "Marike Reimer",
     "description" : "",
     "blender" : (2, 80, 0),
     "location" : "",
@@ -45,7 +45,7 @@ def register():
     bpy.types.Scene.subject_id = bpy.props.StringProperty \
       (name = "Subject ID", default = "L")
     bpy.types.Scene.age = bpy.props.StringProperty \
-      (name = "Age", default = "")
+      (name = "Age", default = "P14W")
     bpy.types.Scene.subject_description = bpy.props.StringProperty \
       (name = "Description", default = '')
     bpy.types.Scene.genotype = bpy.props.StringProperty \
@@ -88,13 +88,13 @@ def register():
     bpy.types.Scene.excitation_lambda = bpy.props.FloatProperty \
       (name = "Excitation Lambda", default = 488)
     bpy.types.Scene.external_file = bpy.props.StringProperty \
-      (name = "External File Link", default = "https://yalesecure.app.box.com/folder/184104062698")
+      (name = "External File Link", default = "C:/Users/meowm/OneDrive/TanLab/DataJointTesting/Images")
     bpy.types.Scene.imaging_rate = bpy.props.FloatProperty \
       (name = "Imaging Rate")
     bpy.types.Scene.indicator = bpy.props.StringProperty \
       (name = "Indicator", default = "Thy1-YFP")
     bpy.types.Scene.location = bpy.props.StringProperty \
-      (name = "Location", default = "spinal cord")
+      (name = "Location", default = "lumbar spinal cord")
     bpy.types.Scene.grid_spacing = bpy.props.FloatProperty \
       (name = "Grid Spacing")
     bpy.types.Scene.grid_spacing_unit = bpy.props.StringProperty \
