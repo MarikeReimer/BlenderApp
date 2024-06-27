@@ -175,8 +175,12 @@ nwbfile
 # ``RGBAImage.data`` must be 3D where the first and second dimensions
 # represent x and y. The third dimension has length 4 and represents the RGBA value.
 #
+try:
+    img = Image.open("L691_1_2022-11-04_14.11.41.ims")  # an example image
 
-img = Image.open("logo_pynwb.png")  # an example image
+except:
+    "please save as image sequence"
+
 
 # rgba_logo = RGBAImage(
 #     name="pynwb_RGBA_logo",
@@ -194,8 +198,10 @@ img = Image.open("logo_pynwb.png")  # an example image
 # represent x and y. The third dimension has length 3 and represents the RGB value.
 #
 
+
+
 rgb_logo = RGBImage(
-    name="pynwb_RGB_logo",
+    name="L691_1_2022-11-04_14.11.410000",
     data=np.array(img.convert("RGB")),
     resolution=70.0,
     description="RGB version of the PyNWB logo.",
