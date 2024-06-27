@@ -13,7 +13,8 @@ def open_image(file_path):
         return None
 
 # Example usage:
-file_path = 'L691_1_2022-11-04_14.11.41.ims'
+#file_path = 'L691_1_2022-11-04_14.11.41.ims'
+file_path = 'L691_1_2022-11-04_14.11.410000.png'
 image = open_image(file_path)
 
 if image:
