@@ -10,7 +10,7 @@ import time
 import re
 import datajoint as dj
 import csv
-
+from PIL import Image
 
 #The new way of adding python libraries
 import sys
@@ -19,9 +19,11 @@ packages_path = "C:\\Users\\meowm\\AppData\\Local\\Programs\\Python\\Python310\\
 sys.path.insert(0, packages_path )
 
 from pynwb import NWBFile, NWBHDF5IO, image
+from pynwb.image import RGBImage
 from pynwb.ophys import TwoPhotonSeries, OpticalChannel, ImageSegmentation, ImagingPlane
 from pynwb.file import Subject
 from pynwb.device import Device
+from pynwb.base import Images
 from mathutils import Vector
 from mathutils.bvhtree import BVHTree
 
@@ -359,16 +361,49 @@ class WriteNWB(bpy.types.Operator):
             grid_spacing = [grid_spacing, grid_spacing, grid_spacing], 
             grid_spacing_unit = grid_spacing_unit)
 
-        #Create image series and add a link to the raw image stack to the file
-        raw_data = image.ImageSeries(
-            'Raw Data',
-            format = 'external',
-            rate = imaging_rate, #Unit is Hz
-            external_file = external_file, 
-            starting_frame = [1])
+        #Create image series and add a link to the raw image stack to the file. Assumes images are in NWB Output folder
+        path = bpy.context.scene.my_path_property
+        img = Image.open(path + '/'+ external_file[0])
 
-        nwbfile.add_acquisition(raw_data)
-        return(nwbfile, imaging_plane, raw_data, nwbfile_name)
+        ####################
+        # RGBImage: for color images
+        # ^^^^^^^^^^^^^^^^^^^^^^^^^^
+        #
+        # :py:class:`~pynwb.image.RGBImage` is for storing data of RGB color image.
+        # ``RGBImage.data`` must be 3D where the first and second dimensions
+        # represent x and y. The third dimension has length 3 and represents the RGB value.
+        #
+
+        rgb_img = RGBImage(
+            name= str(external_file[0]),
+            data=np.array(img.convert("RGB")),
+            resolution=grid_spacing,
+            description="RGB version of the image stack.",
+        )
+
+
+        ####################
+        # Images: a container for images
+        # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+        #
+        # Add the images to an :py:class:`~pynwb.base.Images` container
+        # that accepts any of these image types.
+
+        images = Images(
+            name="logo_images",
+            images=[rgb_img],
+            description="A collection of logo images presented to the subject.",
+        )
+
+        # raw_data = RGBImage(
+        #     name = external_file[0],
+        #     data=np.array(img.convert("RGB")),
+        #     resolution = grid_spacing,
+        #     description = "Original image stack",
+        #     )
+
+        nwbfile.add_acquisition(images)
+        return(nwbfile, imaging_plane, images, nwbfile_name)
     
     #Find the distance between the endpoints of spines when running the execute loop
     def find_length(self, i):
@@ -418,7 +453,7 @@ class WriteNWB(bpy.types.Operator):
         holder = self.AddPanelData()
         nwbfile = holder[0]
         imaging_plane = holder[1]
-        raw_data = holder[2]
+        images = holder[2]
         nwbfile_name = holder[3]
         module = nwbfile.create_processing_module("SpineData", 'Contains processed neuromorphology data from Blender.')
         image_segmentation = ImageSegmentation()
@@ -442,7 +477,7 @@ class WriteNWB(bpy.types.Operator):
                 name = segmentation_name,
                 description = 'output from segmenting a mesh in Blender',
                 imaging_plane = imaging_plane,     
-                reference_images = raw_data
+                reference_images = images
                     )               
 
             #Iterate through collections and extract variables

@@ -96,9 +96,9 @@ def register():
     bpy.types.Scene.location = bpy.props.StringProperty \
       (name = "Location", default = "lumbar spinal cord")
     bpy.types.Scene.grid_spacing = bpy.props.FloatProperty \
-      (name = "Grid Spacing")
+      (name = "Grid Spacing", default = 8.2982)
     bpy.types.Scene.grid_spacing_unit = bpy.props.StringProperty \
-      (name = "Grid Spacing Units", default = 'um')
+      (name = "Grid Spacing Units", default = 'pixels/micron')
     bpy.types.Scene.device = bpy.props.StringProperty \
       (name = "Device", default = "iXon EMCCD 1")
     bpy.types.Scene.optical_channel_name = bpy.props.StringProperty \
