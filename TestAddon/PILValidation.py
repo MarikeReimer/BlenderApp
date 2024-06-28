@@ -16,8 +16,8 @@ from pynwb.image import GrayscaleImage, ImageSeries, OpticalSeries, RGBAImage, R
 
 nwbfile_path = os.getcwd()
 # Example usage:
-file_path = 'L691_1_2022-11-04_14.11.41.ims' #Fails
-#file_path = 'L691_1_2022-11-04_14.11.410000.PNG' #Works
+#file_path = 'L691_1_2022-11-04_14.11.41.ims' #Fails
+file_path = 'L691_1_2022-11-04_14.11.410000.PNG' #Works
 
 
 session_start_time = datetime(2018, 4, 25, 2, 30, 3, tzinfo=tz.gettz("US/Pacific"))
@@ -105,7 +105,7 @@ nwbfile.add_acquisition(images)
 print("Image sequence added successfully for ", file_path)
 
 #Return to NWB file directory
-os.chdir('..')
+os.chdir(nwbfile_path)
 
 with NWBHDF5IO("PILWorkaround.nwb", "w") as io:
     io.write(nwbfile)

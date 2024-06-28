@@ -281,7 +281,7 @@ class WriteNWB(bpy.types.Operator):
         plane_name = bpy.context.scene.plane_name
         plane_description = bpy.context.scene.plane_description
         excitation_lambda = float(bpy.context.scene.excitation_lambda)
-        external_file = [bpy.context.scene.external_file]
+        external_file = bpy.context.scene.external_file
         grid_spacing = bpy.context.scene.grid_spacing
         imaging_rate = float(bpy.context.scene.imaging_rate)
         indicator = bpy.context.scene.indicator
@@ -351,8 +351,8 @@ class WriteNWB(bpy.types.Operator):
 
         #Create image series and add a link to the raw image stack to the file. Assumes images are in NWB Output folder
         path = bpy.context.scene.my_path_property
-        img = Image.open(path + '/'+ external_file[0])
-
+        image_location = path + '/' + external_file
+        img = open_image(image_location)
         ####################
         # RGBImage: for color images
         # ^^^^^^^^^^^^^^^^^^^^^^^^^^
@@ -378,9 +378,9 @@ class WriteNWB(bpy.types.Operator):
         # that accepts any of these image types.
 
         images = Images(
-            name="logo_images",
+            name="Reference Image",
             images=[rgb_img],
-            description="A collection of logo images presented to the subject.",
+            description="An image stack or sequence images used to create  3D model.",
         )
 
         nwbfile.add_acquisition(images)
@@ -391,8 +391,6 @@ class WriteNWB(bpy.types.Operator):
         point1 = i.data.vertices[0].co
         point2 = i.data.vertices[1].co
         length = math.dist(point1, point2)
-        print("spine name is", i.name, "length is ", length)
-        #return length
         return point1, point2
 
 
@@ -436,23 +434,20 @@ class WriteNWB(bpy.types.Operator):
         imaging_plane = holder[1]
         images = [holder[2]]
         nwbfile_name = holder[3]
-        module = nwbfile.create_processing_module("SpineData", 'Contains processed neuromorphology data from Blender.')
+        module = nwbfile.create_processing_module("MorphologyData", 'Contains processed morphology data from Blender.')
         image_segmentation = ImageSegmentation()
         module.add(image_segmentation)
 
-        #This loop iterates through all collections and extracts data about the meshes.
-       
+        #This loop iterates through all collections and extracts data about the meshes.       
         for collection in bpy.data.collections:
             #Empty variables which are collected during the loop
             length = ''
             center_of_mass = ''
             volume = ''
             surface_area = ''
-
             #Create unique name
             segmentation_name = collection.name + '_plane_segmentaton'
             print("segmentation_name", segmentation_name)
-
             #Create plane segmentation from our NWB extension    
             plane_segmentation = image_segmentation.create_plane_segmentation(
                 name = segmentation_name,
@@ -878,7 +873,17 @@ class ManualLength(bpy.types.Operator):
         return {'FINISHED'}
 
 
-
+def open_image(file_path):
+    try:
+        img = Image.open(file_path)
+        img.verify()  # Verify that it is, in fact, an image
+        # Re-open the image file to reset the file pointer after verify
+        img = Image.open(file_path)
+        img = img.convert("RGB")
+        return img
+    except (IOError, SyntaxError) as e:
+        print(f"Unsupported Imagetype: {e}, Please convert image stack to a sequence of png or jpg files in the directory created.  We recommended this open source tool: https://imagej.net/ij/download.html")
+        return None
 
 
 ### DataJoint
