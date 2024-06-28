@@ -41,7 +41,7 @@ def open_image(file_path):
     try:
         img = Image.open(file_path)
         img.verify()  # Verify that it is, in fact, an image
-        # Re-open the image file to reset the file pointer after verify(??) Workaround provided by Chat.gpt 
+        # Re-open the image file to reset the file pointer after verify
         img = Image.open(file_path)
         img = img.convert("RGB")
         return img
@@ -106,10 +106,6 @@ print("Image sequence added successfully for ", file_path)
 
 #Return to NWB file directory
 os.chdir('..')
-
-    #For all images in the stack, create a pynwb object
-    #Add objects to Image group
-    #Add Image group to NWBFile
 
 with NWBHDF5IO("PILWorkaround.nwb", "w") as io:
     io.write(nwbfile)

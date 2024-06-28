@@ -11,13 +11,6 @@ import re
 import datajoint as dj
 import csv
 from PIL import Image
-
-#The new way of adding python libraries
-import sys
-#TODO: Replace this path when setting up 
-packages_path = "C:\\Users\\meowm\\AppData\\Local\\Programs\\Python\\Python310\\Lib\\site-packages"
-sys.path.insert(0, packages_path )
-
 from pynwb import NWBFile, NWBHDF5IO, image
 from pynwb.image import RGBImage
 from pynwb.ophys import TwoPhotonSeries, OpticalChannel, ImageSegmentation, ImagingPlane
@@ -144,11 +137,6 @@ class NeuronAnalysis(bpy.types.Panel):
         #Pass data to DataJoint
         row = box.row() 
         row.operator('object.load_dj', text = "Load into DataJoint")
-
-        #Pass data to DataJoint
-        # row = box.row() 
-        # row.operator('object.drop_current', text = "Clear Current Entry")
-
 
 #ROW OPERATORS
 
@@ -395,13 +383,6 @@ class WriteNWB(bpy.types.Operator):
             description="A collection of logo images presented to the subject.",
         )
 
-        # raw_data = RGBImage(
-        #     name = external_file[0],
-        #     data=np.array(img.convert("RGB")),
-        #     resolution = grid_spacing,
-        #     description = "Original image stack",
-        #     )
-
         nwbfile.add_acquisition(images)
         return(nwbfile, imaging_plane, images, nwbfile_name)
     
@@ -453,7 +434,7 @@ class WriteNWB(bpy.types.Operator):
         holder = self.AddPanelData()
         nwbfile = holder[0]
         imaging_plane = holder[1]
-        images = holder[2]
+        images = [holder[2]]
         nwbfile_name = holder[3]
         module = nwbfile.create_processing_module("SpineData", 'Contains processed neuromorphology data from Blender.')
         image_segmentation = ImageSegmentation()
@@ -514,25 +495,12 @@ class WriteNWB(bpy.types.Operator):
 
             plane_segmentation.add_roi(
                 image_mask=np.ones((4,4)), #This line holds dummy data and won't work without it.
-                # faces=faces,
-                # vertices=vertices,
                 center_of_mass = center_of_mass,
                 volume=volume,
                 surface_area = surface_area,
                 length = length,
                 )
                    
-                #This code can be used to extract the verticies and faces if we want to keep them in the NWBFile
-                #NOTE: edges should be included when we decide to do that
-
-                #     # for v in bm.verts:
-                #     #     mesh_verts.append(v.co)
-                
-                #     # for face in mesh.polygons:
-                #     #     vertices = face.vertices
-                #     #     face_vert_list = [vertices[0], vertices[1], vertices[2]]
-                #     #     faces.append(face_vert_list)
-
         path = context.scene.my_path_property
         os.chdir(path) 
         #Write the NWB file
@@ -961,8 +929,6 @@ class LoadDataJoint(bpy.types.Operator):
             csv_reader = csv.reader(csv_file, delimiter=',')
             next(csv_reader) # This skips the header row of the CSV file.
             #Make a list of the NWB files in the directory
-            # path = 'C:/Users/meowm/OneDrive/TanLab/DataJointTesting/NWBFiles'
-            # os.chdir(path)
             nwb_file_path = bpy.context.scene.my_path_property
             os.chdir(nwb_file_path)
             NWBfiles = os.listdir(nwb_file_path)
