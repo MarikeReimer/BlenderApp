@@ -353,46 +353,65 @@ class WriteNWB(bpy.types.Operator):
         path = bpy.context.scene.my_path_property
         image_location = path + '/' + external_file
         img = open_image(image_location)
-        ####################
-        # RGBImage: for color images
-        # ^^^^^^^^^^^^^^^^^^^^^^^^^^
-        #
-        # :py:class:`~pynwb.image.RGBImage` is for storing data of RGB color image.
-        # ``RGBImage.data`` must be 3D where the first and second dimensions
-        # represent x and y. The third dimension has length 3 and represents the RGB value.
-        #
+        check_for_dir(image_location[:-4])
+        image_list = []
 
-        rgb_img = RGBImage(
-            name= str(external_file[0]),
-            data=np.array(img.convert("RGB")),
-            resolution=grid_spacing,
-            description="RGB version of the image stack.",
-        )
+        if img:
+            rgb_img = np.array(img.convert("RGB"))
+            ####################
+            # RGBImage: for color images
+            # :py:class:`~pynwb.image.RGBImage` is for storing data of RGB color image.
+            # ``RGBImage.data`` must be 3D where the first and second dimensions
+            # represent x and y. The third dimension has length 3 and represents the RGB value.
 
+            rgb_img = RGBImage(
+                name= str(external_file[0]),
+                data=rgb_img,
+                resolution=grid_spacing,
+                description="RGB version of the image stack.",
+            )
+                
+            images = Images(
+                name="Reference Image Stack",
+                images=[rgb_img],
+                description="An image stack used to create 3D model.",
+            )
+            nwbfile.add_acquisition(images)
 
-        ####################
-        # Images: a container for images
-        # ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
-        #
-        # Add the images to an :py:class:`~pynwb.base.Images` container
-        # that accepts any of these image types.
+        else:    
+            os.chdir(image_location[:-4])
+            for i in os.listdir():
+                image = open_image(i)
+                if image:
+                    image = open_image(i)
+                    rgb_img = np.array(image.convert("RGB"))           
+                    rgb_logo = RGBImage(
+                        name=i,
+                        data=rgb_img,
+                        resolution=70.0,
+                        description="RGB version of the PyNWB logo.",
+                    )
+                    image_list.append(rgb_logo)
+                else:
+                    print(i, 'fails') 
 
-        images = Images(
-            name="Reference Image",
-            images=[rgb_img],
-            description="An image stack or sequence images used to create  3D model.",
-        )
+            images = Images(
+                name="Reference Image Sequence",
+                images=image_list,
+                description="A sequence of images used to create 3D model.",
+            )   
+            nwbfile.add_acquisition(images)
+        os.chdir(path)    
 
-        nwbfile.add_acquisition(images)
         return(nwbfile, imaging_plane, images, nwbfile_name)
     
+    #Dendritic spine segmentation
     #Find the distance between the endpoints of spines when running the execute loop
     def find_length(self, i):
         point1 = i.data.vertices[0].co
         point2 = i.data.vertices[1].co
         length = math.dist(point1, point2)
         return point1, point2
-
 
     #This purports to be a faster way             
     def distance_vec(self, i, point1: Vector, point2: Vector) -> float:
@@ -885,6 +904,14 @@ def open_image(file_path):
         print(f"Unsupported Imagetype: {e}, Please convert image stack to a sequence of png or jpg files in the directory created.  We recommended this open source tool: https://imagej.net/ij/download.html")
         return None
 
+def check_for_dir(dir_path):
+    # Check if the directory exists
+    if not os.path.exists(dir_path):
+        # If the directory does not exist, create it
+        os.mkdir(dir_path)
+        print("We're here", os.getcwd())
+    else:
+        print(f"Directory {dir_path} already exists.")
 
 ### DataJoint
 
