@@ -289,7 +289,8 @@ class WriteNWB(bpy.types.Operator):
         grid_spacing_unit = bpy.context.scene.grid_spacing_unit
         
         #Create filename 
-        nwbfile_name = subject_id + identifier + '.nwb'
+        #Use DANDI Archives convention:prepend sub-, insert _ses-
+        nwbfile_name = 'sub-' + subject_id + '_ses-' + identifier + '.nwb'
 
         #Create pynwb subject
         subject = Subject(
@@ -355,6 +356,8 @@ class WriteNWB(bpy.types.Operator):
         img = open_image(image_location)
         check_for_dir(image_location[:-4])
         image_list = []
+
+
 
         if img:
             rgb_img = np.array(img.convert("RGB"))
@@ -507,8 +510,13 @@ class WriteNWB(bpy.types.Operator):
             plane_segmentation.add_column('surface_area', 'surface_area')         
             plane_segmentation.add_column('length', 'length')
 
+            #Make dummy data to enable plane segmentation:
+            
+            pixel_mask = np.array([[0, 0, 0]] * 1)
+            
             plane_segmentation.add_roi(
-                image_mask=np.ones((4,4)), #This line holds dummy data and won't work without it.
+                #image_mask=np.ones((4,4)), #This line holds dummy data and won't work without it.
+                pixel_mask = pixel_mask,
                 center_of_mass = center_of_mass,
                 volume=volume,
                 surface_area = surface_area,
@@ -518,6 +526,7 @@ class WriteNWB(bpy.types.Operator):
         path = context.scene.my_path_property
         os.chdir(path) 
         #Write the NWB file
+        
         with NWBHDF5IO(nwbfile_name, 'w') as io:
             io.write(nwbfile)
 
